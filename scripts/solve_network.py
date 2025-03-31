@@ -40,10 +40,11 @@ import yaml
 from _benchmark import memory_logger
 from _helpers import (
     configure_logging,
+    create_tuples,
     set_scenario_config,
     update_config_from_wildcards,
 )
-from prepare_sector_network import get
+from prepare_sector_network import get, prepare_costs
 from pypsa.descriptors import get_activity_mask
 from pypsa.descriptors import get_switchable_as_dense as get_as_dense
 
@@ -934,6 +935,179 @@ def add_co2_atmosphere_constraint(n, snapshots):
 
             n.model.add_constraints(lhs <= rhs, name=f"GlobalConstraint-{name}")
 
+# def system_res_constraints(n, year, config) -> None:
+#     """
+#     Set a system-wide national RES constraints based on NECPs.
+
+#     Here CI load is not counted within country_load ->
+#     this avoids avoid big overshoot of national RES targets due to CI-procured portfolio. Note that EU RE directive counts corporate PPA within NECPs.
+#     """
+#     country_targets = config["RES_target"][year]
+
+#     grid_res_techs = config["global"]["grid_res_techs"]
+#     weights = n.snapshot_weightings["generators"]
+
+#     for ct in country_targets.keys():
+#         country_buses = n.buses.index[(n.buses.index.str[:2] == ct)]
+#         if country_buses.empty:
+#             continue
+
+#         country_loads = n.loads.index[n.loads.bus.isin(country_buses) & n.loads.carrier.isin(['electricity'])]
+#         country_res_gens = n.generators.index[
+#             n.generators.bus.isin(country_buses)
+#             & n.generators.carrier.isin(grid_res_techs)
+#         ]
+#         country_res_links = n.links.index[
+#             n.links.bus1.isin(country_buses) & n.links.carrier.isin(grid_res_techs)
+#         ]
+#         country_res_storage_units = n.storage_units.index[
+#             n.storage_units.bus.isin(country_buses)
+#             & n.storage_units.carrier.isin(grid_res_techs)
+#         ]
+
+#         gens = n.model["Generator-p"].loc[:, country_res_gens] * weights
+#         links = (
+#             n.model["Link-p"].loc[:, country_res_links]
+#             * n.links.loc[country_res_links, "efficiency"]
+#             * weights
+#         )
+#         sus = (
+#             n.model["StorageUnit-p_dispatch"].loc[:, country_res_storage_units]
+#             * weights
+#         )
+#         lhs = gens.sum() + sus.sum() + links.sum()
+
+#         target = config["RES_target"][year][f"{ct}"]
+#         total_load = (n.loads_t.p_set[country_loads].sum(axis=1) * weights).sum()
+
+#         logger.info(
+#             f"country RES constraint for {ct} {target} and total load {round(total_load/1e6, 2)} TWh"
+#         )
+
+#         n.model.add_constraints(
+#             lhs == target * total_load, name=f"{ct}_res_constraint"
+#         )
+
+# def cfe_constraints(n, penetration):
+#     weights = n.snapshot_weightings["generators"]
+#     vls = n.links[n.links.carrier == "virtual_link"]
+#     dsm = n.links[n.links.carrier == "dsm"]
+
+#     for location, name in datacenters.items():
+#         # LHS
+#         clean_gens = [name + " " + g for g in clean_techs]
+#         storage_dischargers = [name + " " + g for g in storage_discharge_techs]
+#         storage_chargers = [name + " " + g for g in storage_charge_techs]
+
+#         gen_sum = (n.model["Generator-p"].loc[:, clean_gens] * weights).sum()
+#         discharge_sum = (
+#             n.model["Link-p"].loc[:, storage_dischargers]
+#             * n.links.loc[storage_dischargers, "efficiency"]
+#             * weights
+#         ).sum()
+#         charge_sum = (
+#             -1 * (n.model["Link-p"].loc[:, storage_chargers] * weights).sum()
+#         )
+
+#         ci_export = n.model["Link-p"].loc[:, [name + " export"]]
+#         ci_import = n.model["Link-p"].loc[:, [name + " import"]]
+#         grid_sum = (
+#             (-1 * ci_export * weights)
+#             + (
+#                 ci_import
+#                 * n.links.at[name + " import", "efficiency"]
+#                 * grid_supply_cfe
+#                 * weights
+#             )
+#         ).sum()  # linear expr
+
+#         lhs = gen_sum + discharge_sum + charge_sum + grid_sum
+
+#         # RHS
+#         total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
+
+#         vls_snd = vls.query("bus0==@name").index
+#         vls_rec = vls.query("bus1==@name").index
+#         total_snd = (
+#             n.model["Link-p"].loc[:, vls_snd] * weights
+#         ).sum()  # NB sum over both axes
+#         total_rec = (n.model["Link-p"].loc[:, vls_rec] * weights).sum()
+
+#         dsm_delayin = dsm.query("bus0==@name").index
+#         dsm_delayout = dsm.query("bus1==@name").index
+#         total_delayin = (
+#             n.model["Link-p"].loc[:, dsm_delayin] * weights
+#         ).sum()  # NB sum over both axes
+#         total_delayout = (n.model["Link-p"].loc[:, dsm_delayout] * weights).sum()
+
+#         flex = penetration * (
+#             total_rec - total_snd + total_delayout - total_delayin
+#         )
+
+#         n.model.add_constraints(
+#             lhs - flex >= penetration * (total_load), name=f"CFE_constraint_{name}"
+#         )
+
+# def excess_constraints(n, config):
+#     weights = n.snapshot_weightings["generators"]
+
+#     for location, name in datacenters.items():
+#         ci_export = n.model["Link-p"].loc[:, [name + " export"]]
+#         excess = (ci_export * weights).sum()
+#         total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
+#         share = config["ci"][
+#             "excess_share"
+#         ]  # 'sliding': max(0., penetration - 0.8)
+
+#         n.model.add_constraints(
+#             excess <= share * total_load, name=f"Excess_constraint_{name}"
+#         )
+
+# def DC_constraints(n):
+#     "A general case when both spatial and temporal flexibility mechanisms are enabled"
+
+#     flexibility = n.config["procurement"]["flexibility"]
+
+#     delta = float(flexibility) / 100
+#     weights = n.snapshot_weightings["generators"]
+#     vls = n.links[n.links.carrier == "virtual_link"]
+#     dsm = n.links[n.links.carrier == "dsm"]
+
+#     for location, name in datacenters.items():
+#         vls_snd = vls.query("bus0==@name").index
+#         vls_rec = vls.query("bus1==@name").index
+#         dsm_delayin = dsm.query("bus0==@name").index
+#         dsm_delayout = dsm.query("bus1==@name").index
+
+#         snd = n.model["Link-p"].loc[:, vls_snd].sum(dim=["Link"])
+#         rec = n.model["Link-p"].loc[:, vls_rec].sum(dim=["Link"])
+#         delayin = n.model["Link-p"].loc[:, dsm_delayin].sum(dim=["Link"])
+#         delayout = n.model["Link-p"].loc[:, dsm_delayout].sum(dim=["Link"])
+
+#         load = n.loads_t.p_set[name + " load"]
+#         # requested_load = load + rec - snd
+#         rhs_up = load * (1 + delta) - load
+#         rhs_lo = load * (1 - delta) - load
+
+#         n.model.add_constraints(
+#             rec - snd + delayout - delayin <= rhs_up, name=f"DC-upper_{name}"
+#         )
+#         n.model.add_constraints(
+#             rec - snd + delayout - delayin >= rhs_lo, name=f"DC-lower_{name}"
+#         )
+
+# def res_constraints(n, penetration):
+#     weights = n.snapshot_weightings["generators"]
+
+#     for location, name in datacenters.items():
+#         res_gens = [name + " " + g for g in res_techs]
+#         lhs = (n.model["Generator-p"].loc[:, res_gens] * weights).sum()
+#         total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
+
+#         # Note equality sign
+#         n.model.add_constraints(
+#             lhs == penetration * total_load, name=f"RES_annual_matching_{name}"
+#         )
 
 def extra_functionality(n, snapshots):
     """
@@ -980,6 +1154,32 @@ def extra_functionality(n, snapshots):
     if config["sector"]["enhanced_geothermal"]["enable"]:
         add_flexible_egs_constraint(n)
 
+    ###################
+    # Add procurement constraints here
+
+    # if constraints.get("RES", False):
+    #     year = n.params.planning_horizons
+    #     system_res_constraints(n, year, config)
+
+    # procurement_stratergy = config.get("procurement",{}).get("stratergy",False)
+    # if procurement_stratergy and config["enable"].get("procurement", False):
+    #     logger.info("Procurement stratergy model is activate")
+    #     penetration = config["procurement"]["stratergy"][3:]
+
+    #     if procurement_stratergy == "ref":
+    #         logger.info("ref is selected")
+    #     elif procurement_stratergy == "cfe":
+    #         logger.info("setting CFE target of", penetration)
+    #         cfe_constraints(n, penetration)
+    #         excess_constraints(n, config)
+    #         DC_constraints(n)
+    #     elif procurement_stratergy == "res":
+    #         logger.info("setting annual RES target of", penetration)
+    #         res_constraints(n, penetration)
+    #         excess_constraints(n, config)
+
+        #============ add Emission based procurement stratergy here ===========#
+
     if n.params.custom_extra_functionality:
         source_path = n.params.custom_extra_functionality
         assert os.path.exists(source_path), f"{source_path} does not exist"
@@ -1001,6 +1201,124 @@ def check_objective_value(n, solving):
                 f"Objective value {n.objective} differs from expected value "
                 f"{expected_value} by more than {atol}."
             )
+
+
+# def calculate_grid_cfe(n, name: str, node: str, config) -> pd.Series:
+#     """
+#     Calculates the time-series of grid supply CFE score for each C&I consumer.
+
+#     Args:
+#     - n: pypsa network.
+#     - name: name of a C&I consumer.
+#     - node: location (node) of a C&I consumer.
+#     - config: config.yaml settings
+
+#     Returns:
+#     - pd.Series: A pandas series containing the grid CFE supply score.
+#     """
+#     grid_buses = n.buses.index[
+#         ~n.buses.index.str.contains(name) & ~n.buses.index.str.contains(node)
+#     ]
+#     country_buses = n.buses.index[n.buses.index.str.contains(node)]
+
+#     clean_techs = pd.Index(config["global"]["grid_clean_techs"])
+#     emitters = pd.Index(config["global"]["emitters"])
+
+#     clean_grid_generators = n.generators.index[
+#         n.generators.bus.isin(grid_buses) & n.generators.carrier.isin(clean_techs)
+#     ]
+#     clean_grid_links = n.links.index[
+#         n.links.bus1.isin(grid_buses) & n.links.carrier.isin(clean_techs)
+#     ]
+#     clean_grid_storage_units = n.storage_units.index[
+#         n.storage_units.bus.isin(grid_buses) & n.storage_units.carrier.isin(clean_techs)
+#     ]
+#     dirty_grid_links = n.links.index[
+#         n.links.bus1.isin(grid_buses) & n.links.carrier.isin(emitters)
+#     ]
+
+#     clean_country_generators = n.generators.index[
+#         n.generators.bus.isin(country_buses) & n.generators.carrier.isin(clean_techs)
+#     ]
+#     clean_country_links = n.links.index[
+#         n.links.bus1.isin(country_buses) & n.links.carrier.isin(clean_techs)
+#     ]
+#     clean_country_storage_units = n.storage_units.index[
+#         n.storage_units.bus.isin(country_buses)
+#         & n.storage_units.carrier.isin(clean_techs)
+#     ]
+#     dirty_country_links = n.links.index[
+#         n.links.bus1.isin(country_buses) & n.links.carrier.isin(emitters)
+#     ]
+
+#     clean_grid_gens = n.generators_t.p[clean_grid_generators].sum(axis=1)
+#     clean_grid_ls = -n.links_t.p1[clean_grid_links].sum(axis=1)
+#     clean_grid_sus = n.storage_units_t.p[clean_grid_storage_units].sum(axis=1)
+#     clean_grid_resources = clean_grid_gens + clean_grid_ls + clean_grid_sus
+
+#     dirty_grid_resources = -n.links_t.p1[dirty_grid_links].sum(axis=1)
+
+#     # grid_cfe =  clean_grid_resources / n.loads_t.p[grid_loads].sum(axis=1)
+#     # grid_cfe[grid_cfe > 1] = 1.
+
+#     import_cfe = clean_grid_resources / (clean_grid_resources + dirty_grid_resources)
+#     import_cfe = np.nan_to_num(import_cfe, nan=0.0)  # Convert NaN to 0
+
+#     clean_country_gens = n.generators_t.p[clean_country_generators].sum(axis=1)
+#     clean_country_ls = -n.links_t.p1[clean_country_links].sum(axis=1)
+#     clean_country_sus = n.storage_units_t.p[clean_country_storage_units].sum(axis=1)
+#     clean_country_resources = clean_country_gens + clean_country_ls + clean_country_sus
+
+#     dirty_country_resources = -n.links_t.p1[dirty_country_links].sum(axis=1)
+
+#     ##################
+#     # Country imports |
+#     # NB lines and links are bidirectional, thus we track imports for both subsets
+#     # of interconnectors: where [country] node is bus0 and bus1. Subsets are exclusive.
+
+#     line_imp_subsetA = n.lines_t.p1.loc[:, n.lines.bus0.str.contains(node)].sum(axis=1)
+#     line_imp_subsetB = n.lines_t.p0.loc[:, n.lines.bus1.str.contains(node)].sum(axis=1)
+#     line_imp_subsetA[line_imp_subsetA < 0] = 0.0
+#     line_imp_subsetB[line_imp_subsetB < 0] = 0.0
+
+#     links_imp_subsetA = (
+#         n.links_t.p1.loc[
+#             :,
+#             (
+#                 n.links.bus0.str.contains(node)
+#                 & (n.links.carrier == "DC")
+#                 & ~(n.links.index.str.contains(name))
+#             ),
+#         ]
+#         .clip(lower=0)
+#         .sum(axis=1)
+#     )
+
+#     links_imp_subsetB = (
+#         n.links_t.p0.loc[
+#             :,
+#             (
+#                 n.links.bus1.str.contains(node)
+#                 & (n.links.carrier == "DC")
+#                 & ~(n.links.index.str.contains(name))
+#             ),
+#         ]
+#         .clip(lower=0)
+#         .sum(axis=1)
+#     )
+
+#     country_import = (
+#         line_imp_subsetA + line_imp_subsetB + links_imp_subsetA + links_imp_subsetB
+#     )
+
+#     grid_supply_cfe = (clean_country_resources + country_import * import_cfe) / (
+#         clean_country_resources + dirty_country_resources + country_import
+#     )
+
+#     print(f"Grid_supply_CFE for {node} has following stats:")
+#     print(grid_supply_cfe.describe())
+
+#     return grid_supply_cfe
 
 
 def solve_network(n, config, params, solving, **kwargs):
@@ -1038,6 +1356,28 @@ def solve_network(n, config, params, solving, **kwargs):
         kwargs["overlap"] = cf_solving.get("overlap", 0)
         n.optimize.optimize_with_rolling_horizon(**kwargs)
         status, condition = "", ""
+    # elif config["enable"].get("procurement", False):
+    #     n_iterations = cf_solving["min_iterations"]
+    #     values = [f"iteration {i}" for i in range(n_iterations + 1)]
+
+    #     ci_names = config["procurement"]["ci"].keys()
+    #     ci_locations = [config["procurement"]["ci"][ci_name]["location"] for ci_name in ci_names]
+        
+    #     cols = pd.MultiIndex.from_tuples(create_tuples(ci_locations, values))
+    #     grid_cfe_df = pd.DataFrame(0.0, index=n.snapshots, columns=cols)
+    #     for i in range(n_iterations):
+    #         for ci_location in ci_locations:
+    #             grid_supply_cfe = grid_cfe_df.loc[:, (ci_location, f"iteration {i}")]
+    #             logger.info(grid_supply_cfe.describe())
+
+    #         status, condition = n.optimize(**kwargs)
+
+    #         for ci_name in ci_names:
+    #             ci_location = config["procurement"]["ci"][ci_name]["location"]
+    #             grid_cfe_df.loc[:, (f"{ci_location}", f"iteration {i + 1}")] = (
+    #                 calculate_grid_cfe(n, name=ci_name, node=ci_location, config=config)
+    #             )
+    #     grid_cfe_df.to_csv(snakemake.output.grid_cfe)
     elif skip_iterations:
         status, condition = n.optimize(**kwargs)
     else:
@@ -1065,6 +1405,281 @@ def solve_network(n, config, params, solving, **kwargs):
         raise RuntimeError("Solving status 'infeasible'")
 
     return n
+
+
+def strip_network(n: pypsa.Network, config: dict) -> None:
+    """
+    Removes unnecessary components from a pypsa network.
+
+    Args:
+    - n (pypsa.Network): The network object to be stripped.
+
+    Returns:
+    - None
+    """
+    ci_names = config["ci"].keys()
+    ci_locations = [config["ci"][ci_name]["location"] for ci_name in ci_names]
+    zone = set(n.buses.country[bus] for bus in ci_locations)
+
+    # Perform queries and combine results into a single set
+    bus_core = n.buses.query("country.isin(@zone)", engine="python").index.unique()
+    combined_lines = n.lines.query("bus1.isin(@bus_core) | bus0.isin(@bus_core)", engine="python")
+    combined_links = n.links.query("bus1.isin(@bus_core) | bus0.isin(@bus_core)", engine="python")
+    
+    # Combine the results of bus0 and bus1 in lines and links
+    bus_connect = (set(combined_lines.bus0.unique()) | set(combined_lines.bus1.unique()) |
+                   set(combined_links.bus0.unique()) | set(combined_links.bus1.unique()))
+    
+    zone_all = set(n.buses.country[bus] for bus in bus_connect)
+    nodes_to_keep = n.buses.query("country.isin(@zone_all)").index.unique()
+
+    n.remove("Bus", n.buses.index.symmetric_difference(nodes_to_keep))
+
+    # make sure lines are kept
+    n.lines.carrier = "AC"
+
+    for c in n.iterate_components(
+        ["Generator", "Link", "Line", "Store", "StorageUnit", "Load"]
+    ):
+        if c.name in ["Link", "Line"]:
+            location_boolean = c.df.bus0.isin(nodes_to_keep) & c.df.bus1.isin(
+                nodes_to_keep
+            )
+        else:
+            location_boolean = c.df.bus.isin(nodes_to_keep)
+        to_keep = c.df.index[location_boolean]
+        to_drop = c.df.index.symmetric_difference(to_keep)
+        n.remove(c.name, to_drop)
+
+
+def load_profile(
+    n: pypsa.Network,
+    name: str,
+    profile_shape: str,
+    config,
+) -> pd.Series:
+    """
+    Create daily load profile for C&I buyers based on config setting.
+
+    Args:
+    - n (object): object
+    - profile_shape (str): shape of the load profile, must be one of 'baseload' or 'industry'
+    - config (dict): config settings
+
+    Returns:
+    - pd.Series: annual load profile for C&I buyers
+    """
+
+    procurement = config["procurement"]
+    scaling = n.snapshot_weightings.objective.sum() / 8760.0  # 3/1 for 3H/1H
+
+    shapes = {
+        "baseload": [1 / 24] * 24,
+        "industry": [0.009] * 5
+        + [0.016, 0.031, 0.07, 0.072, 0.073, 0.072, 0.07]
+        + [0.052, 0.054, 0.066, 0.07, 0.068, 0.063]
+        + [0.035] * 2
+        + [0.045] * 2
+        + [0.009],
+    }
+
+    try:
+        shape = shapes[profile_shape]
+    except KeyError:
+        print(
+            f"'profile_shape' option must be one of 'baseload' or 'industry'. Now is {profile_shape}."
+        )
+        sys.exit()
+
+    # CI consumer nominal load in MW
+    if procurement["stratergy"] == "ref":
+        load = 0.0
+    else:
+        load = procurement["ci"][name]["load"] * procurement["participation"] / 100
+
+    load_day = load * 24  # 24h
+    load_profile_day = pd.Series(shape) * load_day
+
+    if scaling != 1.0:
+        load_profile_day = load_profile_day.groupby(
+            np.arange(len(load_profile_day)) // scaling
+        ).mean()  # 3H sampling
+
+    load_profile_year = pd.concat([load_profile_day] * 365)
+    profile = load_profile_year.set_axis(n.snapshots)
+
+    return profile
+
+
+def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> None:
+    """
+    Add C&I buyer(s) to the network.
+
+    Args:
+    - n: pypsa.Network to which the C&I buyer(s) will be added.
+    - year: the year of optimisation based on config setting.
+
+    Returns:
+    - None
+    """
+    # tech_palette options
+    procurement = config["procurement"]
+    clean_techs = procurement["technology"]["generation_tech"]
+    storage_techs = procurement["technology"]["storage_tech"]
+    ci = procurement["ci"]
+    stratergy = procurement["stratergy"]
+    max_hours = config["max_hours"]
+
+    for name in ci.keys():
+        location = ci[name]["location"]
+        profile = ci[name]["profile"]
+
+        n.add("Bus", name)
+
+        n.add(
+            "Link",
+            f"{name}" + " export",
+            bus0=name,
+            bus1=location,
+            marginal_cost=0.1,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
+            p_nom=1e6,
+        )
+
+        n.add(
+            "Link",
+            f"{name}" + " import",
+            bus0=location,
+            bus1=name,
+            marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
+            p_nom=1e6,
+        )
+
+        n.add(
+            "Load",
+            f"{name}" + " load",
+            carrier="electricity",
+            bus=name,
+            p_set=load_profile(n, name, profile, config),
+        )
+
+        # C&I following voluntary clean energy procurement is a share of C&I load -> subtract it from node's profile
+        n.loads_t.p_set[location] -= n.loads_t.p_set[f"{name}" + " load"]
+
+        # Add clean firm advanced generators
+        #if "green hydrogen OCGT" in clean_techs:
+        #    n.add(
+        #        "Generator",
+        #        f"{name} green hydrogen OCGT",
+        #        carrier="green hydrogen OCGT",
+        #        bus=name,
+        #        p_nom_extendable=True if stratergy == "cfe" else False,
+        #        capital_cost=costs.at["OCGT", "fixed"],
+        #        marginal_cost=costs.at["OCGT", "VOM"]
+        #        + snakemake.config["costs"]["price_green_hydrogen"]
+        #        / 0.033
+        #        / costs.at["OCGT", "efficiency"],
+        #    )
+            # hydrogen cost in EUR/kg, 0.033 MWhLHV/kg
+
+        if "nuclear" in clean_techs:
+            n.add(
+                "Generator",
+                f"{name} nuclear",
+                bus=name,
+                carrier="nuclear",
+                capital_cost=costs.loc["nuclear"]["fixed"],
+                marginal_cost=costs.loc["nuclear"]["VOM"]
+                + costs.loc["nuclear"]["fuel"]
+                / costs.loc["nuclear"]["efficiency"],
+                p_nom_extendable=True if stratergy == "cfe" else False,
+                lifetime=costs.loc["nuclear"]["lifetime"],
+            )
+
+        if "allam" in clean_techs:
+            n.add(
+                "Generator",
+                f"{name} allam",
+                bus=name,
+                carrier="gas",
+                capital_cost=costs.at["allam", "fixed"],
+                marginal_cost=costs.loc["allam"]["VOM"]
+                + costs.loc["gas"]["fuel"] / costs.loc["allam"]["efficiency"],
+                #+ 0.02 * costs.at["gas", "CO2 intensity"] / costs.loc["allam"]["efficiency"], # 98% of CO2 is captured
+                p_nom_extendable=True if stratergy == "cfe" else False,
+                lifetime=costs.loc["allam"]["lifetime"],
+                efficiency=costs.loc["allam"]["efficiency"],
+            )
+
+        if "geothermal" in clean_techs:
+            n.add(
+                "Generator",
+                f"{name} geothermal",
+                bus=name,
+                # carrier = '',
+                capital_cost=10000, # TODO: Intergrate geothermal cost to model and config
+                marginal_cost=costs.loc["geothermal"]["VOM"],
+                p_nom_extendable=True if stratergy == "cfe" else False,
+                lifetime=costs.at["geothermal", "lifetime"],
+            )
+
+        # Add RES generators
+        for carrier in ["onwind", "solar"]:
+            if carrier not in clean_techs:
+                continue
+            gen_template = location + " " + carrier + f"-{year}"
+
+            n.add(
+                "Generator",
+                f"{name} {carrier}",
+                carrier=carrier,
+                bus=name,
+                p_nom_extendable=False if stratergy == "ref" else True,
+                p_max_pu=n.generators_t.p_max_pu[gen_template],
+                capital_cost=n.generators.at[gen_template, "capital_cost"],
+                marginal_cost=n.generators.at[gen_template, "marginal_cost"],
+            )
+
+        # =================== Add storage techs =================== 
+        
+        # check for not implemented storage technologies
+        implemented = ["H2", "li-ion battery", "iron-air battery", "lfp", "vanadium", "lair", "pair"]
+        not_implemented = list(set(storage_techs).difference(implemented))
+        available_carriers = list(set(storage_techs).intersection(implemented))
+        if len(not_implemented) > 0:
+            logger.warning(
+                f"{not_implemented} are not yet implemented as Storage technologies in PyPSA-Eur"
+            )
+        missing_carriers = list(set(available_carriers).difference(n.carriers.index))
+        n.add("Carrier", missing_carriers)
+
+        lookup_store = {"H2": "electrolysis", "li-ion battery": "battery inverter", "iron-air battery": "iron-air battery charge",
+        "lfp": "Lithium-Ion-LFP-bicharger", "vanadium": "Vanadium-Redox-Flow-bicharger", "lair":  "Liquid-Air-charger", "pair": "Compressed-Air-Adiabatic-bicharger"}
+        lookup_dispatch = {"H2": "fuel cell", "li-ion battery": "battery inverter", "iron-air battery": "iron-air battery discharge",
+        "lfp": "Lithium-Ion-LFP-bicharger", "vanadium": "Vanadium-Redox-Flow-bicharger", "lair":  "Liquid-Air-discharger", "pair": "Compressed-Air-Adiabatic-bicharger"}
+
+        for carrier in available_carriers:
+            for max_hour in max_hours[carrier]:
+                roundtrip_correction = 0.5 if carrier == "li-ion battery" else 1
+                cost_carrier = "H2 tank" if carrier == "H2" else carrier
+                cost_carrier = "iron-air battery storage" if carrier == "iron-air battery" else cost_carrier
+                
+                n.add(
+                    "StorageUnit",
+                    f"{name} {carrier}",
+                    suffix=f" {carrier} {max_hour}h",
+                    bus=name,
+                    carrier=carrier,
+                    p_nom_extendable=True,
+                    capital_cost=costs.at[f"{cost_carrier} {max_hour}h", "fixed"],
+                    marginal_cost=0., # TODO: Set this adjustable?
+                    efficiency_store=costs.at[lookup_store[carrier], "efficiency"]
+                    ** roundtrip_correction,
+                    efficiency_dispatch=costs.at[lookup_dispatch[carrier], "efficiency"]
+                    ** roundtrip_correction,
+                    max_hours=max_hour,
+                    cyclic_state_of_charge=True,
+                    lifetime=costs.at[f"{cost_carrier} {max_hour}h", "lifetime"],
+                )
 
 
 # %%
@@ -1103,6 +1718,33 @@ if __name__ == "__main__":
     with memory_logger(
         filename=getattr(snakemake.log, "memory", None), interval=30.0
     ) as mem:
+        #############################
+        # Temporary, place the preparation for procurement here
+
+        if snakemake.params.procurement_enable:
+            print("procurement_enable is activated")
+            procurement = snakemake.params.procurement
+
+
+            if procurement["strip_network"]:
+                print("stript_network is activated")
+                strip_network(n, procurement)
+
+            Nyears = n.snapshot_weightings.generators.sum() / 8760.0
+
+            # TODO: (DONE) Modify the prepare_costs to apply additions in max hours
+            costs = prepare_costs(
+                snakemake.input.costs,
+                snakemake.params,
+                Nyears,
+            )
+            # TODO: Expand the C&I scope for renewable energy in neighbouring nodes
+            add_ci(n, 
+                   snakemake.wildcards.planning_horizons, 
+                   snakemake.params,
+                   costs
+                   )
+
         n = solve_network(
             n,
             config=snakemake.config,

@@ -7,6 +7,7 @@ technologies for the buildings, transport and industry sectors.
 """
 
 import logging
+import warnings
 import os
 from itertools import product
 from types import SimpleNamespace
@@ -1075,6 +1076,14 @@ def cycling_shift(df, steps=1):
 
 
 def prepare_costs(cost_file, params, nyears):
+    # deprecation warning and casting float values to list of float values for max_hours per carrier
+    for carrier in params.max_hours:
+        if not isinstance(params.max_hours[carrier], list):
+            warnings.warn(
+                "The 'max_hours' configuration as a float is deprecated and will be removed in future versions. Please use a list instead.",
+                DeprecationWarning,
+            )
+            params.max_hours[carrier] = [params.max_hours[carrier]]
     # set all asset costs and other parameters
     costs = pd.read_csv(cost_file, index_col=[0, 1]).sort_index()
 
@@ -1086,7 +1095,16 @@ def prepare_costs(cost_file, params, nyears):
         costs.loc[:, "value"].unstack(level=1).groupby("technology").sum(min_count=1)
     )
 
-    costs = costs.fillna(params["fill_values"])
+    costs = costs.fillna(params["costs"]["fill_values"])
+
+    for attr in ("investment", "lifetime", "FOM", "VOM", "efficiency", "fuel"):
+        overwrites = params["costs"].get(attr)
+        if overwrites is not None:
+            overwrites = pd.Series(overwrites)
+            costs.loc[overwrites.index, attr] = overwrites
+            logger.info(
+                f"Overwriting {attr} of {overwrites.index} to {overwrites.values}"
+            )
 
     def annuity_factor(v):
         return calculate_annuity(v["lifetime"], v["discount rate"]) + v["FOM"] / 100
@@ -1094,6 +1112,77 @@ def prepare_costs(cost_file, params, nyears):
     costs["fixed"] = [
         annuity_factor(v) * v["investment"] * nyears for i, v in costs.iterrows()
     ]
+
+    def costs_for_storage(store, link1=None, link2=None, max_hours=1.0):
+        capital_cost = max_hours * store["fixed"]
+        # if charger/discharge link cost are already included in store capex
+        if link1 is not None:
+            capital_cost += link1["fixed"]
+        if link2 is not None:
+            capital_cost += link2["fixed"]
+        return pd.Series(dict(fixed=capital_cost, lifetime=store["lifetime"]))
+
+    max_hours = params["max_hours"]
+    # TODO: storage capex might have to be adjusted for different max hour archetypes
+    for max_hour in max_hours["li-ion battery"]:
+        costs.loc[f"li-ion battery {max_hour}h"] = costs_for_storage(
+            costs.loc["battery storage"],
+            costs.loc["battery inverter"],
+            max_hours=max_hour,
+        )
+        costs.loc[f"li-ion home battery {max_hour}h"] = costs_for_storage(
+            costs.loc["home battery storage"],
+            costs.loc["home battery inverter"],
+            max_hours=max_hour,
+        )
+
+    #for max_hour in max_hours["lfp"]:
+    #    costs.loc[f"lfp {max_hour}h"] = costs_for_storage(
+    #        costs.loc["Lithium-Ion-LFP-store"],
+    #        costs.loc["Lithium-Ion-LFP-bicharger"],
+    #        max_hours=max_hour,
+    #    )
+
+    for max_hour in max_hours["vanadium"]:
+        costs.loc[f"vanadium {max_hour}h"] = costs_for_storage(
+            costs.loc["Vanadium-Redox-Flow-store"],
+            costs.loc["Vanadium-Redox-Flow-bicharger"],
+            max_hours=max_hour,
+        )
+
+    for max_hour in max_hours["lair"]:
+        costs.loc[f"lair {max_hour}h"] = costs_for_storage(
+            costs.loc["Liquid-Air-store"],
+            costs.loc["Liquid-Air-charger"],
+            costs.loc["Liquid-Air-discharger"],
+            max_hours=max_hour,
+        )
+
+    for max_hour in max_hours["pair"]:
+        costs.loc[f"pair {max_hour}h"] = costs_for_storage(
+            costs.loc["Compressed-Air-Adiabatic-store"],
+            costs.loc["Compressed-Air-Adiabatic-bicharger"],
+            max_hours=max_hour,
+        )
+
+    for max_hour in max_hours["iron-air battery"]:
+        costs.loc[f"iron-air battery storage {max_hour}h"] = costs_for_storage(
+            costs.loc["iron-air battery"],
+            max_hours=max_hour,
+        )
+    for max_hour in max_hours["H2"]:
+        costs.loc[f"H2 underground {max_hour}h"] = costs_for_storage(
+            costs.loc["hydrogen storage underground"],
+            costs.loc["fuel cell"],
+            costs.loc["electrolysis"],
+            max_hours=max_hour,
+        )
+        costs.loc[f"H2 tank {max_hour}h"] = costs_for_storage(
+            costs.loc["hydrogen storage tank type 1 including compressor"],
+            costs.loc["fuel cell"],
+            costs.loc["electrolysis"],
+            max_hours=max_hour,
+        )
 
     return costs
 

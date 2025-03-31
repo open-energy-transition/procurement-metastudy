@@ -980,3 +980,9 @@ def rename_techs(label: str) -> str:
         if old == label:
             label = new
     return label
+
+
+def create_tuples(list_a, list_b):
+    # Use a nested list comprehension to create the list of tuples
+    tuples_list = [(a, b) for a in list_a for b in list_b]
+    return tuples_list

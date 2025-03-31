@@ -116,6 +116,12 @@ rule solve_sector_network_myopic:
         co2_sequestration_potential=config_provider(
             "sector", "co2_sequestration_potential", default=200
         ),
+        # ================ New Params Start ================
+        procurement_enable=config_provider("enable", "procurement"),
+        procurement=config_provider("procurement"),
+        costs=config_provider("costs"),
+        max_hours=config_provider("electricity", "max_hours"),
+        # ================  New Params End  ================
         custom_extra_functionality=input_custom_extra_functionality,
     input:
         network=resources(
@@ -127,6 +133,8 @@ rule solve_sector_network_myopic:
         + "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.nc",
         config=RESULTS
         + "configs/config.base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.yaml",
+        #grid_cfe=RESULTS 
+        #+ "csvs/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}_cfe.csv", # Make this optional
     shadow:
         "shallow"
     log:
