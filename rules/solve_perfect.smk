@@ -146,7 +146,7 @@ def input_networks_make_summary_perfect(w):
 rule make_summary_perfect:
     params:
         costs=config_provider("costs"),
-        max_hours=config_provider("electricity","max_hours"),
+        max_hours=config_provider("electricity", "max_hours"),
     input:
         unpack(input_networks_make_summary_perfect),
         costs=resources("costs_2020.csv"),

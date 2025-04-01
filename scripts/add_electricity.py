@@ -211,7 +211,7 @@ def load_costs(tech_costs, config, max_hours, Nyears=1.0):
                 DeprecationWarning,
             )
             max_hours[carrier] = [max_hours[carrier]]
-            
+
     for key in ("marginal_cost", "capital_cost"):
         if key in config:
             config["overwrites"][key] = config[key]
@@ -1067,10 +1067,24 @@ def attach_storageunits(
 
     buses_i = n.buses.index
 
-    lookup_store = {"H2": "electrolysis", "li-ion battery": "battery inverter", "iron-air battery": "iron-air battery charge", "lfp": "Lithium-Ion-LFP-bicharger", 
-    "vanadium": "Vanadium-Redox-Flow-bicharger", "lair":  "Liquid-Air-charger", "pair": "Compressed-Air-Adiabatic-bicharger"}
-    lookup_dispatch = {"H2": "fuel cell", "li-ion battery": "battery inverter", "iron-air battery": "iron-air battery discharge", "lfp": "Lithium-Ion-LFP-bicharger", 
-    "vanadium": "Vanadium-Redox-Flow-bicharger", "lair":  "Liquid-Air-discharger", "pair": "Compressed-Air-Adiabatic-bicharger"}
+    lookup_store = {
+        "H2": "electrolysis",
+        "li-ion battery": "battery inverter",
+        "iron-air battery": "iron-air battery charge",
+        "lfp": "Lithium-Ion-LFP-bicharger",
+        "vanadium": "Vanadium-Redox-Flow-bicharger",
+        "lair": "Liquid-Air-charger",
+        "pair": "Compressed-Air-Adiabatic-bicharger",
+    }
+    lookup_dispatch = {
+        "H2": "fuel cell",
+        "li-ion battery": "battery inverter",
+        "iron-air battery": "iron-air battery discharge",
+        "lfp": "Lithium-Ion-LFP-bicharger",
+        "vanadium": "Vanadium-Redox-Flow-bicharger",
+        "lair": "Liquid-Air-discharger",
+        "pair": "Compressed-Air-Adiabatic-bicharger",
+    }
 
     for carrier in carriers:
         roundtrip_correction = 0.5 if carrier == "li-ion battery" else 1
@@ -1157,7 +1171,10 @@ def attach_stores(
 
     if "li-ion battery" in carriers:
         b_buses_i = n.add(
-            "Bus", buses_i + " li-ion battery", carrier="li-ion battery", location=buses_i
+            "Bus",
+            buses_i + " li-ion battery",
+            carrier="li-ion battery",
+            location=buses_i,
         )
 
         n.add(
@@ -1227,7 +1244,6 @@ if __name__ == "__main__":
         max_hours,
         Nyears,
     )
-    
 
     ppl = load_and_aggregate_powerplants(
         snakemake.input.powerplants,
