@@ -202,7 +202,6 @@ def add_co2_emissions(n, costs, carriers):
 
 
 def load_costs(tech_costs, config, max_hours, Nyears=1.0):
-    print(max_hours)
     # deprecation warning and casting float values to list of float values for max_hours per carrier
     for carrier in max_hours:
         if not isinstance(max_hours[carrier], list):
@@ -1063,8 +1062,6 @@ def attach_storageunits(
     """
     carriers = extendable_carriers["StorageUnit"]
 
-    n.add("Carrier", carriers)
-
     buses_i = n.buses.index
 
     lookup_store = {
@@ -1089,12 +1086,14 @@ def attach_storageunits(
     for carrier in carriers:
         roundtrip_correction = 0.5 if carrier == "li-ion battery" else 1
         for max_hour in max_hours[carrier]:
+            n.add("Carrier", f" {carrier} {max_hour}h")
+
             n.add(
                 "StorageUnit",
                 buses_i,
                 f" {carrier} {max_hour}h",
                 bus=buses_i,
-                carrier=carrier,
+                carrier=f" {carrier} {max_hour}h",
                 p_nom_extendable=True,
                 capital_cost=costs.at[f"{carrier} {max_hour}h", "capital_cost"],
                 marginal_cost=costs.at[f"{carrier} {max_hour}h", "marginal_cost"],

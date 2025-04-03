@@ -1678,7 +1678,15 @@ def add_storageunits(n, costs, carriers, max_hours, h2_caverns):
         logger.warning(
             f"{not_implemented} are not yet implemented as Storage technologies in PyPSA-Eur"
         )
-    missing_carriers = list(set(available_carriers).difference(n.carriers.index))
+    available_carriers_max_hours = [
+        f"{carrier} {max_hour}"
+        for carrier in available_carriers
+        if carrier in max_hours
+        for max_hour in max_hours[carrier]
+    ]
+    missing_carriers = list(
+        set(available_carriers_max_hours).difference(n.carriers.index)
+    )
     n.add("Carrier", missing_carriers)
 
     lookup_store = {
@@ -1710,7 +1718,7 @@ def add_storageunits(n, costs, carriers, max_hours, h2_caverns):
                     h2_caverns.index,
                     suffix=f" {carrier} {max_hour}h",
                     bus=h2_caverns.index,
-                    carrier=carrier,
+                    carrier=f"{carrier} {max_hour}h",
                     p_nom_extendable=True,
                     p_nom_max=h2_caverns.div(max_hour).values,
                     capital_cost=costs.at[
@@ -1742,7 +1750,7 @@ def add_storageunits(n, costs, carriers, max_hours, h2_caverns):
                 nodes_,
                 suffix=f" {carrier} {max_hour}h",
                 bus=nodes_,
-                carrier=carrier,
+                carrier=f"{carrier} {max_hour}h",
                 p_nom_extendable=True,
                 capital_cost=costs.at[f"{cost_carrier} {max_hour}h", "capital_cost"],
                 marginal_cost=options["marginal_cost_storage"],
