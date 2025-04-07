@@ -107,7 +107,7 @@ costs:
   year: 2025
   version: v0.10.1
 
-  overwrite:
+  overwrites:
     fuel:
       OCGT: 38.84 # https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:52022SC0230 (Annex)
       CCGT: 38.84
@@ -136,6 +136,8 @@ costs:
     fuel cell: 0.
     li-ion battery: 0.
     battery inverter: 0.
+  capital_cost:
+    geothermal: 10000
   emission_prices:
     enable: false
     co2: 0.
@@ -145,3 +147,18 @@ costs:
 clustering:
   temporal:
     resolution_sector: 3H
+
+# ================ Procurment Metastudy ================
+procurement:
+  stratergy: res100 # "ref", "cfe90", "cfe98", "cfe100", "cfe..", "res90", "res98", "res100", "res.."
+  scope: "country" # "node", "country", "all"
+
+  strip_network: true
+
+  ci:
+    Germany: # Set name here
+      location: "DE0 0"
+
+  technology:
+    generation_tech: ["onwind", "solar", "nuclear", "allam", "geothermal"]
+    storage_tech: ["li-ion battery", "vanadium", "lair", "pair", "iron-air battery"]
