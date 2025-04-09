@@ -1292,7 +1292,7 @@ def extra_functionality(
         procurement = config["procurement"]
         strategy = procurement["strategy"]
         penetration = procurement["penetration"]
-        #res_capacity_constraints(n) TODO: not yet operational
+        # res_capacity_constraints(n) TODO: not yet operational
 
         if strategy == "vol-match":
             logger.info(f"Setting annual RES target of {penetration}")
