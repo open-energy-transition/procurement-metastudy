@@ -45,9 +45,10 @@ from _helpers import (
     configure_logging,
     set_scenario_config,
     update_config_from_wildcards,
+    #    create_tuples,
 )
-from add_electricity import load_costs
-from prepare_sector_network import get, define_spatial
+from add_electricity import add_missing_carriers, load_costs
+from prepare_sector_network import get
 from pypsa.descriptors import get_activity_mask
 from pypsa.descriptors import get_switchable_as_dense as get_as_dense
 
@@ -1130,6 +1131,79 @@ def add_co2_atmosphere_constraint(n, snapshots):
             n.model.add_constraints(lhs <= rhs, name=f"GlobalConstraint-{name}")
 
 
+def res_capacity_constraints(n):
+    """
+    Restrict the deployment of renewable capacities for the same carrier within the same buses.
+    """
+    buses = n.buses.query("carrier == 'AC' & country != ''").index.unique()
+    for bus in buses:
+        for carrier in ["onwind", "solar"]:
+            # Includes also CI buses linked to the referred buses. Only CI links have AC as its carriers
+            linked_bus = [bus] + n.links.query(
+                "carrier == 'AC' & bus1 == @bus"
+            ).bus0.to_list()
+            gen_bus_list = list(
+                n.generators.query(
+                    "bus.isin(@linked_bus) & carrier == @carrier & p_nom_extendable == True"
+                ).index
+            )
+
+            if len(gen_bus_list) >= 2:
+                p_nom_max = min(n.generators.loc[gen_bus_list, "p_nom_max"])
+                gen = n.model["Generator-p_nom"].loc[gen_bus_list].sum()
+
+                n.model.add_constraints(
+                    gen <= p_nom_max, name=f"RES_capacity-{bus}-{carrier}"
+                )
+
+
+def res_annual_matching_constraints(n, penetration):
+    """
+    Implement strategies for annual renewable procurement matching.
+
+    The total generation from all CI-related generators (renewable carriers) and links (conventional/clean carriers) must equal to its own load consumption.
+    """
+    weights = n.snapshot_weightings["generators"]
+
+    for name in n.config["procurement"]["ci"]:
+        gen_ci = list(n.generators.query("ci == @name").index)
+        links_ci = list(n.links.query("ci == @name").index)
+
+        lhs_gen = (n.model["Generator-p"].loc[:, gen_ci] * weights).sum()
+        lhs_link = (
+            n.model["Link-p"].loc[:, links_ci]
+            * n.links.loc[links_ci].efficiency
+            * weights
+        ).sum()
+        lhs = lhs_gen + lhs_link
+
+        total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
+
+        # Note equality sign
+        n.model.add_constraints(
+            lhs == penetration * total_load, name=f"RES_annual_matching_{name}"
+        )
+
+
+def excess_constraints(n):
+    """
+    Each CI bus must meet its own load consumption before exporting any energy back to the grid.
+    """
+    weights = n.snapshot_weightings["generators"]
+
+    for name in n.config["procurement"]["ci"]:
+        ci_export = n.model["Link-p"].loc[:, [name + " export"]]
+        excess = (ci_export * weights).sum()
+        total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
+        share = n.config["procurement"][
+            "excess_share"
+        ]  # 'sliding': max(0., penetration - 0.8)
+
+        n.model.add_constraints(
+            excess <= share * total_load, name=f"Excess_constraint_{name}"
+        )
+
+
 def extra_functionality(
     n: pypsa.Network, snapshots: pd.DatetimeIndex, planning_horizons: str | None = None
 ) -> None:
@@ -1208,6 +1282,18 @@ def extra_functionality(
         module = importlib.import_module(module_name)
         custom_extra_functionality = getattr(module, module_name)
         custom_extra_functionality(n, snapshots, snakemake)  # pylint: disable=E0601
+
+    if n.params.procurement_enable:
+        stratergy = config["procurement"]["stratergy"]
+        penetration = stratergy[3:]
+        res_capacity_constraints(n)
+
+        if "ref" in stratergy:
+            logger.info("no target set")
+        elif "res" in stratergy:
+            logger.info("setting annual RES target of", penetration)
+            res_annual_matching_constraints(n, penetration)
+            excess_constraints(n, config)
 
 
 def check_objective_value(n: pypsa.Network, solving: dict) -> None:
@@ -1321,6 +1407,14 @@ def solve_network(
         status, condition = "", ""
     elif skip_iterations:
         status, condition = n.optimize(**kwargs)
+    elif (
+        n.params.procurement_enable
+        and n.params.procurement["year"] == planning_horizons
+    ):
+        procurment = config["procurement"]
+        n_iterations = procurment["min_iterations"]
+        for i in range(n_iterations):
+            status, condition = n.optimize(**kwargs)
     else:
         kwargs["track_iterations"] = cf_solving["track_iterations"]
         kwargs["min_iterations"] = cf_solving["min_iterations"]
@@ -1348,6 +1442,7 @@ def solve_network(
         n.model.print_infeasibilities()
         raise RuntimeError("Solving status 'infeasible'. Infeasibilities computed.")
 
+
 def strip_network(n: pypsa.Network, config: dict) -> None:
     """
     Removes unnecessary components from a pypsa network.
@@ -1364,13 +1459,21 @@ def strip_network(n: pypsa.Network, config: dict) -> None:
 
     # Perform queries and combine results into a single set
     bus_core = n.buses.query("country.isin(@zone)", engine="python").index.unique()
-    combined_lines = n.lines.query("bus1.isin(@bus_core) | bus0.isin(@bus_core)", engine="python")
-    combined_links = n.links.query("bus1.isin(@bus_core) | bus0.isin(@bus_core)", engine="python")
-    
+    combined_lines = n.lines.query(
+        "bus1.isin(@bus_core) | bus0.isin(@bus_core)", engine="python"
+    )
+    combined_links = n.links.query(
+        "bus1.isin(@bus_core) | bus0.isin(@bus_core)", engine="python"
+    )
+
     # Combine the results of bus0 and bus1 in lines and links
-    bus_connect = (set(combined_lines.bus0.unique()) | set(combined_lines.bus1.unique()) |
-                   set(combined_links.bus0.unique()) | set(combined_links.bus1.unique()))
-    
+    bus_connect = (
+        set(combined_lines.bus0.unique())
+        | set(combined_lines.bus1.unique())
+        | set(combined_links.bus0.unique())
+        | set(combined_links.bus1.unique())
+    )
+
     zone_all = set(n.buses.country[bus] for bus in bus_connect)
     nodes_to_keep = n.buses.query("country.isin(@zone_all)").index.unique()
 
@@ -1391,6 +1494,7 @@ def strip_network(n: pypsa.Network, config: dict) -> None:
         to_keep = c.df.index[location_boolean]
         to_drop = c.df.index.symmetric_difference(to_keep)
         n.remove(c.name, to_drop)
+
 
 def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> None:
     """
@@ -1439,8 +1543,9 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
             f"{name}" + " load",
             carrier="electricity",
             bus=name,
-            p_set=n.loads_t.p_set[location] / 3, # TODO: Add the load settings here, current value is only a placeholder
-            ci=name, # C&I markers used in constraints
+            p_set=n.loads_t.p_set[location]
+            / 3,  # TODO: Add the load settings here, current value is only a placeholder
+            ci=name,  # C&I markers used in constraints
         )
 
         # C&I following voluntary clean energy procurement is a share of C&I load -> subtract it from node's profile
@@ -1450,24 +1555,30 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
         # ============================================================================
 
         gen_implemented = {
-            "nuclear":{
-                "carrier":"uranium",
-                "carrier_nodes":"EU uranium",
-                "unit":"MWh_th",
+            "nuclear": {
+                "carrier": "uranium",
+                "carrier_nodes": "EU uranium",
+                "unit": "MWh_th",
             },
-            "allam":{
-                "carrier":"gas",
-                "carrier_nodes":"EU gas",
-                "unit":"MWh_LHV",
+            "allam": {
+                "carrier": "gas",
+                "carrier_nodes": "EU gas",
+                "unit": "MWh_LHV",
             },
-            "geothermal":{
-                "carrier":"geothermal",
-                "carrier_nodes":"EU enhanced geothermal systems",
-                "unit":"MWh_th",
-            }
+            "geothermal": {
+                "carrier": "geothermal",
+                "carrier_nodes": "EU enhanced geothermal systems",
+                "unit": "MWh_th",
+            },
         }
-        gen_not_implemented = list(set(clean_techs).difference(list(gen_implemented.keys()) + ["onwind", "solar"]))
-        gen_available_carriers = list(set(clean_techs).intersection(gen_implemented.keys()))
+        gen_not_implemented = list(
+            set(clean_techs).difference(
+                list(gen_implemented.keys()) + ["onwind", "solar"]
+            )
+        )
+        gen_available_carriers = list(
+            set(clean_techs).intersection(gen_implemented.keys())
+        )
         if len(gen_not_implemented) > 0:
             logger.warning(
                 f"{gen_not_implemented} are not yet implemented as Clean technologies for CI in PyPSA-Eur"
@@ -1479,12 +1590,13 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
 
             if carrier_nodes not in n.buses.index:
                 logger.info(f"Missing buses: {carrier_nodes}. Adding them now for CI")
-                n.add("Bus",
-                      carrier_nodes,
-                      carrier=carrier,
-                      location="EU",
-                      unit=gen_implemented[generator]["unit"]
-                      )
+                n.add(
+                    "Bus",
+                    carrier_nodes,
+                    carrier=carrier,
+                    location="EU",
+                    unit=gen_implemented[generator]["unit"],
+                )
 
             n.add(
                 "Link",
@@ -1496,21 +1608,27 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                 * costs.at[generator, "VOM"],  # NB: VOM is per MWel
                 capital_cost=costs.at[generator, "efficiency"]
                 * costs.at[generator, "capital_cost"],  # NB: fixed cost is per MWel
-                p_nom_extendable=True,
-                p_max_pu=0.7 if carrier == "uranium" else 1,  # be conservative for nuclear (maintenance or unplanned shut downs)
+                p_nom_extendable=False if stratergy == "ref" else True,
+                p_max_pu=0.7
+                if carrier == "uranium"
+                else 1,  # be conservative for nuclear (maintenance or unplanned shut downs)
                 carrier=generator,
                 efficiency=costs.at[generator, "efficiency"],
                 efficiency2=costs.at[carrier, "CO2 intensity"],
                 lifetime=costs.at[generator, "lifetime"],
-                ci=name, # C&I markers used in constraints
+                ci=name,  # C&I markers used in constraints
             )
+
+        add_missing_carriers(n, gen_available_carriers)
 
         logger.info(f"Include {gen_available_carriers} for the CI: {name}.")
 
         # ===================== Adding Variable Renewable Technologies =====================
         # ==================================================================================
 
-        res_available_carriers = list(set(clean_techs).intersection(["onwind", "solar"]))
+        res_available_carriers = list(
+            set(clean_techs).intersection(["onwind", "solar"])
+        )
 
         for carrier in res_available_carriers:
             if scope == "node" or "cfe" in stratergy:
@@ -1520,15 +1638,19 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
             else:
                 if scope == "country":
                     zone = n.buses.loc[location, "country"]
-                    query_condition = f" & country == @zone"
-                else: # scope == "all" is the default
+                    query_condition = " & country == @zone"
+                else:  # scope == "all" is the default
                     query_condition = " & country != ''"
-                res_df = pd.DataFrame(index=n.buses.query("carrier == 'AC'" + query_condition).index)
+                res_df = pd.DataFrame(
+                    index=n.buses.query("carrier == 'AC'" + query_condition).index
+                )
                 res_df["gen_name"] = [f"{i} {name} {carrier}" for i in res_df.index]
                 res_df["gen_template"] = [f"{i} {carrier}-{year}" for i in res_df.index]
 
             p_max_pu_df = n.generators_t.p_max_pu[res_df["gen_template"]]
-            p_max_pu_df = p_max_pu_df.rename(columns=res_df.set_index("gen_template")['gen_name'].to_dict())
+            p_max_pu_df = p_max_pu_df.rename(
+                columns=res_df.set_index("gen_template")["gen_name"].to_dict()
+            )
 
             n.add(
                 "Generator",
@@ -1539,10 +1661,12 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                 p_max_pu=p_max_pu_df,
                 capital_cost=costs.at[carrier, "capital_cost"],
                 marginal_cost=costs.at[carrier, "marginal_cost"],
-                ci=name, # C&I markers used in constraints
+                ci=name,  # C&I markers used in constraints
             )
 
-        logger.info(f"Include {res_available_carriers} for the CI: {name} with the scope: {scope}.")
+        logger.info(
+            f"Include {res_available_carriers} for the CI: {name} with the scope: {scope}."
+        )
 
         # ===================== Adding Storage Technologies =====================
         # =======================================================================
@@ -1559,8 +1683,12 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
             "lair",
             "pair",
         ]
-        storage_not_implemented = list(set(storage_techs).difference(storage_implemented))
-        storage_available_carriers = list(set(storage_techs).intersection(storage_implemented))
+        storage_not_implemented = list(
+            set(storage_techs).difference(storage_implemented)
+        )
+        storage_available_carriers = list(
+            set(storage_techs).intersection(storage_implemented)
+        )
         if len(storage_not_implemented) > 0:
             logger.warning(
                 f"{storage_not_implemented} are not yet implemented as Storage technologies in PyPSA-Eur"
@@ -1605,9 +1733,11 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                     suffix=f" {carrier} {max_hour}h",
                     bus=name,
                     carrier=f"{carrier} {max_hour}h",
-                    p_nom_extendable=True,
-                    capital_cost=costs.at[f"{cost_carrier} {max_hour}h", "capital_cost"],
-                    marginal_cost=0.,
+                    p_nom_extendable=False if stratergy == "ref" else True,
+                    capital_cost=costs.at[
+                        f"{cost_carrier} {max_hour}h", "capital_cost"
+                    ],
+                    marginal_cost=0.0,
                     efficiency_store=costs.at[lookup_store[carrier], "efficiency"]
                     ** roundtrip_correction,
                     efficiency_dispatch=costs.at[lookup_dispatch[carrier], "efficiency"]
@@ -1615,9 +1745,9 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                     max_hours=max_hour,
                     cyclic_state_of_charge=True,
                     lifetime=costs.at[f"{cost_carrier} {max_hour}h", "lifetime"],
-                    ci=name, # C&I markers used in constraints
+                    ci=name,  # C&I markers used in constraints
                 )
-        
+
         logger.info(f"Include {storage_available_carriers} for the CI: {name}.")
 
 
@@ -1661,7 +1791,10 @@ if __name__ == "__main__":
     with memory_logger(
         filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
     ) as mem:
-        if snakemake.params.procurement_enable:
+        if (
+            snakemake.params.procurement_enable
+            and snakemake.params.procurement["year"] == planning_horizons
+        ):
             print("procurement_enable is activated")
             procurement = snakemake.params.procurement
 
@@ -1676,20 +1809,16 @@ if __name__ == "__main__":
                 snakemake.params.max_hours,
                 Nyears,
             )
-            add_ci(n, 
-                   snakemake.wildcards.planning_horizons, 
-                   snakemake.params,
-                   costs
-                   )
+            add_ci(n, snakemake.wildcards.planning_horizons, snakemake.params, costs)
 
-        # solve_network(
-        #     n,
-        #     config=snakemake.config,
-        #     params=snakemake.params,
-        #     solving=snakemake.params.solving,
-        #     planning_horizons=planning_horizons,
-        #     rule_name=snakemake.rule,
-        # )
+        solve_network(
+            n,
+            config=snakemake.config,
+            params=snakemake.params,
+            solving=snakemake.params.solving,
+            planning_horizons=planning_horizons,
+            rule_name=snakemake.rule,
+        )
 
     logger.info(f"Maximum memory usage: {mem.mem_usage}")
 

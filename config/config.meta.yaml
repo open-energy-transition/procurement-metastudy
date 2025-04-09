@@ -150,10 +150,13 @@ clustering:
 
 # ================ Procurment Metastudy ================
 procurement:
+  year: 2030
   stratergy: res100 # "ref", "cfe90", "cfe98", "cfe100", "cfe..", "res90", "res98", "res100", "res.."
   scope: "country" # "node", "country", "all"
 
-  strip_network: true
+  strip_network: true # simplify the network to only include the country with CI and it's neighbours
+  excess_share: 0.  # share of excess CI generation that can be sold to the grid [percentage]
+  min_iterations: 2
 
   ci:
     Germany: # Set name here
