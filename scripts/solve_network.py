@@ -1406,7 +1406,7 @@ def strip_network(n: pypsa.Network, config: dict) -> None:
 
 def load_profile(
     n: pypsa.Network,
-    name: str,
+    location: str,
     profile_shape: str,
     config,
 ) -> pd.Series:
@@ -1448,8 +1448,10 @@ def load_profile(
     if procurement["strategy"] == "ref":
         load = 0.0
     else:
+        
+        country = n.buses.country[location]
         load_year = (
-            pd.read_csv(procurement["load"]).groupby("Country")["2023"].sum()[name]
+            pd.read_csv(procurement["load"]).groupby("Country Code")["2023"].sum()[country]
         )  # GWh
         load = load_year / 8760 * 1000 * procurement["participation"] / 100  # MW
 
@@ -1516,7 +1518,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict) -> None:
             f"{name}" + " load",
             carrier="electricity",
             bus=name,
-            p_set=load_profile(n, name, profile, config),
+            p_set=load_profile(n, location, profile, config),
         )
 
         # C&I following voluntary clean energy procurement is a share of C&I load -> subtract it from node's profile

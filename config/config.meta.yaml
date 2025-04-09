@@ -66,7 +66,7 @@ enable:
   custom_busmap: false
   drop_leap_day: true
   sector: false
-  procurement: true
+  procurement: true  # [true, false ] If true, model the procurement strategies
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#electricity
 electricity:
@@ -148,12 +148,12 @@ clustering:
 
 # procurement strategies
 procurement:
-  load: data/ci_load.csv
-  strategy: "vol-match"
-  participation: 10
-  profile: "industry" # "baseload", "industry"
-  strip_network: true
+  load: data/ci_load.csv # path to CI load input data
+  strategy: "vol-match" # name of procurement strategy
+  participation: 10 # share of CI load participating to the procurement
+  profile: "industry" # type of load profile (e.g., "baseload", "industry")
+  strip_network: true # [ true, false ] If true, model only the countries with the CI loads and their neighbors
 
   ci:
-    Germany:
+    Germany: # CI load name
       location: "DE0 0"
