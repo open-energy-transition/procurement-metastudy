@@ -1448,10 +1448,11 @@ def load_profile(
     if procurement["strategy"] == "ref":
         load = 0.0
     else:
-        
         country = n.buses.country[location]
         load_year = (
-            pd.read_csv(procurement["load"]).groupby("Country Code")["2023"].sum()[country]
+            pd.read_csv(procurement["load"])
+            .groupby("Country Code")["2023"]
+            .sum()[country]
         )  # GWh
         load = load_year / 8760 * 1000 * procurement["participation"] / 100  # MW
 
