@@ -1283,17 +1283,21 @@ def extra_functionality(
         custom_extra_functionality = getattr(module, module_name)
         custom_extra_functionality(n, snapshots, snakemake)  # pylint: disable=E0601
 
-    if n.params.procurement_enable:
-        stratergy = config["procurement"]["stratergy"]
-        penetration = stratergy[3:]
-        res_capacity_constraints(n)
+    if (
+        n.params.procurement_enable
+        and str(n.params.procurement["year"]) == planning_horizons
+    ):
+        procurement = config["procurement"]
+        stratergy = procurement["stratergy"]
+        penetration = procurement["penetration"]
+        # res_capacity_constraints(n)
 
         if "ref" in stratergy:
             logger.info("no target set")
         elif "res" in stratergy:
-            logger.info("setting annual RES target of", penetration)
+            logger.info(f"Setting annual RES target of {penetration}")
             res_annual_matching_constraints(n, penetration)
-            excess_constraints(n, config)
+            excess_constraints(n)
 
 
 def check_objective_value(n: pypsa.Network, solving: dict) -> None:
@@ -1405,16 +1409,18 @@ def solve_network(
         kwargs["overlap"] = cf_solving.get("overlap", 0)
         n.optimize.optimize_with_rolling_horizon(**kwargs)
         status, condition = "", ""
-    elif skip_iterations:
-        status, condition = n.optimize(**kwargs)
     elif (
         n.params.procurement_enable
-        and n.params.procurement["year"] == planning_horizons
+        and str(n.params.procurement["year"]) == planning_horizons
     ):
         procurment = config["procurement"]
         n_iterations = procurment["min_iterations"]
+        logger.info("Enable procurement")
         for i in range(n_iterations):
+            logger.info(f"Iteration: {i + 1}")
             status, condition = n.optimize(**kwargs)
+    elif skip_iterations:
+        status, condition = n.optimize(**kwargs)
     else:
         kwargs["track_iterations"] = cf_solving["track_iterations"]
         kwargs["min_iterations"] = cf_solving["min_iterations"]
@@ -1527,6 +1533,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
             bus1=location,
             marginal_cost=0.1,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
             p_nom=1e6,
+            reversed=False,
         )
 
         n.add(
@@ -1536,6 +1543,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
             bus1=name,
             marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
             p_nom=1e6,
+            reversed=False,
         )
 
         n.add(
@@ -1616,6 +1624,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                 efficiency=costs.at[generator, "efficiency"],
                 efficiency2=costs.at[carrier, "CO2 intensity"],
                 lifetime=costs.at[generator, "lifetime"],
+                reversed=False,
                 ci=name,  # C&I markers used in constraints
             )
 
@@ -1793,7 +1802,7 @@ if __name__ == "__main__":
     ) as mem:
         if (
             snakemake.params.procurement_enable
-            and snakemake.params.procurement["year"] == planning_horizons
+            and str(snakemake.params.procurement["year"]) == planning_horizons
         ):
             print("procurement_enable is activated")
             procurement = snakemake.params.procurement
