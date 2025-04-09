@@ -1347,7 +1347,9 @@ def solve_network(
         n.model.print_infeasibilities()
         raise RuntimeError("Solving status 'infeasible'. Infeasibilities computed.")
 
+
 # metastudy
+
 
 def strip_network(n: pypsa.Network, config: dict) -> None:
     """
@@ -1365,13 +1367,21 @@ def strip_network(n: pypsa.Network, config: dict) -> None:
 
     # Perform queries and combine results into a single set
     bus_core = n.buses.query("country.isin(@zone)", engine="python").index.unique()
-    combined_lines = n.lines.query("bus1.isin(@bus_core) | bus0.isin(@bus_core)", engine="python")
-    combined_links = n.links.query("bus1.isin(@bus_core) | bus0.isin(@bus_core)", engine="python")
-    
+    combined_lines = n.lines.query(
+        "bus1.isin(@bus_core) | bus0.isin(@bus_core)", engine="python"
+    )
+    combined_links = n.links.query(
+        "bus1.isin(@bus_core) | bus0.isin(@bus_core)", engine="python"
+    )
+
     # Combine the results of bus0 and bus1 in lines and links
-    bus_connect = (set(combined_lines.bus0.unique()) | set(combined_lines.bus1.unique()) |
-                   set(combined_links.bus0.unique()) | set(combined_links.bus1.unique()))
-    
+    bus_connect = (
+        set(combined_lines.bus0.unique())
+        | set(combined_lines.bus1.unique())
+        | set(combined_links.bus0.unique())
+        | set(combined_links.bus1.unique())
+    )
+
     zone_all = set(n.buses.country[bus] for bus in bus_connect)
     nodes_to_keep = n.buses.query("country.isin(@zone_all)").index.unique()
 
@@ -1393,6 +1403,7 @@ def strip_network(n: pypsa.Network, config: dict) -> None:
         to_drop = c.df.index.symmetric_difference(to_keep)
         n.remove(c.name, to_drop)
 
+
 def load_profile(
     n: pypsa.Network,
     name: str,
@@ -1412,7 +1423,9 @@ def load_profile(
     """
 
     procurement = config["procurement"]
-    scaling = n.snapshot_weightings.objective.sum() / len(n.snapshot_weightings.objective)  # e.g., 3 for 3H time resolution
+    scaling = n.snapshot_weightings.objective.sum() / len(
+        n.snapshot_weightings.objective
+    )  # e.g., 3 for 3H time resolution
 
     shapes = {
         "baseload": [1 / 24] * 24,
@@ -1435,8 +1448,10 @@ def load_profile(
     if procurement["strategy"] == "ref":
         load = 0.0
     else:
-        load_year = pd.read_csv(procurement["load"]).groupby("Country")["2023"].sum()[name] # GWh
-        load = load_year / 8760 * 1000 * procurement["participation"] / 100 # MW
+        load_year = (
+            pd.read_csv(procurement["load"]).groupby("Country")["2023"].sum()[name]
+        )  # GWh
+        load = load_year / 8760 * 1000 * procurement["participation"] / 100  # MW
 
     load_day = load * 24  # daily load in MWh
     load_profile_day = pd.Series(shape) * load_day
@@ -1455,6 +1470,7 @@ def load_profile(
         profile = load_profile_year.set_axis(n.snapshots)
 
     return profile
+
 
 def add_ci(n: pypsa.Network, year: str, config: dict) -> None:
     """
@@ -1506,6 +1522,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict) -> None:
         # C&I following voluntary clean energy procurement is a share of C&I load -> subtract it from node's profile
         n.loads_t.p_set[location] -= n.loads_t.p_set[f"{name}" + " load"]
 
+
 # %%
 if __name__ == "__main__":
     if "snakemake" not in globals():
@@ -1516,7 +1533,7 @@ if __name__ == "__main__":
             run="baseline-3H",
             opts="",
             clusters="39",
-            configfiles= "config/config.meta.yaml",
+            configfiles="config/config.meta.yaml",
             ll="v1.0",
             sector_opts="",
             planning_horizons="2030",
@@ -1547,22 +1564,21 @@ if __name__ == "__main__":
     with memory_logger(
         filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
     ) as mem:
-        
         # metastudy
         if snakemake.params.procurement_enable:
             print("procurement_enable is activated")
             procurement = snakemake.params.procurement
 
-
             if procurement["strip_network"]:
                 print("stript_network is activated")
                 strip_network(n, procurement)
 
-            add_ci(n, 
-                   snakemake.wildcards.planning_horizons, 
-                   snakemake.params,
-                   )
-        
+            add_ci(
+                n,
+                snakemake.wildcards.planning_horizons,
+                snakemake.params,
+            )
+
         solve_network(
             n,
             config=snakemake.config,

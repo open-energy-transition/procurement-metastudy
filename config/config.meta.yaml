@@ -155,6 +155,5 @@ procurement:
   strip_network: true
 
   ci:
-    Germany: 
-      location: "DE0 0" 
-      
+    Germany:
+      location: "DE0 0"
