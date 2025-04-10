@@ -1189,12 +1189,23 @@ def res_annual_matching_constraints(n):
 
 
 def cfe_constraints(n):
+    """
+    Implement strategies to achieve 24/7 carbon-free energy (CFE).
+
+    The hourly generation from all carbon-free energy (CFE)-related generators (e.g., renewable sources) and links (e.g., conventional or clean carriers) must match the corresponding load consumption.
+    These constraints must be solved iteratively, as the CFE score of the grids changes with each run.
+    """
     weights = n.snapshot_weightings["generators"]
 
     procurement = n.config["procurement"]
     penetration = procurement["penetration"]
 
-    grid_cfe_df = pd.read_csv((snakemake.output.network)[:-2] + "csv", header=[0,1], index_col=0, parse_dates=True)
+    grid_cfe_df = pd.read_csv(
+        (snakemake.output.network)[:-2] + "csv",
+        header=[0, 1],
+        index_col=0,
+        parse_dates=True,
+    )
     iteration_i = grid_cfe_df.columns.get_level_values(1).max()
 
     for name in procurement["ci"]:
@@ -1211,7 +1222,9 @@ def cfe_constraints(n):
             * n.links.loc[links_ci].efficiency
             * weights
         ).sum()
-        discharge_sum = (n.model["StorageUnit-p_dispatch"].loc[:, store_ci] * weights).sum()
+        discharge_sum = (
+            n.model["StorageUnit-p_dispatch"].loc[:, store_ci] * weights
+        ).sum()
         charge_sum = (
             -1 * (n.model["StorageUnit-p_store"].loc[:, store_ci] * weights).sum()
         )
@@ -1223,7 +1236,7 @@ def cfe_constraints(n):
             + (
                 ci_import
                 * n.links.at[name + " import", "efficiency"]
-                * grid_supply_cfe # TODO: This is where the iteration is nessesary
+                * grid_supply_cfe  # TODO: This is where the iteration is necessary
                 * weights
             )
         ).sum()  # linear expr
@@ -1231,7 +1244,7 @@ def cfe_constraints(n):
         lhs = gen_sum + link_sum + discharge_sum + charge_sum + grid_sum
 
         total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
-            
+
         n.model.add_constraints(
             lhs >= penetration * (total_load), name=f"CFE_constraint_{name}"
         )
@@ -1473,6 +1486,7 @@ def calculate_grid_cfe(n, name: str, node: str, config) -> pd.Series:
 
     return grid_supply_cfe
 
+
 def optimize_cfe_iteratively(n, config, **kwargs):
     """
     Calculates the time-series of grid supply CFE score for each C&I consumer.
@@ -1509,16 +1523,17 @@ def optimize_cfe_iteratively(n, config, **kwargs):
 
         logger.info(f"Iteration: {i + 1}")
         status, condition = n.optimize(**kwargs)
-        
+
         for name in names:
             location = config["procurement"]["ci"][name]["location"]
             grid_cfe_df.loc[:, (f"{location}", f"iteration {i + 1}")] = (
                 calculate_grid_cfe(n, name=name, node=location, config=config)
-                )
+            )
 
     grid_cfe_df.to_csv((snakemake.output.network)[:-2] + "csv")
 
     return status, condition
+
 
 def check_objective_value(n: pypsa.Network, solving: dict) -> None:
     """
