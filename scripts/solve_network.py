@@ -1188,6 +1188,55 @@ def res_annual_matching_constraints(n):
         )
 
 
+def cfe_constraints(n):
+    weights = n.snapshot_weightings["generators"]
+
+    procurement = n.config["procurement"]
+    penetration = procurement["penetration"]
+
+    grid_cfe_df = pd.read_csv((snakemake.output.network)[:-2] + "csv", header=[0,1], index_col=0, parse_dates=True)
+    iteration_i = grid_cfe_df.columns.get_level_values(1).max()
+
+    for name in procurement["ci"]:
+        location = procurement["ci"][name]["location"]
+        grid_supply_cfe = grid_cfe_df.loc[:, (location, iteration_i)]
+
+        gen_ci = list(n.generators.query("ci == @name").index)
+        links_ci = list(n.links.query("ci == @name").index)
+        store_ci = list(n.storage_units.query("ci == @name").index)
+
+        gen_sum = (n.model["Generator-p"].loc[:, gen_ci] * weights).sum()
+        link_sum = (
+            n.model["Link-p"].loc[:, links_ci]
+            * n.links.loc[links_ci].efficiency
+            * weights
+        ).sum()
+        discharge_sum = (n.model["StorageUnit-p_dispatch"].loc[:, store_ci] * weights).sum()
+        charge_sum = (
+            -1 * (n.model["StorageUnit-p_store"].loc[:, store_ci] * weights).sum()
+        )
+
+        ci_export = n.model["Link-p"].loc[:, [name + " export"]]
+        ci_import = n.model["Link-p"].loc[:, [name + " import"]]
+        grid_sum = (
+            (-1 * ci_export * weights)
+            + (
+                ci_import
+                * n.links.at[name + " import", "efficiency"]
+                * grid_supply_cfe # TODO: This is where the iteration is nessesary
+                * weights
+            )
+        ).sum()  # linear expr
+
+        lhs = gen_sum + link_sum + discharge_sum + charge_sum + grid_sum
+
+        total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
+            
+        n.model.add_constraints(
+            lhs >= penetration * (total_load), name=f"CFE_constraint_{name}"
+        )
+
+
 def excess_constraints(n):
     """
     Each CI bus must meet its own load consumption before exporting any energy back to the grid.
@@ -1299,9 +1348,177 @@ def extra_functionality(
             logger.info(f"Setting annual RES target of {penetration}")
             res_annual_matching_constraints(n)
             excess_constraints(n)
+        elif strategy == "247-cfe":
+            logger.info(f"Setting 247 CFE target of {penetration}")
+            cfe_constraints(n)
+            excess_constraints(n)
         else:
             logger.info("no target set")
 
+
+def calculate_grid_cfe(n, name: str, node: str, config) -> pd.Series:
+    """
+    Calculates the time-series of grid supply CFE score for each C&I consumer.
+
+    Args:
+    - n: pypsa network.
+    - name: name of a C&I consumer.
+    - node: location (node) of a C&I consumer.
+    - config: config.yaml settings
+
+    Returns:
+    - pd.Series: A pandas series containing the grid CFE supply score.
+    """
+    grid_buses = n.buses.index[
+        ~n.buses.index.str.contains(name) & ~n.buses.index.str.contains(node)
+    ]
+    country_buses = n.buses.index[n.buses.index.str.contains(node)]
+
+    clean_techs = pd.Index(config["procurement"]["grid_policy"]["clean_carriers"])
+    emitters = pd.Index(config["procurement"]["grid_policy"]["emitters"])
+
+    clean_grid_generators = n.generators.index[
+        n.generators.bus.isin(grid_buses) & n.generators.carrier.isin(clean_techs)
+    ]
+    clean_grid_links = n.links.index[
+        n.links.bus1.isin(grid_buses) & n.links.carrier.isin(clean_techs)
+    ]
+    clean_grid_storage_units = n.storage_units.index[
+        n.storage_units.bus.isin(grid_buses) & n.storage_units.carrier.isin(clean_techs)
+    ]
+    dirty_grid_links = n.links.index[
+        n.links.bus1.isin(grid_buses) & n.links.carrier.isin(emitters)
+    ]
+
+    clean_country_generators = n.generators.index[
+        n.generators.bus.isin(country_buses) & n.generators.carrier.isin(clean_techs)
+    ]
+    clean_country_links = n.links.index[
+        n.links.bus1.isin(country_buses) & n.links.carrier.isin(clean_techs)
+    ]
+    clean_country_storage_units = n.storage_units.index[
+        n.storage_units.bus.isin(country_buses)
+        & n.storage_units.carrier.isin(clean_techs)
+    ]
+    dirty_country_links = n.links.index[
+        n.links.bus1.isin(country_buses) & n.links.carrier.isin(emitters)
+    ]
+
+    clean_grid_gens = n.generators_t.p[clean_grid_generators].sum(axis=1)
+    clean_grid_ls = -n.links_t.p1[clean_grid_links].sum(axis=1)
+    clean_grid_sus = n.storage_units_t.p[clean_grid_storage_units].sum(axis=1)
+    clean_grid_resources = clean_grid_gens + clean_grid_ls + clean_grid_sus
+
+    dirty_grid_resources = -n.links_t.p1[dirty_grid_links].sum(axis=1)
+
+    # grid_cfe =  clean_grid_resources / n.loads_t.p[grid_loads].sum(axis=1)
+    # grid_cfe[grid_cfe > 1] = 1.
+
+    import_cfe = clean_grid_resources / (clean_grid_resources + dirty_grid_resources)
+    import_cfe = np.nan_to_num(import_cfe, nan=0.0)  # Convert NaN to 0
+
+    clean_country_gens = n.generators_t.p[clean_country_generators].sum(axis=1)
+    clean_country_ls = -n.links_t.p1[clean_country_links].sum(axis=1)
+    clean_country_sus = n.storage_units_t.p[clean_country_storage_units].sum(axis=1)
+    clean_country_resources = clean_country_gens + clean_country_ls + clean_country_sus
+
+    dirty_country_resources = -n.links_t.p1[dirty_country_links].sum(axis=1)
+
+    ##################
+    # Country imports |
+    # NB lines and links are bidirectional, thus we track imports for both subsets
+    # of interconnectors: where [country] node is bus0 and bus1. Subsets are exclusive.
+
+    line_imp_subsetA = n.lines_t.p1.loc[:, n.lines.bus0.str.contains(node)].sum(axis=1)
+    line_imp_subsetB = n.lines_t.p0.loc[:, n.lines.bus1.str.contains(node)].sum(axis=1)
+    line_imp_subsetA[line_imp_subsetA < 0] = 0.0
+    line_imp_subsetB[line_imp_subsetB < 0] = 0.0
+
+    links_imp_subsetA = (
+        n.links_t.p1.loc[
+            :,
+            (
+                n.links.bus0.str.contains(node)
+                & (n.links.carrier == "DC")
+                & ~(n.links.index.str.contains(name))
+            ),
+        ]
+        .clip(lower=0)
+        .sum(axis=1)
+    )
+
+    links_imp_subsetB = (
+        n.links_t.p0.loc[
+            :,
+            (
+                n.links.bus1.str.contains(node)
+                & (n.links.carrier == "DC")
+                & ~(n.links.index.str.contains(name))
+            ),
+        ]
+        .clip(lower=0)
+        .sum(axis=1)
+    )
+
+    country_import = (
+        line_imp_subsetA + line_imp_subsetB + links_imp_subsetA + links_imp_subsetB
+    )
+
+    grid_supply_cfe = (clean_country_resources + country_import * import_cfe) / (
+        clean_country_resources + dirty_country_resources + country_import
+    )
+
+    print(f"Grid_supply_CFE for {node} has following stats:")
+    print(grid_supply_cfe.describe())
+
+    return grid_supply_cfe
+
+def optimize_cfe_iteratively(n, config, **kwargs):
+    """
+    Calculates the time-series of grid supply CFE score for each C&I consumer.
+
+    Args:
+    - n: pypsa network.
+    - node: location (node) of a C&I consumer.
+    - kwargs: config.yaml settings
+
+    Returns:
+    - status:
+    - condition:
+    """
+
+    procurment = config["procurement"]
+    n_iterations = procurment["min_iterations"]
+
+    names = config["procurement"]["ci"].keys()
+    locations = [config["procurement"]["ci"][name]["location"] for name in names]
+
+    def create_tuples(locations, values):
+        # Use a nested list comprehension to create the list of tuples
+        tuples_list = [(location, value) for location in locations for value in values]
+        return tuples_list
+
+    cols = pd.MultiIndex.from_tuples(create_tuples(locations, ["iteration 0"]))
+    grid_cfe_df = pd.DataFrame(0.0, index=n.snapshots, columns=cols)
+    for i in range(n_iterations):
+        for location in locations:
+            grid_supply_cfe = grid_cfe_df.loc[:, (location, f"iteration {i}")]
+            logger.info(grid_supply_cfe.describe())
+
+        grid_cfe_df.to_csv((snakemake.output.network)[:-2] + "csv")
+
+        logger.info(f"Iteration: {i + 1}")
+        status, condition = n.optimize(**kwargs)
+        
+        for name in names:
+            location = config["procurement"]["ci"][name]["location"]
+            grid_cfe_df.loc[:, (f"{location}", f"iteration {i + 1}")] = (
+                calculate_grid_cfe(n, name=name, node=location, config=config)
+                )
+
+    grid_cfe_df.to_csv((snakemake.output.network)[:-2] + "csv")
+
+    return status, condition
 
 def check_objective_value(n: pypsa.Network, solving: dict) -> None:
     """
@@ -1412,12 +1629,12 @@ def solve_network(
         kwargs["overlap"] = cf_solving.get("overlap", 0)
         n.optimize.optimize_with_rolling_horizon(**kwargs)
         status, condition = "", ""
-    # elif (
-    #     n.params.procurement_enable
-    #     and str(n.params.procurement["year"]) == planning_horizons
-    #     and n.params.procurement["strategy"] == "247-cfe"
-    # ):
-    #     status, condition = optimize_cfe_iteratively(n, config, **kwargs)
+    elif (
+        n.params.procurement_enable
+        and str(n.params.procurement["year"]) == planning_horizons
+        and n.params.procurement["strategy"] == "247-cfe"
+    ):
+        status, condition = optimize_cfe_iteratively(n, config, **kwargs)
     elif skip_iterations:
         status, condition = n.optimize(**kwargs)
     else:
