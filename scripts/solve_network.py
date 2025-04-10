@@ -1159,25 +1159,26 @@ def res_capacity_constraints(n):
                 )
 
 
-def res_annual_matching_constraints(n, penetration):
+def res_annual_matching_constraints(n):
     """
     Implement strategies for annual renewable procurement matching.
 
     The total generation from all CI-related generators (renewable carriers) and links (conventional/clean carriers) must equal to its own load consumption.
     """
     weights = n.snapshot_weightings["generators"]
+    penetration = n.config["procurement"]["penetration"]
 
     for name in n.config["procurement"]["ci"]:
         gen_ci = list(n.generators.query("ci == @name").index)
         links_ci = list(n.links.query("ci == @name").index)
 
-        lhs_gen = (n.model["Generator-p"].loc[:, gen_ci] * weights).sum()
-        lhs_link = (
+        gen_sum = (n.model["Generator-p"].loc[:, gen_ci] * weights).sum()
+        link_sum = (
             n.model["Link-p"].loc[:, links_ci]
             * n.links.loc[links_ci].efficiency
             * weights
         ).sum()
-        lhs = lhs_gen + lhs_link
+        lhs = gen_sum + link_sum
 
         total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
 
@@ -1296,7 +1297,7 @@ def extra_functionality(
 
         if strategy == "vol-match":
             logger.info(f"Setting annual RES target of {penetration}")
-            res_annual_matching_constraints(n, penetration)
+            res_annual_matching_constraints(n)
             excess_constraints(n)
         else:
             logger.info("no target set")
@@ -1411,16 +1412,12 @@ def solve_network(
         kwargs["overlap"] = cf_solving.get("overlap", 0)
         n.optimize.optimize_with_rolling_horizon(**kwargs)
         status, condition = "", ""
-    elif (
-        n.params.procurement_enable
-        and str(n.params.procurement["year"]) == planning_horizons
-    ):
-        procurment = config["procurement"]
-        n_iterations = procurment["min_iterations"]
-        logger.info("Enable procurement")
-        for i in range(n_iterations):
-            logger.info(f"Iteration: {i + 1}")
-            status, condition = n.optimize(**kwargs)
+    # elif (
+    #     n.params.procurement_enable
+    #     and str(n.params.procurement["year"]) == planning_horizons
+    #     and n.params.procurement["strategy"] == "247-cfe"
+    # ):
+    #     status, condition = optimize_cfe_iteratively(n, config, **kwargs)
     elif skip_iterations:
         status, condition = n.optimize(**kwargs)
     else:
@@ -1685,7 +1682,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                 * costs.at[generator, "VOM"],  # NB: VOM is per MWel
                 capital_cost=costs.at[generator, "efficiency"]
                 * costs.at[generator, "capital_cost"],  # NB: fixed cost is per MWel
-                p_nom_extendable=False if strategy == "ref" else True,
+                p_nom_extendable=True if strategy else False,
                 p_max_pu=0.7
                 if carrier == "uranium"
                 else 1,  # be conservative for nuclear (maintenance or unplanned shut downs)
@@ -1738,7 +1735,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                 res_df["gen_name"],
                 carrier=carrier,
                 bus=res_df.index,
-                p_nom_extendable=False if strategy == "ref" else True,
+                p_nom_extendable=True if strategy else False,
                 p_max_pu=p_max_pu_df,
                 capital_cost=costs.at[carrier, "capital_cost"],
                 marginal_cost=costs.at[carrier, "marginal_cost"],
@@ -1814,7 +1811,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                     suffix=f" {carrier} {max_hour}h",
                     bus=name,
                     carrier=f"{carrier} {max_hour}h",
-                    p_nom_extendable=False if strategy == "ref" else True,
+                    p_nom_extendable=True if strategy else False,
                     capital_cost=costs.at[
                         f"{cost_carrier} {max_hour}h", "capital_cost"
                     ],
