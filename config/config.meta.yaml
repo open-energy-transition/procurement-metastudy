@@ -107,7 +107,7 @@ costs:
   year: 2025
   version: v0.10.1
 
-  overwrite:
+  overwrites:
     fuel:
       OCGT: 38.84 # https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:52022SC0230 (Annex)
       CCGT: 38.84
@@ -136,6 +136,8 @@ costs:
     fuel cell: 0.
     li-ion battery: 0.
     battery inverter: 0.
+  capital_cost:
+    geothermal: 10000
   emission_prices:
     enable: false
     co2: 0.
@@ -146,14 +148,25 @@ clustering:
   temporal:
     resolution_sector: 3H
 
-# procurement strategies
+# ================ Procurment Metastudy ================
 procurement:
+  year: 2030
+  strategy: vol-match # name of procurement strategy "vol-match"
+  scope: "all" # "node", "country", "all"
+  penetration: 100
+
   load: data/ci_load.csv # path to CI load input data
-  strategy: "vol-match" # name of procurement strategy
-  participation: 10 # share of CI load participating to the procurement
   profile: "industry" # type of load profile (e.g., "baseload", "industry")
-  strip_network: true # [ true, false ] If true, model only the countries with the CI loads and their neighbors
+  participation: 10 # share of CI load participating to the procurement
 
   ci:
-    Germany: # CI load name
+    Germany: # Set name here
       location: "DE0 0"
+
+  technology:
+    generation_tech: ["onwind", "solar", "nuclear", "allam", "geothermal"]
+    storage_tech: ["li-ion battery", "vanadium", "lair", "pair", "iron-air battery"]
+
+  strip_network: true # [ true, false ] If true, model only the countries with the CI loads and their neighbors
+  excess_share: 0.  # share of excess CI generation that can be sold to the grid [percentage]
+  min_iterations: 2
