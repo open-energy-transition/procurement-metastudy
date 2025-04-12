@@ -21,10 +21,10 @@ remote:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#run
 run:
   prefix: ""
-  name: "baseline-3H"
+  name: "baseline-3H-storage"
   scenarios:
-    enable: false
-    file: config/scenarios.yaml
+    enable: true
+    file: config/scenarios.meta.yaml
   disable_progressbar: false
   shared_resources:
     policy: false
@@ -59,13 +59,12 @@ snapshots:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#enable
 enable:
   retrieve: auto
-  retrieve_databundle: true
+  retrieve_databundle: false
   retrieve_cost_data: true
   build_cutout: false
-  retrieve_cutout: true
+  retrieve_cutout: false
   custom_busmap: false
   drop_leap_day: true
-  sector: false
   procurement: true  # [true, false ] If true, model the procurement strategies
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#electricity
@@ -79,8 +78,8 @@ electricity:
     iron-air battery: [100]
 
   extendable_carriers:
-    StorageUnit: [li-ion battery, iron-air battery, vanadium, lair, pair] # 
-    Store: [H2]
+    StorageUnit: [] # li-ion battery, iron-air battery, H2, lfp, vanadium, lair, pair
+    Store: [li-ion battery, H2]
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#sector
 sector:
@@ -164,8 +163,8 @@ procurement:
       location: "DE0 0"
 
   technology:
-    generation_tech: ["onwind", "solar", "nuclear", "allam", "geothermal"]
-    storage_tech: ["li-ion battery", "vanadium", "lair", "pair", "iron-air battery"]
+    generation_tech: ["onwind", "solar", "allam", "geothermal"]  # "nuclear"
+    storage_tech: ["li-ion battery"] # "iron-air battery"
 
   strip_network: true # [ true, false ] If true, model only the countries with the CI loads and their neighbors
   excess_share: 0.  # share of excess CI generation that can be sold to the grid [percentage]
