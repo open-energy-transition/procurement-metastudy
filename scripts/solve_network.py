@@ -1135,28 +1135,24 @@ def res_capacity_constraints(n):
     """
     Restrict the deployment of renewable capacities for the same carrier within the same buses.
     """
-    buses = n.buses.query("carrier == 'AC' & country != ''").index.unique()
-    for bus in buses:
-        for carrier in ["onwind", "solar"]:
-            # Includes also CI buses linked to the referred buses. Only CI links have AC as its carriers
-            linked_bus = [bus] + n.links[
-                (n.links.carrier == "AC") & (n.links.bus1 == bus)
-            ].bus0.to_list()
-            gen_bus_list = list(
-                n.generators[
-                    n.generators.bus.isin(linked_bus)
-                    & (n.generators.carrier == carrier)
-                    & n.generators.p_nom_extendable
-                ].index
-            )
+    rename = {"Generator-ext": "Generator"}
 
-            if len(gen_bus_list) >= 2:
-                p_nom_max = min(n.generators.loc[gen_bus_list, "p_nom_max"])
-                gen = n.model["Generator-p_nom"].loc[gen_bus_list].sum()
+    for carrier in ["solar", "onwind"]:
+        ext_carrier = n.generators[
+            (n.generators.carrier == carrier) & n.generators.p_nom_extendable
+        ]
+        p_nom_max = (
+            ext_carrier[ext_carrier.p_nom_max != np.inf].groupby("bus").p_nom_max.sum()
+        )
+        gen = (
+            n.model["Generator-p_nom"]
+            .rename(rename)
+            .loc[ext_carrier.index]
+            .groupby(ext_carrier.bus)
+            .sum()
+        )
 
-                n.model.add_constraints(
-                    gen <= p_nom_max, name=f"RES_capacity-{bus}-{carrier}"
-                )
+        n.model.add_constraints(gen <= p_nom_max, name=f"RES_capacity-{carrier}")
 
 
 def res_annual_matching_constraints(n):
@@ -1166,7 +1162,7 @@ def res_annual_matching_constraints(n):
     The total generation from all CI-related generators (renewable carriers) and links (conventional/clean carriers) must equal to its own load consumption.
     """
     weights = n.snapshot_weightings["generators"]
-    penetration = n.config["procurement"]["penetration"]
+    penetration = n.config["procurement"]["penetration"] / 100
 
     for name in n.config["procurement"]["ci"]:
         gen_ci = list(n.generators.query("ci == @name").index)
@@ -1293,10 +1289,10 @@ def extra_functionality(
         procurement = config["procurement"]
         strategy = procurement["strategy"]
         penetration = procurement["penetration"]
-        # res_capacity_constraints(n) TODO: not yet operational
+        res_capacity_constraints(n)
 
         if strategy == "vol-match":
-            logger.info(f"Setting annual RES target of {penetration}")
+            logger.info(f"Setting annual RES target of {penetration}%")
             res_annual_matching_constraints(n)
             excess_constraints(n)
         else:
