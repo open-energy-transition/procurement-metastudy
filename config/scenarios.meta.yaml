@@ -29,7 +29,7 @@ baseline-1H:
 baseline-3H-noline:
   scenario:
     ll:
-      - v1.0
+    - v1.0
   enable:
     procurement: false
 
