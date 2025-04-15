@@ -152,7 +152,7 @@ procurement:
   year: 2030
   strategy: vol-match # name of procurement strategy "vol-match"
   scope: "all" # "node", "country", "all"
-  penetration: 100
+  energy_matching: 100
 
   load: data/ci_load.csv # path to CI load input data
   profile: "industry" # type of load profile (e.g., "baseload", "industry")
