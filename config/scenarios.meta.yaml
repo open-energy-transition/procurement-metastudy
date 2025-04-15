@@ -76,3 +76,33 @@ vol-match-3H-DE-FR-IT:
         location: "IT0 0"
 
     strip_network: false
+
+247-cfe-3H-DE:
+  procurement:
+    strategy: 247-cfe
+    scope: "all"
+    energy_matching: 100
+    participation: 10
+
+    ci:
+      Germany:
+        location: "DE0 0"
+
+    strip_network: true
+
+247-cfe-3H-DE-FR-IT:
+  procurement:
+    strategy: 247-cfe
+    scope: "all"
+    energy_matching: 100
+    participation: 10
+
+    ci:
+      Germany:
+        location: "DE0 0"
+      France:
+        location: "FR0 0"
+      Italy:
+        location: "IT0 0"
+
+    strip_network: true

@@ -1184,6 +1184,60 @@ def res_annual_matching_constraints(n):
         )
 
 
+def cfe_constraints(n):
+    """
+    Implement strategies to achieve 24/7 carbon-free energy (CFE).
+
+    The hourly generation from all carbon-free energy (CFE)-related generators (e.g., renewable sources) and links (e.g., conventional or clean carriers) must match the corresponding load consumption.
+    These constraints must be solved iteratively, as the CFE score of the grids changes with each run.
+    """
+    weights = n.snapshot_weightings["generators"]
+
+    procurement = n.config["procurement"]
+    energy_matching = procurement["energy_matching"] / 100
+
+    for name in procurement["ci"]:
+        location = procurement["ci"][name]["location"]
+        grid_supply_cfe = n.buses_t.cfe_score[location]
+
+        gen_ci = list(n.generators.query("ci == @name").index)
+        links_ci = list(n.links.query("ci == @name").index)
+        store_ci = list(n.storage_units.query("ci == @name").index)
+
+        gen_sum = (n.model["Generator-p"].loc[:, gen_ci] * weights).sum()
+        link_sum = (
+            n.model["Link-p"].loc[:, links_ci]
+            * n.links.loc[links_ci].efficiency
+            * weights
+        ).sum()
+        discharge_sum = (
+            n.model["StorageUnit-p_dispatch"].loc[:, store_ci] * weights
+        ).sum()
+        charge_sum = (
+            -1 * (n.model["StorageUnit-p_store"].loc[:, store_ci] * weights).sum()
+        )
+
+        ci_export = n.model["Link-p"].loc[:, [name + " export"]]
+        ci_import = n.model["Link-p"].loc[:, [name + " import"]]
+        grid_sum = (
+            (-1 * ci_export * weights)
+            + (
+                ci_import
+                * n.links.at[name + " import", "efficiency"]
+                * grid_supply_cfe  # TODO: This is where the iteration is necessary
+                * weights
+            )
+        ).sum()  # linear expr
+
+        lhs = gen_sum + link_sum + discharge_sum + charge_sum + grid_sum
+
+        total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
+
+        n.model.add_constraints(
+            lhs >= energy_matching * (total_load), name=f"CFE_constraint_{name}"
+        )
+
+
 def excess_constraints(n):
     """
     Each CI bus must meet its own load consumption before exporting any energy back to the grid.
@@ -1295,8 +1349,139 @@ def extra_functionality(
             logger.info(f"Setting annual RES target of {energy_matching}%")
             res_annual_matching_constraints(n)
             excess_constraints(n)
+        elif strategy == "247-cfe":
+            logger.info(f"Setting 247 CFE target of {energy_matching}")
+            cfe_constraints(n)
+            excess_constraints(n)
         else:
             logger.info("no target set")
+
+
+def calculate_grid_cfe(n: pypsa.Network, config: dict) -> None:
+    """
+    Calculates the time-series of grid supply CFE score for each C&I consumer.
+
+    NOTE: this only calculate the cfe_score based on the energy generated, not energy consumed.
+    If the objective is energy consumed, then it must be weighted on the imported electricity cfe_score.
+
+    Parameters
+    ----------
+    n : pypsa.Network
+        The PyPSA network instance
+    config : Dict
+        Configuration dictionary containing solver settings
+
+    Returns
+    -------
+    pypsa.Network
+        Modified PyPSA network with added attribute of cfe_score in n.buses_t
+    """
+    clean_techs = config["procurement"]["grid_policy"]["clean_carriers"]
+    emitters = config["procurement"]["grid_policy"]["emitters"]
+
+    grid_buses = n.buses[(n.buses.carrier == "AC")].index
+
+    # ===================== Measuring CFEs in Generator Component =====================
+    # =================================================================================
+
+    df_gen = n.generators_t.p.T.copy()
+    df_gen = df_gen.join(n.generators[["bus", "carrier"]])
+
+    # TODO: convert low voltage bus into normal bus, multiply the axis by 0.97 (or not)
+    low_voltage_bus = (
+        n.links[
+            (n.links.carrier == "electricity distribution grid")
+            & ~n.links.bus0.isin(grid_buses)
+        ]
+        .set_index("bus0")["bus1"]
+        .to_dict()
+    )
+    df_gen["bus"] = df_gen["bus"].apply(lambda x: low_voltage_bus.get(x, x))
+
+    df_gen_clean = (
+        df_gen[df_gen.carrier.isin(clean_techs) & df_gen.bus.isin(grid_buses)]
+        .groupby("bus")[n.snapshots]
+        .sum()
+        .T
+    )
+    df_gen_total = (
+        df_gen[
+            df_gen.carrier.isin(clean_techs + emitters) & df_gen.bus.isin(grid_buses)
+        ]
+        .groupby("bus")[n.snapshots]
+        .sum()
+        .T
+    )
+
+    # ===================== Measuring CFEs in Links Component =====================
+    # =============================================================================
+
+    df_link = -n.links_t.p1.T.copy()
+    df_link = df_link.join(n.links[["bus1", "carrier"]])
+    df_link["bus"] = df_link["bus1"]
+
+    df_link_clean = (
+        df_link[df_link.carrier.isin(clean_techs) & df_link.bus1.isin(grid_buses)]
+        .groupby("bus")[n.snapshots]
+        .sum()
+        .T
+    )
+    df_link_total = (
+        df_link[
+            df_link.carrier.isin(clean_techs + emitters) & df_link.bus1.isin(grid_buses)
+        ]
+        .groupby("bus")[n.snapshots]
+        .sum()
+        .T
+    )
+
+    n.buses_t["cfe_p"] = (
+        pd.concat([df_gen_clean, df_link_clean], axis=1).T.groupby(level=0).sum().T
+    )
+    n.buses_t["all_p"] = (
+        pd.concat([df_gen_total, df_link_total], axis=1).T.groupby(level=0).sum().T
+    )
+
+    n.buses_t["cfe_score"] = n.buses_t["cfe_p"] / n.buses_t["all_p"]
+
+    if n.buses_t.cfe_score.empty:
+        n.buses_t["cfe_score"] = pd.DataFrame(0, index=n.snapshots, columns=grid_buses)
+
+
+def optimize_cfe_iteratively(n: pypsa.Network, config: dict, **kwargs):
+    """
+    Calculates the time-series of grid supply CFE score for each C&I consumer.
+
+    Parameters
+    ----------
+    n : pypsa.Network
+        The PyPSA network instance
+    config : Dict
+        Configuration dictionary containing solver settings
+    **kwargs
+        Additional keyword arguments passed to the solver
+
+    Returns
+    -------
+    n : pypsa.Network
+        Solved network instance
+    status : str
+        Solution status
+    condition : str
+        Termination condition
+    """
+
+    procurment = config["procurement"]
+    n_iterations = procurment["min_iterations"]
+
+    calculate_grid_cfe(n, config)
+    for i in range(n_iterations):
+        logger.info(f"Iteration: {i + 1}")
+        status, condition = n.optimize(**kwargs)
+
+        calculate_grid_cfe(n, config)
+
+    return status, condition
 
 
 def check_objective_value(n: pypsa.Network, solving: dict) -> None:
@@ -1408,12 +1593,12 @@ def solve_network(
         kwargs["overlap"] = cf_solving.get("overlap", 0)
         n.optimize.optimize_with_rolling_horizon(**kwargs)
         status, condition = "", ""
-    # elif (
-    #     n.params.procurement_enable
-    #     and str(n.params.procurement["year"]) == planning_horizons
-    #     and n.params.procurement["strategy"] == "247-cfe"
-    # ):
-    #     status, condition = optimize_cfe_iteratively(n, config, **kwargs)
+    elif (
+        n.params.procurement_enable
+        and str(n.params.procurement["year"]) == planning_horizons
+        and n.params.procurement["strategy"] == "247-cfe"
+    ):
+        status, condition = optimize_cfe_iteratively(n, config, **kwargs)
     elif skip_iterations:
         status, condition = n.optimize(**kwargs)
     else:
