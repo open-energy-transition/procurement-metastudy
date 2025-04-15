@@ -1371,7 +1371,7 @@ def calculate_grid_cfe(n: pypsa.Network, config: dict) -> None:
     config : Dict
         Configuration dictionary containing solver settings
 
-    Returns:
+    Returns
     -------
     pypsa.Network
         Modified PyPSA network with added attribute of cfe_score in n.buses_t
