@@ -1495,9 +1495,8 @@ def strip_network(n: pypsa.Network, config: dict) -> None:
 
 def load_profile(
     n: pypsa.Network,
-    location: str,
-    profile_shape: str,
     config,
+    location: str,
 ) -> pd.Series:
     """
     Create daily load profile for C&I buyers based on config setting.
@@ -1512,6 +1511,7 @@ def load_profile(
     """
 
     procurement = config["procurement"]
+    load = procurement["load"]
     scaling = n.snapshot_weightings.objective.sum() / len(
         n.snapshot_weightings.objective
     )  # e.g., 3 for 3H time resolution
@@ -1527,25 +1527,41 @@ def load_profile(
     }
 
     try:
-        shape = shapes[profile_shape]
+        shape = shapes[load["profile"]]
     except KeyError:
         print(
-            f"'profile_shape' option must be one of 'baseload' or 'industry'. Now is {profile_shape}."
+            f"'profile_shape' option must be one of 'baseload' or 'industry'. Now is {load["profile"]}."
         )
         sys.exit()
 
+    # CI consumer nominal load in MW
     if procurement["strategy"] == "ref":
         load = 0.0
     else:
         country = n.buses.country[location]
-        load_year = (
-            pd.read_csv(procurement["load"])
-            .groupby("Country Code")["2023"]
-            .sum()[country]
-        )  # GWh
-        load = load_year / 8760 * 1000 * procurement["participation"] / 100  # MW
+        data = pd.read_csv(load["load_path"])
+        
+        # Ensure data for the specified year exists for all countries
+        years = list(data["TIME_PERIOD"].unique())
+        for geo in data["geo"].unique():
+            if not ((data["TIME_PERIOD"] == int(load["load_year"])) & (data["geo"] == geo)).any():
+                for fallback_year in years[:-1]:
+                    if ((data["TIME_PERIOD"] == fallback_year) & (data["geo"] == geo)).any():
+                        fallback_row = data[(data["TIME_PERIOD"] == fallback_year) & (data["geo"] == geo)].copy()
+                        fallback_row["TIME_PERIOD"] = int(load["load_year"])
+                        data = pd.concat([data, fallback_row], ignore_index=True)
+                        break
+        
+        filtered_data = data[(data["TIME_PERIOD"] == int(load["load_year"])) & (data["geo"] == country)]
+        industrial_consumption = filtered_data[filtered_data["nrg_bal"] == "FC_IND_E"]["OBS_VALUE"].values[0]
+        commercial_consumption = filtered_data[filtered_data["nrg_bal"] == "FC_OTH_CP_E"]["OBS_VALUE"].values[0]
+        total_consumption = filtered_data[filtered_data["nrg_bal"] == "FC"]["OBS_VALUE"].values[0]
 
-    load_day = load * 24  # daily load in MWh
+        share = (industrial_consumption + commercial_consumption) / total_consumption # (-)
+        load_year = share * (n.loads_t.p_set[location]*n.snapshot_weightings.objective).sum() # MWh
+        load = load_year / 8760 * load["participation"] / 100 # MW
+
+    load_day = load * 24 
     load_profile_day = pd.Series(shape) * load_day
     load_profile_year = pd.concat([load_profile_day] * 365)
 
@@ -1585,8 +1601,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
 
     for name in ci.keys():
         location = ci[name]["location"]
-        profile = procurement["profile"]
-
+        
         n.add("Bus", name, country="")
 
         n.add(
@@ -1614,7 +1629,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
             f"{name}" + " load",
             carrier="electricity",
             bus=name,
-            p_set=load_profile(n, location, profile, config),
+            p_set=load_profile(n, config, location),
             ci=name,  # C&I markers used in constraints
         )
 

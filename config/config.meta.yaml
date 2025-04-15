@@ -21,9 +21,9 @@ remote:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#run
 run:
   prefix: ""
-  name: "baseline-3H-storage"
+  name: "baseline-3H"
   scenarios:
-    enable: true
+    enable: false
     file: config/scenarios.meta.yaml
   disable_progressbar: false
   shared_resources:
@@ -152,11 +152,13 @@ procurement:
   year: 2030
   strategy: vol-match # name of procurement strategy "vol-match"
   scope: "all" # "node", "country", "all"
-  energy_matching: 100
+  energy_matching: 100 # share of CI energy demand to be procured
 
-  load: data/ci_load.csv # path to CI load input data
-  profile: "industry" # type of load profile (e.g., "baseload", "industry")
-  participation: 10 # share of CI load participating to the procurement
+  load:
+    load_path: data/CI-load.csv # path to CI load input data (from https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e__custom_16270810/default/table?lang=en (CSV 2.0))
+    load_year: 2023 
+    profile: "industry" # type of load profile (e.g., "baseload", "industry")
+    participation: 10 # share of CI load participating to the procurement
 
   ci:
     Germany: # Set name here
