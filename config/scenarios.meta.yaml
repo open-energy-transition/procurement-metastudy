@@ -51,7 +51,7 @@ vol-match-3H-DE:
   procurement:
     strategy: vol-match
     scope: "all"
-    penetration: 100
+    energy_matching: 100
     participation: 10
 
     ci:
@@ -64,7 +64,7 @@ vol-match-3H-DE-FR-IT:
   procurement:
     strategy: vol-match
     scope: "all"
-    penetration: 100
+    energy_matching: 100
     participation: 10
 
     ci:
@@ -81,7 +81,7 @@ vol-match-3H-DE-FR-IT:
   procurement:
     strategy: 247-cfe
     scope: "all"
-    penetration: 100
+    energy_matching: 100
     participation: 10
 
     ci:
@@ -94,7 +94,7 @@ vol-match-3H-DE-FR-IT:
   procurement:
     strategy: 247-cfe
     scope: "all"
-    penetration: 100
+    energy_matching: 100
     participation: 10
 
     ci:
