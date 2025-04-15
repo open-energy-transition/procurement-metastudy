@@ -1162,7 +1162,7 @@ def res_annual_matching_constraints(n):
     The total generation from all CI-related generators (renewable carriers) and links (conventional/clean carriers) must equal to its own load consumption.
     """
     weights = n.snapshot_weightings["generators"]
-    penetration = n.config["procurement"]["penetration"] / 100
+    energy_matching = n.config["procurement"]["energy_matching"] / 100
 
     for name in n.config["procurement"]["ci"]:
         gen_ci = list(n.generators.query("ci == @name").index)
@@ -1180,7 +1180,7 @@ def res_annual_matching_constraints(n):
 
         # Note equality sign
         n.model.add_constraints(
-            lhs == penetration * total_load, name=f"RES_annual_matching_{name}"
+            lhs == energy_matching * total_load, name=f"RES_annual_matching_{name}"
         )
 
 
@@ -1196,7 +1196,7 @@ def excess_constraints(n):
         total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
         share = n.config["procurement"][
             "excess_share"
-        ]  # 'sliding': max(0., penetration - 0.8)
+        ]  # 'sliding': max(0., energy_matching - 0.8)
 
         n.model.add_constraints(
             excess <= share * total_load, name=f"Excess_constraint_{name}"
@@ -1288,11 +1288,11 @@ def extra_functionality(
     ):
         procurement = config["procurement"]
         strategy = procurement["strategy"]
-        penetration = procurement["penetration"]
+        energy_matching = procurement["energy_matching"]
         res_capacity_constraints(n)
 
         if strategy == "vol-match":
-            logger.info(f"Setting annual RES target of {penetration}%")
+            logger.info(f"Setting annual RES target of {energy_matching}%")
             res_annual_matching_constraints(n)
             excess_constraints(n)
         else:
