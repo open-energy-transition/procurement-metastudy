@@ -1210,6 +1210,7 @@ def emission_matching_constraints(n):
     """
     weights = n.snapshot_weightings["generators"]
     emission_matching = n.config["procurement"]["emission_matching"] / 100
+    participation = n.config["procurement"]["load"]["participation"] / 100
     moer = pd.Series(0.382, index = n.snapshots) # t_CO2/MWh
 
     for name in n.config["procurement"]["ci"]:
@@ -1226,12 +1227,11 @@ def emission_matching_constraints(n):
 
         lhs = emission_matching * (gen_emi + link_emi)
 
-        total_emissions = (n.loads_t.p_set[name + " load"] * weights * moer).sum()
+        total_emissions = participation * (n.loads_t.p_set[name + " load"] * weights * moer).sum()
         
         n.model.add_constraints(
-            lhs >= total_emissions, name=f"emission_matching_{name}"
+            lhs == total_emissions, name=f"emission_matching_{name}"
         )
-
 
 def extra_functionality(
     n: pypsa.Network, snapshots: pd.DatetimeIndex, planning_horizons: str | None = None
@@ -1327,7 +1327,7 @@ def extra_functionality(
             res_annual_matching_constraints(n)
             excess_constraints(n)
         elif strategy == "emi-match":
-            logger.info(f"Setting annual RES target of {emission_matching}%")
+            logger.info(f"Setting annual avoided emission target of {emission_matching}%")
             emission_matching_constraints(n)
             #res_annual_matching_constraints(n)
             #excess_constraints(n)
@@ -1883,7 +1883,7 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "solve_sector_network_myopic",
-            run="baseline-3H",
+            run="baseline-3H-emi-match",
             opts="",
             clusters="39",
             configfiles="config/config.meta.yaml",

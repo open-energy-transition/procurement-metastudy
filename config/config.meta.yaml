@@ -21,7 +21,7 @@ remote:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#run
 run:
   prefix: ""
-  name: "baseline-3H"
+  name: "baseline-3H-emi-match"
   scenarios:
     enable: false
     file: config/scenarios.meta.yaml
@@ -44,7 +44,7 @@ scenario:
   sector_opts:
   - ''
   planning_horizons:
-  - 2025
+  # - 2025
   - 2030
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#countries
