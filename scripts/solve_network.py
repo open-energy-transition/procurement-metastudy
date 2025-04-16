@@ -1202,6 +1202,36 @@ def excess_constraints(n):
             excess <= share * total_load, name=f"Excess_constraint_{name}"
         )
 
+def emission_matching_constraints(n):
+    """
+    Implement strategies for emission matching.
+
+    The avoided emissions (according to MOER) from all CI-related generators (renewable carriers) and links (conventional/clean carriers) are greater than or equal to some percentage of their annual emissions from load consumption.
+    """
+    weights = n.snapshot_weightings["generators"]
+    emission_matching = n.config["procurement"]["emission_matching"] / 100
+    moer = pd.Series(0.382, index = n.snapshots) # t_CO2/MWh
+
+    for name in n.config["procurement"]["ci"]:
+        gen_ci = list(n.generators.query("ci == @name").index)
+        links_ci = list(n.links.query("ci == @name").index)
+
+        gen_emi = (n.model["Generator-p"].loc[:, gen_ci] * weights * moer).sum()
+        link_emi = (
+            n.model["Link-p"].loc[:, links_ci]
+            * n.links.loc[links_ci].efficiency
+            * weights
+            * moer
+        ).sum()
+
+        lhs = emission_matching * (gen_emi + link_emi)
+
+        total_emissions = (n.loads_t.p_set[name + " load"] * weights * moer).sum()
+        
+        n.model.add_constraints(
+            lhs >= total_emissions, name=f"emission_matching_{name}"
+        )
+
 
 def extra_functionality(
     n: pypsa.Network, snapshots: pd.DatetimeIndex, planning_horizons: str | None = None
@@ -1289,12 +1319,18 @@ def extra_functionality(
         procurement = config["procurement"]
         strategy = procurement["strategy"]
         energy_matching = procurement["energy_matching"]
+        emission_matching = procurement["emission_matching"]
         res_capacity_constraints(n)
 
         if strategy == "vol-match":
             logger.info(f"Setting annual RES target of {energy_matching}%")
             res_annual_matching_constraints(n)
             excess_constraints(n)
+        elif strategy == "emi-match":
+            logger.info(f"Setting annual RES target of {emission_matching}%")
+            emission_matching_constraints(n)
+            #res_annual_matching_constraints(n)
+            #excess_constraints(n)
         else:
             logger.info("no target set")
 
