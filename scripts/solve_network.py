@@ -1217,15 +1217,21 @@ def emission_matching_constraints(n):
         gen_ci = list(n.generators.query("ci == @name").index)
         links_ci = list(n.links.query("ci == @name").index)
 
-        gen_emi = (n.model["Generator-p"].loc[:, gen_ci] * weights * moer).sum()
-        link_emi = (
+        gen_avoided = (n.model["Generator-p"].loc[:, gen_ci] * weights * moer).sum()
+        link_avoided = (
             n.model["Link-p"].loc[:, links_ci]
             * n.links.loc[links_ci].efficiency
             * weights
             * moer
         ).sum()
 
-        lhs = emission_matching * (gen_emi + link_emi)
+        link_emitted = (
+            n.model["Link-p"].loc[:, links_ci]
+            * n.links.loc[links_ci].efficiency2
+            * weights
+        ).sum()
+
+        lhs = emission_matching * (gen_avoided + link_avoided - link_emitted)
 
         total_emissions = participation * (n.loads_t.p_set[name + " load"] * weights * moer).sum()
         
@@ -1735,7 +1741,9 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                 else 1,  # be conservative for nuclear (maintenance or unplanned shut downs)
                 carrier=generator,
                 efficiency=costs.at[generator, "efficiency"],
-                efficiency2=costs.at[carrier, "CO2 intensity"],
+                efficiency2= costs.at[carrier, "CO2 intensity"]
+                if carrier != "gas"
+                else 0.02 * costs.at[carrier, "CO2 intensity"],
                 lifetime=costs.at[generator, "lifetime"],
                 reversed=False,
                 ci=name,  # C&I markers used in constraints
