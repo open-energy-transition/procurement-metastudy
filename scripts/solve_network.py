@@ -1581,7 +1581,17 @@ def load_profile(
         load = 0.0
     else:
         country = n.buses.country[location]
-        data = pd.read_csv(load["load_path"])
+        
+        import requests
+        url = "https://ec.europa.eu/eurostat/api/dissemination/sdmx/3.0/data/dataflow/ESTAT/nrg_cb_e/1.0/*.*.*.*.*?c[freq]=A&c[nrg_bal]=FC,FC_IND_E,FC_OTH_CP_E&c[siec]=E7000&c[unit]=GWH&c[geo]=EU27_2020,EA20,BE,BG,CZ,DK,DE,EE,IE,EL,ES,FR,HR,IT,CY,LV,LT,LU,HU,MT,NL,AT,PL,PT,RO,SI,SK,FI,SE,IS,LI,NO,UK,BA,ME,MD,MK,GE,AL,RS,TR,UA,XK&c[TIME_PERIOD]=2023,2022,2021,2020&compress=false&format=csvdata&formatVersion=2.0&lang=en&labels=name"
+        try:
+            response = requests.get(url)
+            with open(load["load_path"], "wb") as file:
+                file.write(response.content)
+            data = pd.read_csv(load["load_path"])
+        except requests.ConnectionError:
+            logger.warning("No internet connection. Reading data from the local file.")
+            data = pd.read_csv(load["load_path"])
         
         # Ensure data for the specified year exists for all countries
         years = list(data["TIME_PERIOD"].unique())
