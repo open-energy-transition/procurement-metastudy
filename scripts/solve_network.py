@@ -1236,7 +1236,7 @@ def emission_matching_constraints(n):
         total_emissions = participation * (n.loads_t.p_set[name + " load"] * weights * moer).sum()
         
         n.model.add_constraints(
-            lhs == total_emissions, name=f"emission_matching_{name}"
+            lhs >= total_emissions, name=f"emission_matching_{name}"
         )
 
 def extra_functionality(
