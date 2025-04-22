@@ -34,6 +34,7 @@ import sys
 from functools import partial
 from typing import Any
 
+import country_converter as coco
 import linopy
 import numpy as np
 import pandas as pd
@@ -51,6 +52,8 @@ from add_electricity import add_missing_carriers, load_costs
 from prepare_sector_network import get
 from pypsa.descriptors import get_activity_mask
 from pypsa.descriptors import get_switchable_as_dense as get_as_dense
+
+cc = coco.CountryConverter()
 
 logger = logging.getLogger(__name__)
 pypsa.pf.logger.setLevel(logging.WARNING)
@@ -1155,6 +1158,117 @@ def res_capacity_constraints(n):
         n.model.add_constraints(gen <= p_nom_max, name=f"RES_capacity-{carrier}")
 
 
+def ember_res_target(n):
+    """
+    Set a system-wide national RES constraints based on NECPs.
+
+    In comparison to Iegor's 247-cfe paper, this RES target is based on energy generated based on EMBER 2030 Global Renewable Target Tracker.
+    CI related generators and links are excluded in this constraint to avoid big overshoot of national RES targets due to CI-procured portfolio.
+    Note that EU RE directive counts corporate PPA within NECPs.
+    """
+    # --- Load and prepare RES targets ---
+    df_ember = pd.read_excel(
+        "https://storage.googleapis.com/emb-prod-bkt-publicdata/public-downloads/res_tracker/outputs/targets_download.xlsx",
+        sheet_name="share_target_wide",
+    )
+
+    # Convert ISO3 to ISO2, keeping "EU" unchanged
+    df_ember["country"] = df_ember["country_code"].apply(
+        lambda code: code
+        if code == "EU"
+        else cc.convert(names=code, src="ISO3", to="ISO2")
+    )
+
+    # --- Define technologies and weights ---
+    grid_policy = n.config["procurement"]["grid_policy"]
+    res_tech = grid_policy["renewable_carriers"]
+    weights = n.snapshot_weightings["generators"]
+
+    # --- Helper function to filter and assign country ---
+    def get_carriers(df, bus_col):
+        bus_list = n.buses[n.buses.carrier == "AC"].index
+        grid_carriers = ["electricity distribution grid", "AC", "DC"]
+
+        return (
+            df[
+                df[bus_col].isin(bus_list)
+                & ~df["carrier"].isin(grid_carriers)
+                & df["ci"].isin([np.NaN, ""])
+            ]
+            .copy()
+            .assign(country=lambda d: d[bus_col].map(n.buses["country"]))
+        )
+
+    # --- Helper function to factor in powerplant efficiencies ---
+    def get_link_model(n, df, weights):
+        return (
+            n.model["Link-p"].loc[:, df.index]
+            * df.loc[df.index, "efficiency"]
+            * weights
+        )
+
+    # --- Apply for generators and links ---
+    all_gen_carrier = get_carriers(n.generators, "bus")
+    all_link_carrier = get_carriers(n.links, "bus1")
+
+    # Separate RES carriers
+    res_gen_carrier = all_gen_carrier.query("carrier in @res_tech")
+    res_link_carrier = all_link_carrier.query("carrier in @res_tech")
+
+    # --- EU-wide RES target constraint ---
+    eu_target = df_ember.loc[df_ember.country == "EU", "res_share_target"].values[0]
+    logger.info(f"Set EU wide RES share target to {eu_target}%")
+
+    all_gen = n.model["Generator-p"].loc[:, all_gen_carrier.index] * weights
+    all_link = get_link_model(n, all_link_carrier, weights)
+
+    all_eu = all_gen.sum() + all_link.sum()
+
+    res_gen = n.model["Generator-p"].loc[:, res_gen_carrier.index] * weights
+    res_link = get_link_model(n, res_link_carrier, weights)
+
+    res_eu = res_gen.sum() + res_link.sum()
+
+    n.model.add_constraints(
+        res_eu == (eu_target / 100) * all_eu, name="EU_res_constraint"
+    )
+
+    # --- Country-level RES target constraint ---
+    countries = list(filter(None, n.buses.country.unique()))
+    df_ember = df_ember[df_ember.country.isin(countries)]
+    country_target = df_ember.groupby("country").res_share_target.sum()
+    logger.info(f"set RES constraint specific to {country_target}")
+
+    # Filter carrier dataframes to relevant countries
+    all_gen_carrier = all_gen_carrier.query("country in @country_target.index")
+    all_link_carrier = all_link_carrier.query("country in @country_target.index")
+
+    res_gen_carrier = all_gen_carrier.query("carrier in @res_tech")
+    res_link_carrier = all_link_carrier.query("carrier in @res_tech")
+
+    # Compute RES and total by country
+    all_gen = n.model["Generator-p"].loc[:, all_gen_carrier.index] * weights
+    all_link = get_link_model(n, all_link_carrier, weights)
+
+    all_country = (
+        all_gen.sum(dim="snapshot").groupby(all_gen_carrier.country).sum()
+        + all_link.sum(dim="snapshot").groupby(all_link_carrier.country).sum()
+    )
+
+    res_gen = n.model["Generator-p"].loc[:, res_gen_carrier.index] * weights
+    res_link = get_link_model(n, res_link_carrier, weights)
+
+    res_country = (
+        res_gen.sum(dim="snapshot").groupby(res_gen_carrier.country).sum()
+        + res_link.sum(dim="snapshot").groupby(res_link_carrier.country).sum()
+    )
+
+    n.model.add_constraints(
+        res_country == (country_target / 100) * all_country,
+        name="country_res_constraint",
+    )
+
+
 def res_annual_matching_constraints(n):
     """
     Implement strategies for annual renewable procurement matching.
@@ -1290,6 +1404,7 @@ def extra_functionality(
         strategy = procurement["strategy"]
         energy_matching = procurement["energy_matching"]
         res_capacity_constraints(n)
+        ember_res_target(n)
 
         if strategy == "vol-match":
             logger.info(f"Setting annual RES target of {energy_matching}%")
