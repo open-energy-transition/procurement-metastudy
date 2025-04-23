@@ -1976,7 +1976,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                 carrier=generator,
                 efficiency=costs.at[generator, "efficiency"],
                 efficiency2= costs.at[carrier, "CO2 intensity"]
-                if carrier != "gas"
+                if generator != "allam"
                 else 0.02 * costs.at[carrier, "CO2 intensity"],
                 lifetime=costs.at[generator, "lifetime"],
                 reversed=False,
