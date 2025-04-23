@@ -1558,6 +1558,7 @@ def extra_functionality(
             emission_matching_constraints(n)
             res_annual_matching_constraints(n)
             excess_constraints(n)
+            excess_constraints(n)
         else:
             logger.info("no target set")
 
