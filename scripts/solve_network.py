@@ -1594,23 +1594,27 @@ def load_profile(
             data = pd.read_csv(load["load_path"])
         
         # Ensure data for the specified year exists for all countries
+        data["reference_year"] = int(load["load_year"])
         years = list(data["TIME_PERIOD"].unique())
+        years.reverse()
         for geo in data["geo"].unique():
             if not ((data["TIME_PERIOD"] == int(load["load_year"])) & (data["geo"] == geo)).any():
-                for fallback_year in years[:-1]:
+                for fallback_year in years[1:]:
                     if ((data["TIME_PERIOD"] == fallback_year) & (data["geo"] == geo)).any():
                         fallback_row = data[(data["TIME_PERIOD"] == fallback_year) & (data["geo"] == geo)].copy()
                         fallback_row["TIME_PERIOD"] = int(load["load_year"])
                         data = pd.concat([data, fallback_row], ignore_index=True)
+                        data.loc[(data["TIME_PERIOD"] == int(load["load_year"])) & (data["geo"] == geo), "reference_year"] = fallback_year
                         break
         
         filtered_data = data[(data["TIME_PERIOD"] == int(load["load_year"])) & (data["geo"] == country)]
         industrial_consumption = filtered_data[filtered_data["nrg_bal"] == "FC_IND_E"]["OBS_VALUE"].values[0]
         commercial_consumption = filtered_data[filtered_data["nrg_bal"] == "FC_OTH_CP_E"]["OBS_VALUE"].values[0]
         total_consumption = filtered_data[filtered_data["nrg_bal"] == "FC"]["OBS_VALUE"].values[0]
-
         share = (industrial_consumption + commercial_consumption) / total_consumption # (-)
         load_year = share * (n.loads_t.p_set[location]*n.snapshot_weightings.objective).sum() # MWh
+        logger.info(f"CI load in {country} (raw data from Eurostat):\nannual consumption: {round((industrial_consumption + commercial_consumption)/1000)} TWh\nreference year: {filtered_data['reference_year'].values[0]}\nshare: {round(share*100,0)}%")
+        logger.info(f"CI load in {country} (PyPSA data):\nannual consumption {round(load_year/10**6)} TWh\nreference year: {load["load_year"]}")
         load = load_year / 8760 * load["participation"] / 100 # MW
 
     load_day = load * 24 
