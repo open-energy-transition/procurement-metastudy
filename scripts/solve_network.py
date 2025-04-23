@@ -1554,9 +1554,10 @@ def extra_functionality(
             excess_constraints(n)
         elif strategy == "emi-match":
             logger.info(f"Setting annual avoided emission target of {emission_matching}%")
+            logger.info(f"Setting annual volume matching of {energy_matching}%")
             emission_matching_constraints(n)
-            #res_annual_matching_constraints(n)
-            #excess_constraints(n)
+            res_annual_matching_constraints(n)
+            excess_constraints(n)
         else:
             logger.info("no target set")
 
