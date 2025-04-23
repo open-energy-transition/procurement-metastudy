@@ -1268,8 +1268,9 @@ def ember_res_target(n):
     )
 
     # --- Define technologies and weights ---
-    grid_policy = n.config["procurement"]["grid_policy"]
-    res_tech = grid_policy["renewable_carriers"]
+    procurement = n.config["procurement"]
+    res_target = procurement["res_target"]
+    res_tech = procurement["grid_policy"]["renewable_carriers"]
     weights = n.snapshot_weightings["generators"]
 
     # --- Helper function to filter and assign country ---
@@ -1295,66 +1296,80 @@ def ember_res_target(n):
             * weights
         )
 
-    # --- Apply for generators and links ---
-    all_gen_carrier = get_carriers(n.generators, "bus")
-    all_link_carrier = get_carriers(n.links, "bus1")
+    # Find EU and national targets
+    eu_target = df_ember.loc[df_ember.country == "EU", "res_share_target"].values[0]
+    countries = list(filter(None, n.buses.country.unique()))
+    df_country = df_ember[df_ember.country.isin(countries)]
+    country_target = df_country.groupby("country").res_share_target.sum()
 
-    # Separate RES carriers
-    res_gen_carrier = all_gen_carrier.query("carrier in @res_tech")
-    res_link_carrier = all_link_carrier.query("carrier in @res_tech")
+    if res_target == "both" and len(countries) == len(country_target):
+        logger.info(
+            f"All {str(len(countries))} countries have national targets, disable EU-wide RES share target to prevent overconstraints."
+        )
+        res_target = "country"
 
     # --- EU-wide RES target constraint ---
-    eu_target = df_ember.loc[df_ember.country == "EU", "res_share_target"].values[0]
-    logger.info(f"Set EU wide RES share target to {eu_target}%")
+    if res_target in ["EU", "both"]:
+        logger.info(f"Set EU-wide RES share target to {eu_target}%")
 
-    all_gen = n.model["Generator-p"].loc[:, all_gen_carrier.index] * weights
-    all_link = get_link_model(n, all_link_carrier, weights)
+        # --- Apply for generators and links ---
+        all_gen_carrier = get_carriers(n.generators, "bus")
+        all_link_carrier = get_carriers(n.links, "bus1")
 
-    all_eu = all_gen.sum() + all_link.sum()
+        # Separate RES carriers
+        res_gen_carrier = all_gen_carrier.query("carrier in @res_tech")
+        res_link_carrier = all_link_carrier.query("carrier in @res_tech")
 
-    res_gen = n.model["Generator-p"].loc[:, res_gen_carrier.index] * weights
-    res_link = get_link_model(n, res_link_carrier, weights)
+        all_gen = n.model["Generator-p"].loc[:, all_gen_carrier.index] * weights
+        all_link = get_link_model(n, all_link_carrier, weights)
 
-    res_eu = res_gen.sum() + res_link.sum()
+        all_eu = all_gen.sum() + all_link.sum()
 
-    n.model.add_constraints(
-        res_eu == (eu_target / 100) * all_eu, name="EU_res_constraint"
-    )
+        res_gen = n.model["Generator-p"].loc[:, res_gen_carrier.index] * weights
+        res_link = get_link_model(n, res_link_carrier, weights)
+
+        res_eu = res_gen.sum() + res_link.sum()
+
+        n.model.add_constraints(
+            res_eu == (eu_target / 100) * all_eu, name="EU_res_constraint"
+        )
 
     # --- Country-level RES target constraint ---
-    countries = list(filter(None, n.buses.country.unique()))
-    df_ember = df_ember[df_ember.country.isin(countries)]
-    country_target = df_ember.groupby("country").res_share_target.sum()
-    logger.info(f"set RES constraint specific to {country_target}")
+    if res_target in ["country", "both"]:
+        logger.info(f"Set national RES share targets to {country_target}")
 
-    # Filter carrier dataframes to relevant countries
-    all_gen_carrier = all_gen_carrier.query("country in @country_target.index")
-    all_link_carrier = all_link_carrier.query("country in @country_target.index")
+        # Filter carrier dataframes to relevant countries
+        all_gen_carrier = get_carriers(n.generators, "bus").query(
+            "country in @country_target.index"
+        )
+        all_link_carrier = get_carriers(n.links, "bus1").query(
+            "country in @country_target.index"
+        )
 
-    res_gen_carrier = all_gen_carrier.query("carrier in @res_tech")
-    res_link_carrier = all_link_carrier.query("carrier in @res_tech")
+        res_gen_carrier = all_gen_carrier.query("carrier in @res_tech")
+        res_link_carrier = all_link_carrier.query("carrier in @res_tech")
 
-    # Compute RES and total by country
-    all_gen = n.model["Generator-p"].loc[:, all_gen_carrier.index] * weights
-    all_link = get_link_model(n, all_link_carrier, weights)
+        # Compute RES and total by country
+        all_gen = n.model["Generator-p"].loc[:, all_gen_carrier.index] * weights
+        all_link = get_link_model(n, all_link_carrier, weights)
 
-    all_country = (
-        all_gen.sum(dim="snapshot").groupby(all_gen_carrier.country).sum()
-        + all_link.sum(dim="snapshot").groupby(all_link_carrier.country).sum()
-    )
+        all_country = (
+            all_gen.sum(dim="snapshot").groupby(all_gen_carrier.country).sum()
+            + all_link.sum(dim="snapshot").groupby(all_link_carrier.country).sum()
+        )
 
-    res_gen = n.model["Generator-p"].loc[:, res_gen_carrier.index] * weights
-    res_link = get_link_model(n, res_link_carrier, weights)
+        res_gen = n.model["Generator-p"].loc[:, res_gen_carrier.index] * weights
+        res_link = get_link_model(n, res_link_carrier, weights)
 
-    res_country = (
-        res_gen.sum(dim="snapshot").groupby(res_gen_carrier.country).sum()
-        + res_link.sum(dim="snapshot").groupby(res_link_carrier.country).sum()
-    )
+        res_country = (
+            res_gen.sum(dim="snapshot").groupby(res_gen_carrier.country).sum()
+            + res_link.sum(dim="snapshot").groupby(res_link_carrier.country).sum()
+        )
 
-    n.model.add_constraints(
-        res_country == (country_target / 100) * all_country,
-        name="country_res_constraint",
-    )
+        n.model.add_constraints(
+            res_country == (country_target / 100) * all_country,
+            name="country_res_constraint",
+        )
 
 
 def res_annual_matching_constraints(n):
@@ -1492,10 +1507,12 @@ def extra_functionality(
         strategy = procurement["strategy"]
         energy_matching = procurement["energy_matching"]
         res_capacity_constraints(n)
-        ember_res_target(n)
+
+        if procurement["res_target"]:
+            ember_res_target(n)
 
         if strategy == "vol-match":
-            logger.info(f"Setting annual RES target of {energy_matching}%")
+            logger.info(f"Setting annual volume matching of {energy_matching}%")
             res_annual_matching_constraints(n)
             excess_constraints(n)
         else:
