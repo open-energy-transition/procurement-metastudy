@@ -21,7 +21,7 @@ remote:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#run
 run:
   prefix: ""
-  name: "vol-match-3H-IT"
+  name: "baseline-3H"
   scenarios:
     enable: true
     file: config/scenarios.meta.yaml
@@ -81,6 +81,11 @@ electricity:
     StorageUnit: [] # li-ion battery, iron-air battery, H2, lfp, vanadium, lair, pair
     Store: [li-ion battery, H2]
 
+  powerplants_filter: >
+    (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'DE' and Fueltype == 'Nuclear')
+    and not (Country.isin(['AT', 'BE', 'DK', 'ES', 'FI', 'FR', 'GB', 'GR', 'HU', 'IE', 'IT', 'MK', 'NL', 'PT', 'RS', 'SE', 'SK'])
+    and Fueltype.isin(['Hard Coal', 'Lignite']))
+
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#sector
 sector:
   transport: false
@@ -103,7 +108,7 @@ sector:
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#costs
 costs:
-  year: 2025
+  year: 2030
   version: v0.10.1
 
   overwrites:

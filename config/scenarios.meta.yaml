@@ -26,15 +26,12 @@ baseline-1H:
     temporal:
       resolution_sector: 1H
 
-baseline-3H-noline:
-  scenario:
-    ll:
-    - v1.0
+baseline-3H-v1.0:
   enable:
     procurement: false
 
-  transmission_projects:
-    enable: false
+  electricity:
+    transmission_limit: v1.0
 
 baseline-3H-storage:
   enable:
