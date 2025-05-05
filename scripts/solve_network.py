@@ -1600,7 +1600,9 @@ def extra_functionality(
         custom_extra_functionality = getattr(module, module_name)
         custom_extra_functionality(n, snapshots, snakemake)  # pylint: disable=E0601
 
-    if config["procurement"].get("res_target", False):
+    if (config["procurement"].get("res_target", False)
+        and str(n.params.procurement["year"]) == planning_horizons
+    ):
         ember_res_target(n)
 
     if (
