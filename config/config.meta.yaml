@@ -166,7 +166,7 @@ procurement:
 
   load:
     load_path_1: data/CI-load.csv # path to Eurostat CI load input data (from https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e__custom_16270810/default/table?lang=en (CSV 2.0))
-    load_path_2: data/CI-load-missing.xlsx.xlsx # path to IEA CI load input data (from https://www.iea.org/data-and-statistics/data-product/world-energy-balances-highlights)
+    load_path_2: data/CI-load-missing.xlsx # path to IEA CI load input data (from https://www.iea.org/data-and-statistics/data-product/world-energy-balances-highlights)
     load_year: 2023
     profile: "industry" # type of load profile (e.g., "baseload", "industry")
     participation: 10 # share of CI load participating to the procurement
