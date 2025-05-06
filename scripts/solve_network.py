@@ -1867,6 +1867,7 @@ def strip_network(n: pypsa.Network, config: dict) -> None:
 def retrieve_ci_load(config):
     load = config["procurement"]["load"]
 
+    #1 EUROSTAT data in GWh
     import requests
 
     url = "https://ec.europa.eu/eurostat/api/dissemination/sdmx/3.0/data/dataflow/ESTAT/nrg_cb_e/1.0/*.*.*.*.*?c[freq]=A&c[nrg_bal]=FC,FC_IND_E,FC_OTH_CP_E&c[siec]=E7000&c[unit]=GWH&c[geo]=EU27_2020,EA20,BE,BG,CZ,DK,DE,EE,IE,EL,ES,FR,HR,IT,CY,LV,LT,LU,HU,MT,NL,AT,PL,PT,RO,SI,SK,FI,SE,IS,LI,NO,UK,BA,ME,MD,MK,GE,AL,RS,TR,UA,XK&c[TIME_PERIOD]=2023,2022,2021,2020&compress=false&format=csvdata&formatVersion=2.0&lang=en&labels=name"
@@ -1924,13 +1925,12 @@ def retrieve_ci_load(config):
         dfs.append(df_part)
     
     # Merge all load data into a single DataFrame
-    #1 Eurostat data
     load_year_eurostat = pd.concat(dfs, axis=1).loc[:, ~pd.concat(dfs, axis=1).columns.duplicated()] # remove reference_year duplicatated columns
     load_year_eurostat.rename(index={"EL": "GR"}, inplace=True)  # Rename EL (Eurostat) to GR (PyPSA)
     load_year_eurostat["ci_demand"] = load_year_eurostat["industrial_demand"] + load_year_eurostat["commercial_demand"]
     load_year_eurostat["ci_share"] = load_year_eurostat["ci_demand"] / load_year_eurostat["total_demand"]
 
-    #2 Add IEA data for CH and UK
+    #2 IEA data for Switzerland (CH) and Great Britain (GB) in PJ
     years = list(range(1971, 2023)) + [str(2023) + " Provisional"]
     country_map = {"Switzerland": "CH", "United Kingdom": "GB"}
     demand_map = {
@@ -1938,9 +1938,9 @@ def retrieve_ci_load(config):
     "Industry (PJ)": "industrial_demand",
     "Commercial and public services (PJ)": "commercial_demand"
     }
-
-    data = pd.read_excel(load["load_path_2"], sheet_name="TimeSeries_1971-2023", skiprows=1)
+    data = pd.read_excel(load["load_path_2"], sheet_name="TimeSeries_1971-2023", skiprows=1) # 
     filtered_data = data[(data["Product"] == "Electricity") & (data["Country"].isin(country_map.keys()))]
+
     # Determine the most recent available year in the 'iea' DataFrame
     for y in years[::-1]:
         if y in filtered_data.columns and not (filtered_data[y] == "..").any():  # Check if at least one value is '..'
@@ -1953,10 +1953,11 @@ def retrieve_ci_load(config):
             filtered_data[filtered_data["Flow"] == code][["Country",most_recent_year]]
             .rename(columns={"Country": "country", most_recent_year: label})
             .groupby("country")
-            .sum()
+            .sum() * 1 / 0.0036 # Convert PJ to GWh
         )
         dfs.append(df_part)
 
+    # Merge all load data into a single DataFrame
     load_year_missing = pd.concat(dfs, axis = 1).rename(index=country_map)
     load_year_missing["reference_year"] = most_recent_year
     load_year_missing["ci_demand"] = load_year_missing["industrial_demand"] + load_year_missing["commercial_demand"]
@@ -2017,10 +2018,10 @@ def load_profile(
         load_year["ci_share"].values[0] * (n.loads_t.p_set[location] * n.snapshot_weightings.objective).sum()
         )  # MWh
         logger.info(
-        f"CI load in {load_year.index.values[0]} (raw data from Eurostat/IEA):\nannual consumption: {round((load_year["total_demand"].values[0]) / 1000)} TWh\nreference year: {load_year["reference_year"].values[0]}\nshare: {round(load_year["ci_share"].values[0] * 100, 0)}%"
+        f"CI load in {load_year.index.values[0]} (raw data from Eurostat/IEA):\nannual consumption: {round((load_year["total_demand"].values[0]) / 1000)} TWh\nreference raw data year: {load_year["reference_year"].values[0]}\nshare: {round(load_year["ci_share"].values[0] * 100, 0)}%"
         )
         logger.info(
-        f"CI load in {load_year.index.values[0]} (PyPSA data):\nannual consumption {round(load_year_val / 10**6)} TWh\nreference year: {load['load_year']}"
+        f"CI load in {load_year.index.values[0]} (PyPSA data):\nannual consumption {round(load_year_val / 10**6)} TWh\nreference config year: {load['load_year']}"
     )
         load = load_year_val / 8760 * load["participation"] / 100  # MW
 
