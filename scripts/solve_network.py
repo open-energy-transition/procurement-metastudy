@@ -1379,7 +1379,7 @@ def ember_res_target(n):
         res_eu = res_gen.sum() + res_link.sum() + res_sus.sum()
 
         n.model.add_constraints(
-            res_eu == (eu_target / 100) * all_eu, name="EU_res_constraint"
+            res_eu >= (eu_target / 100) * all_eu, name="EU_res_constraint"
         )
 
     # --- Country-level RES target constraint ---
@@ -1427,7 +1427,7 @@ def ember_res_target(n):
         )
 
         n.model.add_constraints(
-            res_country == (country_target / 100) * all_country,
+            res_country >= (country_target / 100) * all_country,
             name="country_res_constraint",
         )
 
@@ -1495,7 +1495,7 @@ def ember_res_target(n):
         )
 
         n.model.add_constraints(
-            res_country + res_exist_country == country_target_capacity,
+            res_country + res_exist_country >= country_target_capacity,
             name="country_res_cap_constraint",
         )
 
