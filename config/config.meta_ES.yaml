@@ -22,14 +22,14 @@ remote:
 run:
   prefix: ""
   name:
-  - baseline-1H
-  - vol-match-PL-1H
-  - vol-match-DE-1H
-  - vol-match-FR-1H
+  # - baseline-1H
+  # - vol-match-PL-1H
+  # - vol-match-DE-1H
+  # - vol-match-FR-1H
   - vol-match-ES-1H
-  - vol-match-DK-1H
-  - vol-match-IE-1H
-  - vol-match-PL-DE-FR-ES-DK-IE-1H
+  # - vol-match-DK-1H
+  # - vol-match-IE-1H
+  # - vol-match-PL-DE-FR-ES-DK-IE-1H
   scenarios:
     enable: true
     file: config/scenarios.meta.yaml
@@ -168,6 +168,10 @@ clustering:
 solving:
   mem_mb: 50000 #memory in MB; 20 GB enough for 50+B+I+H2; 100 GB for 181+B+I+H2
   runtime: 24h #runtime in humanfriendly style https://humanfriendly.readthedocs.io/en/latest/
+
+  solver:
+    name: gurobi
+    options: gurobi-default
 
 # ================ Procurment Metastudy ================
 res_target:

@@ -30,9 +30,9 @@ vol-match-PL-1H:
     scope: "all"
     energy_matching: 100
 
-  load:
-    participation: 70
-    profile: "baseload"
+    load:
+      participation: 70
+      profile: "baseload"
 
     ci:
       Poland:
@@ -47,9 +47,9 @@ vol-match-DE-1H:
     scope: "all"
     energy_matching: 100
 
-  load:
-    participation: 70
-    profile: "baseload"
+    load:
+      participation: 70
+      profile: "baseload"
 
     ci:
       Germamy:
@@ -64,9 +64,9 @@ vol-match-FR-1H:
     scope: "all"
     energy_matching: 100
 
-  load:
-    participation: 70
-    profile: "baseload"
+    load:
+      participation: 70
+      profile: "baseload"
 
     ci:
       France:
@@ -81,9 +81,9 @@ vol-match-ES-1H:
     scope: "all"
     energy_matching: 100
 
-  load:
-    participation: 70
-    profile: "baseload"
+    load:
+      participation: 70
+      profile: "baseload"
 
     ci:
       Spain:
@@ -98,9 +98,9 @@ vol-match-DK-1H:
     scope: "all"
     energy_matching: 100
 
-  load:
-    participation: 70
-    profile: "baseload"
+    load:
+      participation: 70
+      profile: "baseload"
 
     ci:
       Denmark:
@@ -115,9 +115,9 @@ vol-match-IE-1H:
     scope: "all"
     energy_matching: 100
 
-  load:
-    participation: 70
-    profile: "baseload"
+    load:
+      participation: 70
+      profile: "baseload"
 
     ci:
       Ireland:
@@ -126,15 +126,19 @@ vol-match-IE-1H:
 vol-match-PL-DE-FR-ES-DK-IE-1H:
   enable:
     procurement: true
+  
+  solving:
+    mem_mb: 150000
+    runtime: 24h
 
   procurement:
     strategy: vol-match
     scope: "all"
     energy_matching: 100
 
-  load:
-    participation: 70
-    profile: "baseload"
+    load:
+      participation: 70
+      profile: "baseload"
 
     ci:
       Poland:
