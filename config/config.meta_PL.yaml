@@ -204,7 +204,7 @@ procurement:
   #    location: "DE0 0"
 
   technology:
-    generation_tech: ["onwind", "solar", "allam", "geothermal"]  # "nuclear"
+    generation_tech: ["onwind", "solar"]  # "nuclear"
     storage_tech: ["li-ion battery"] # "iron-air battery"
 
   strip_network: false # [ true, false ] If true, model only the countries with the CI loads and their neighbors

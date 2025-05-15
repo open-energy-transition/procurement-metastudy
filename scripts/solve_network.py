@@ -1516,8 +1516,8 @@ def res_annual_matching_constraints(n):
     energy_matching = n.config["procurement"]["energy_matching"] / 100
 
     for name in n.config["procurement"]["ci"]:
-        gen_ci = list(n.generators.query("ci == @name").index)
-        links_ci = list(n.links.query("ci == @name").index)
+        gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
+        links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
 
         gen_sum = (n.model["Generator-p"].loc[:, gen_ci] * weights).sum()
         link_sum = (
