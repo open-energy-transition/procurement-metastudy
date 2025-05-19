@@ -1015,11 +1015,15 @@ def add_TES_charger_ratio_constraints(n: pypsa.Network) -> None:
         If the charger and discharger indices do not align.
     """
     indices_charger_p_nom_extendable = n.links.index[
-        n.links.index.str.contains("water tanks charger|water pits charger")
+        n.links.index.str.contains(
+            "water tanks charger|water pits charger|aquifer thermal energy storage charger"
+        )
         & n.links.p_nom_extendable
     ]
     indices_discharger_p_nom_extendable = n.links.index[
-        n.links.index.str.contains("water tanks discharger|water pits discharger")
+        n.links.index.str.contains(
+            "water tanks discharger|water pits discharger|aquifer thermal energy storage discharger"
+        )
         & n.links.p_nom_extendable
     ]
 
@@ -1734,7 +1738,7 @@ def extra_functionality(
         ember_res_target(n)
 
     if (
-        n.params.procurement_enable
+        n.params.get("procurement_enable", False)
         and str(n.config.get("procurement", {}).get("year", False)) == planning_horizons
     ):
         procurement = config["procurement"]
@@ -1909,7 +1913,7 @@ def solve_network(
         n.optimize.optimize_with_rolling_horizon(**kwargs)
         status, condition = "", ""
     elif (
-        n.params.procurement_enable
+        n.params.get("procurement_enable", False)
         and str(n.params.procurement.get("year", False)) == planning_horizons
         and n.params.procurement.get("strategy", False) == "247-cfe"
     ):
@@ -2506,7 +2510,7 @@ if __name__ == "__main__":
         filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
     ) as mem:
         if (
-            snakemake.params.procurement_enable
+            snakemake.params.get("procurement_enable", False)
             and str(snakemake.params.procurement.get("year", False))
             == planning_horizons
         ):
@@ -2533,6 +2537,7 @@ if __name__ == "__main__":
             solving=snakemake.params.solving,
             planning_horizons=planning_horizons,
             rule_name=snakemake.rule,
+            log_fn=snakemake.log.solver,
         )
 
     logger.info(f"Maximum memory usage: {mem.mem_usage}")
