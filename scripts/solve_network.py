@@ -1520,8 +1520,8 @@ def res_annual_matching_constraints(n):
     energy_matching = n.config["procurement"]["energy_matching"] / 100
 
     for name in n.config["procurement"]["ci"]:
-        gen_ci = list(n.generators.query("ci == @name").index)
-        links_ci = list(n.links.query("ci == @name").index)
+        gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
+        links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
 
         gen_sum = (n.model["Generator-p"].loc[:, gen_ci] * weights).sum()
         link_sum = (
@@ -1558,9 +1558,9 @@ def cfe_constraints(n):
         location = procurement["ci"][name]["location"]
         grid_supply_cfe = n.buses_t.cfe_score[location]
 
-        gen_ci = list(n.generators.query("ci == @name").index)
-        links_ci = list(n.links.query("ci == @name").index)
-        store_ci = list(n.storage_units.query("ci == @name").index)
+        gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
+        links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
+        store_ci = list(n.storage_units.query("ci == @name").index) if "ci" in n.storage_units.columns else []
 
         gen_sum = (n.model["Generator-p"].loc[:, gen_ci] * weights).sum()
         link_sum = (
@@ -1627,8 +1627,8 @@ def emission_matching_constraints(n):
     moer = pd.Series(0.382, index=n.snapshots)  # t_CO2/MWh
 
     for name in n.config["procurement"]["ci"]:
-        gen_ci = list(n.generators.query("ci == @name").index)
-        links_ci = list(n.links.query("ci == @name").index)
+        gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
+        links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
 
         gen_avoided = (n.model["Generator-p"].loc[:, gen_ci] * weights * moer).sum()
         link_avoided = (

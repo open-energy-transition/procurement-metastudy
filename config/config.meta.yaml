@@ -156,6 +156,11 @@ clustering:
   temporal:
     resolution_sector: 3H
 
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#solving
+solving:
+  mem_mb: 50000 #50 GB is enough for vol-match 1 country, 150 GB is needed for multiple countries
+  runtime: 24h #runtime in humanfriendly style https://humanfriendly.readthedocs.io/en/latest/
+
 # ================ Procurment Metastudy ================
 res_target:
   EU_share_target: true
@@ -179,15 +184,15 @@ procurement:
     load_path_1: data/CI-load.csv # path to Eurostat CI load input data (from https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e__custom_16270810/default/table?lang=en (CSV 2.0))
     load_path_2: data/CI-load-missing.xlsx # path to IEA CI load input data (from https://www.iea.org/data-and-statistics/data-product/world-energy-balances-highlights)
     load_year: 2023
-    profile: "industry" # type of load profile (e.g., "baseload", "industry")
-    participation: 10 # share of CI load participating to the procurement
+    profile: "baseload" # type of load profile (e.g., "baseload", "industry")
+    participation: 70 # share of CI load participating to the procurement
 
   #ci:
   #  Germany: # Set name here
   #    location: "DE0 0"
 
   technology:
-    generation_tech: ["onwind", "solar", "allam", "geothermal"]  # "nuclear"
+    generation_tech: ["onwind", "solar"]  # "allam", "geothermal", "nuclear"
     storage_tech: ["li-ion battery"] # "iron-air battery"
 
   strip_network: false # [ true, false ] If true, model only the countries with the CI loads and their neighbors
