@@ -2341,7 +2341,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
         # ==================================================================================
 
         res_available_carriers = list(
-            set(clean_techs).intersection(["onwind", "solar"])
+            set(clean_techs).intersection(["onwind", "solar", "solar-hsat", "solar rooftop"])
         )
 
         for carrier in res_available_carriers:
@@ -2355,6 +2355,9 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                 ].index
             else:  # scope == "all" is the default
                 bus = n.buses[(n.buses.carrier == "AC") & (n.buses.country != "")].index
+            
+            if carrier == "solar rooftop":
+                bus = [b + " low voltage" for b in bus]
 
             res_df = n.generators.loc[
                 (n.generators.bus.isin(bus))
@@ -2475,7 +2478,7 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "solve_sector_network_myopic",
-            run="baseline-3H",
+            run="vol-match-DE-3H",
             opts="",
             clusters="39",
             configfiles="config/config.meta.yaml",

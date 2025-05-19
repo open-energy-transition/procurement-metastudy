@@ -21,7 +21,9 @@ remote:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#run
 run:
   prefix: ""
-  name: "baseline-3H"
+  name:
+  #- baseline-3H
+  - vol-match-DE-3H
   scenarios:
     enable: true
     file: config/scenarios.meta.yaml
@@ -192,7 +194,7 @@ procurement:
   #    location: "DE0 0"
 
   technology:
-    generation_tech: ["onwind", "solar"]  # "allam", "geothermal", "nuclear"
+    generation_tech: ["onwind", "solar", "solar-hsat", "solar rooftop"]  # "allam", "geothermal", "nuclear"
     storage_tech: ["li-ion battery"] # "iron-air battery"
 
   strip_network: false # [ true, false ] If true, model only the countries with the CI loads and their neighbors
