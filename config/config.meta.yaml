@@ -90,6 +90,8 @@ electricity:
 
   transmission_limit: v1.0
 
+  ci_baseline: true # [ true, false ] If true, the model will move the CI load to the high voltage grid already in the baseline
+
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#transmission_projects
 transmission_projects:
   include:

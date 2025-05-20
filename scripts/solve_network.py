@@ -2172,12 +2172,15 @@ def load_profile(
             load_year["ci_share"].values[0]
             * (n.loads_t.p_set[location] * n.snapshot_weightings.objective).sum()
         )  # MWh
-        logger.info(
-            f"CI load in {load_year.index.values[0]} (raw data from Eurostat/IEA):\nannual consumption: {round((load_year['total_demand'].values[0]) / 1000)} TWh\nreference raw data year: {load_year['reference_year'].values[0]}\nshare: {round(load_year['ci_share'].values[0] * 100, 0)}%"
-        )
-        logger.info(
-            f"CI load in {load_year.index.values[0]} (PyPSA data):\nannual consumption {round(load_year_val / 10**6)} TWh\nreference config year: {load['load_year']}"
-        )
+
+        if (snakemake.params.get("procurement_enable", False) and location in [v["location"] for v in procurement["ci"].values()]):
+            print("procurement_enable is activated")
+            logger.info(
+                f"CI load in {load_year.index.values[0]} (raw data from Eurostat/IEA):\nannual consumption: {round((load_year['total_demand'].values[0]) / 1000)} TWh\nreference raw data year: {load_year['reference_year'].values[0]}\nshare: {round(load_year['ci_share'].values[0] * 100, 0)}%"
+            )
+            logger.info(
+                f"CI load in {load_year.index.values[0]} (PyPSA data):\nannual consumption {round(load_year_val / 10**6)} TWh\nreference config year: {load['load_year']}"
+            )
         load = load_year_val / 8760 * load["participation"] / 100  # MW
 
     load_day = load * 24
@@ -2198,8 +2201,67 @@ def load_profile(
 
     return profile
 
+def add_ci_load(n: pypsa.Network, config: dict) -> None:
+    """
+    Add C&I buyer(s) to the network.
 
-def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> None:
+    Args:
+    - n: pypsa.Network to which the C&I buyer(s) will be added.
+
+    Returns:
+    - None
+    """
+
+    load_year_countries = retrieve_ci_load(config)  # retrieve CI load input data
+
+    countries_chosen = []
+
+    for bus in n.buses[(n.buses.carrier == "AC") & (n.buses.country != "")].index:
+        
+        country = n.buses.country[bus]
+        if country in countries_chosen:
+            continue
+        countries_chosen.append(country)
+
+        load_year = load_year_countries[
+            load_year_countries.index == country
+        ]  # select only the country of interest
+
+        n.add("Bus", f"{bus}" + " CI", country="", location = bus)
+
+        n.add(
+            "Link",
+            f"{bus}" + " CI" + " export",
+            bus0=f"{bus}" + " CI",
+            bus1=bus,
+            marginal_cost=0.1,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
+            p_nom=1e6,
+            reversed=False,
+        )
+
+        n.add(
+            "Link",
+            f"{bus}" + " CI" + " import",
+            bus0=bus,
+            bus1=f"{bus}" + " CI",
+            marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
+            p_nom=1e6,
+            reversed=False,
+        )
+
+        n.add(
+            "Load",
+            f"{bus}" + " CI" + " load",
+            carrier="electricity",
+            bus=f"{bus}" + " CI",
+            p_set=load_profile(n, load_year, config, bus),
+            ci="None"  # C&I markers used in constraints
+        )
+
+        # C&I following voluntary clean energy procurement is a share of C&I load -> subtract it from node's profile
+        n.loads_t.p_set[bus] -= n.loads_t.p_set[f"{bus}" + " CI" + " load"]
+
+def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> None:
     """
     Add C&I buyer(s) to the network.
 
@@ -2218,49 +2280,15 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
     strategy = procurement["strategy"]
     scope = procurement["scope"]
 
-    load_year_countries = retrieve_ci_load(config)  # retrieve CI load input data
-
     for name in ci.keys():
         location = ci[name]["location"]
 
-        country = n.buses.country[location]
-        load_year = load_year_countries[
-            load_year_countries.index == country
-        ]  # select only the country of interest
-
-        n.add("Bus", name, country="")
-
-        n.add(
-            "Link",
-            f"{name}" + " export",
-            bus0=name,
-            bus1=location,
-            marginal_cost=0.1,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
-            p_nom=1e6,
-            reversed=False,
-        )
-
-        n.add(
-            "Link",
-            f"{name}" + " import",
-            bus0=location,
-            bus1=name,
-            marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
-            p_nom=1e6,
-            reversed=False,
-        )
-
-        n.add(
-            "Load",
-            f"{name}" + " load",
-            carrier="electricity",
-            bus=name,
-            p_set=load_profile(n, load_year, config, location),  # GC
-            ci=name,  # C&I markers used in constraints
-        )
-
-        # C&I following voluntary clean energy procurement is a share of C&I load -> subtract it from node's profile
-        n.loads_t.p_set[location] -= n.loads_t.p_set[f"{name}" + " load"]
+        # ===================== Renaming CI load =====================================
+        # ============================================================================
+        
+        filtered_CI_load = n.loads[n.loads.bus == n.buses[(n.buses.index.str.contains("CI")) & (n.buses.location == location)].index.values[0]]
+        n.loads.rename(index = {filtered_CI_load.index.values[0]: f"{name}" + " load"}, inplace = True)
+        n.loads.loc[n.loads.index.str.contains(f"{name}"), "ci"] = name  # C&I markers used in constraints
 
         # ===================== Adding Dispatchable Technologies =====================
         # ============================================================================
@@ -2313,7 +2341,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                 "Link",
                 name + " " + generator,
                 bus0=carrier_nodes,
-                bus1=name,
+                bus1=f"{location}" + " CI",
                 bus2="co2 atmosphere",
                 marginal_cost=costs.at[generator, "efficiency"]
                 * costs.at[generator, "VOM"],  # NB: VOM is per MWel
@@ -2367,7 +2395,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                 & (n.generators.index.astype(str).str.contains(year))
             ].copy()
             res_df["gen_name"] = name + " " + res_df.index
-            res_df["bus_name"] = name if scope == "node" else res_df["bus"]
+            res_df["bus_name"] = f"{location}" + " CI" if scope == "node" else res_df["bus"]
 
             p_max_pu_df = n.generators_t.p_max_pu[res_df.index]
             p_max_pu_df = p_max_pu_df.rename(columns=res_df["gen_name"].to_dict())
@@ -2380,6 +2408,9 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                 and snakemake.config["sector"]["electricity_grid_connection"]
                 else 0
             )
+
+            if carrier == "solar rooftop":
+                carrier = "solar-rooftop" # use costs name convention
 
             n.add(
                 "Generator",
@@ -2487,7 +2518,7 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "solve_sector_network_myopic",
-            run="vol-match-DE-3H",
+            run="vol-match-DE-3H", #"baseline-3H"
             opts="",
             clusters="39",
             configfiles="config/config.meta.yaml",
@@ -2521,12 +2552,15 @@ if __name__ == "__main__":
     with memory_logger(
         filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
     ) as mem:
+        
+        if (snakemake.params.get("ci_baseline"), False):
+            add_ci_load(n, snakemake.params)
+
         if (
             snakemake.params.get("procurement_enable", False)
             and str(snakemake.params.procurement.get("year", False))
             == planning_horizons
         ):
-            print("procurement_enable is activated")
             procurement = snakemake.params.procurement
 
             if procurement["strip_network"]:
@@ -2540,7 +2574,7 @@ if __name__ == "__main__":
                 snakemake.params.max_hours,
                 Nyears,
             )
-            add_ci(n, snakemake.wildcards.planning_horizons, snakemake.params, costs)
+            add_ci_procurement(n, snakemake.wildcards.planning_horizons, snakemake.params, costs)
 
         solve_network(
             n,
