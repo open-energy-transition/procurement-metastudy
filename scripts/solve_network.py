@@ -209,7 +209,7 @@ def add_solar_potential_constraints(n: pypsa.Network, config: dict) -> None:
     ].index
 
     solar_today = n.generators[
-        (n.generators.carrier == "solar") & (n.generators.p_nom_extendable)
+        (n.generators.carrier == "solar") & (n.generators.p_nom_extendable) & ~n.generators.p_nom_max.isin([np.inf, np.nan])
     ].index
     solar_hsat = n.generators[(n.generators.carrier == "solar-hsat")].index
 
@@ -1255,7 +1255,7 @@ def res_capacity_constraints(n):
     ci = n.config["procurement"]["ci"]
     ci_location = {k: v["location"] for k, v in ci.items()}
 
-    for carrier in ["solar", "onwind"]:
+    for carrier in ["solar rooftop", "onwind"]:
         ext_carrier = n.generators[
             (n.generators.carrier == carrier) & n.generators.p_nom_extendable
         ].copy()
@@ -2358,6 +2358,8 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
             
             if carrier == "solar rooftop":
                 bus = [b + " low voltage" for b in bus]
+                costs.at["solar rooftop", "capital_cost"] = costs.at["solar-rooftop", "capital_cost"]
+                costs.at["solar rooftop", "marginal_cost"] = costs.at["solar-rooftop", "marginal_cost"]
 
             res_df = n.generators.loc[
                 (n.generators.bus.isin(bus))
@@ -2372,6 +2374,13 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
 
             res_df = res_df.set_index("bus_name")
 
+            grid_cost = (
+                costs.at["electricity grid connection", "capital_cost"]
+                if carrier in ["onwind", "solar", "solar-hsat"] 
+                and snakemake.config["sector"]["electricity_grid_connection"]
+                else 0
+            )
+
             n.add(
                 "Generator",
                 res_df["gen_name"],
@@ -2379,7 +2388,7 @@ def add_ci(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> No
                 bus=res_df.index,
                 p_nom_extendable=True if strategy else False,
                 p_max_pu=p_max_pu_df,
-                capital_cost=costs.at[carrier, "capital_cost"],
+                capital_cost=costs.at[carrier, "capital_cost"] + grid_cost,
                 marginal_cost=costs.at[carrier, "marginal_cost"],
                 ci=name,  # C&I markers used in constraints
             )
