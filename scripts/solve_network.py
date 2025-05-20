@@ -1998,7 +1998,7 @@ def strip_network(n: pypsa.Network, config: dict) -> None:
 
 
 def retrieve_ci_load(config):
-    load = config["procurement"]["load"]
+    load = config["electricity"]["ci_load"]
 
     # 1 EUROSTAT data in GWh
     import requests
@@ -2141,7 +2141,7 @@ def load_profile(
     """
 
     procurement = config["procurement"]
-    load = procurement["load"]
+    load = config["electricity"]["ci_load"]
     scaling = n.snapshot_weightings.objective.sum() / len(
         n.snapshot_weightings.objective
     )  # e.g., 3 for 3H time resolution
@@ -2181,7 +2181,7 @@ def load_profile(
             logger.info(
                 f"CI load in {load_year.index.values[0]} (PyPSA data):\nannual consumption {round(load_year_val / 10**6)} TWh\nreference config year: {load['load_year']}"
             )
-        load = load_year_val / 8760 * load["participation"] / 100  # MW
+        load = load_year_val / 8760 / 100  # MW
 
     load_day = load * 24
     load_profile_day = pd.Series(shape) * load_day
@@ -2282,13 +2282,41 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
 
     for name in ci.keys():
         location = ci[name]["location"]
+        participation = procurement["participation"]
 
-        # ===================== Renaming CI load =====================================
+        # ===================== Adding CI load to be supplied ========================
         # ============================================================================
-        
         filtered_CI_load = n.loads[n.loads.bus == n.buses[(n.buses.index.str.contains("CI")) & (n.buses.location == location)].index.values[0]]
-        n.loads.rename(index = {filtered_CI_load.index.values[0]: f"{name}" + " load"}, inplace = True)
+        if participation == 100: 
+            n.loads.rename(index = {filtered_CI_load.index.values[0]: f"{name}" + " load"}, inplace = True)
+        else:
+            filtered_CI_load.rename(index = {filtered_CI_load.index.values[0]: f"{name}" + " load"}, inplace = True)
+            n.loads = pd.concat([n.loads, filtered_CI_load])
+            total_CI_load = n.loads_t.p_set[f"{location}" + " CI" + " load"]
+            n.loads_t.p_set[f"{name}" + " load"] = total_CI_load * participation / 100
+            n.loads_t.p_set[f"{location}" + " CI" + " load"] = total_CI_load * (100 - participation) / 100
+        
         n.loads.loc[n.loads.index.str.contains(f"{name}"), "ci"] = name  # C&I markers used in constraints
+
+        n.add(
+            "Link",
+            f"{name}" + " export",
+            bus0=f"{location}" + " CI",
+            bus1=location,
+            marginal_cost=0.1,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
+            p_nom=1e6,
+            reversed=False,
+        )
+
+        n.add(
+            "Link",
+            f"{name}" + " import",
+            bus0=location,
+            bus1=f"{location}" + " CI",
+            marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
+            p_nom=1e6,
+            reversed=False,
+        )
 
         # ===================== Adding Dispatchable Technologies =====================
         # ============================================================================
@@ -2553,8 +2581,7 @@ if __name__ == "__main__":
         filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
     ) as mem:
         
-        if (snakemake.params.get("ci_baseline"), False):
-            add_ci_load(n, snakemake.params)
+        add_ci_load(n, snakemake.params)
 
         if (
             snakemake.params.get("procurement_enable", False)

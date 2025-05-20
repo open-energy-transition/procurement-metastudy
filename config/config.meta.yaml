@@ -90,7 +90,12 @@ electricity:
 
   transmission_limit: v1.0
 
-  ci_baseline: true # [ true, false ] If true, the model will move the CI load to the high voltage grid already in the baseline
+  ci_load:
+    load_path_1: data/CI-load.csv # path to Eurostat CI load input data (from https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e__custom_16270810/default/table?lang=en (CSV 2.0))
+    load_path_2: data/CI-load-missing.xlsx # path to IEA CI load input data (from https://www.iea.org/data-and-statistics/data-product/world-energy-balances-highlights)
+    load_year: 2023
+    profile: "baseload" # type of load profile (e.g., "baseload", "industry")
+
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#transmission_projects
 transmission_projects:
@@ -103,7 +108,7 @@ sector:
   heating: false
   biomass: false
   ammonia: false
-  #methanol: false
+  methanol: false
   industry: false
   shipping: false
   aviation: false
@@ -183,13 +188,7 @@ procurement:
   scope: "all" # "node", "country", "all"
   energy_matching: 100 # share of CI energy demand to be procured
   emission_matching: 100 # share of CI emissions to be compensated
-
-  load:
-    load_path_1: data/CI-load.csv # path to Eurostat CI load input data (from https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e__custom_16270810/default/table?lang=en (CSV 2.0))
-    load_path_2: data/CI-load-missing.xlsx # path to IEA CI load input data (from https://www.iea.org/data-and-statistics/data-product/world-energy-balances-highlights)
-    load_year: 2023
-    profile: "baseload" # type of load profile (e.g., "baseload", "industry")
-    participation: 70 # share of CI load participating to the procurement
+  participation: 70 # share of CI load participating to the procurement
 
   #ci:
   #  Germany: # Set name here
