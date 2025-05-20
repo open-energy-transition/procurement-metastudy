@@ -165,6 +165,16 @@ clustering:
   temporal:
     resolution_sector: 3H
 
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#adjustments
+adjustments:
+  sector:
+    absolute:
+      links:
+        DC:
+          marginal_cost: 0.5
+        electricity distribution grid:
+          marginal_cost: 0.5
+
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#solving
 solving:
   mem_mb: 50000 #50 GB is enough for vol-match 1 country, 150 GB is needed for multiple countries
