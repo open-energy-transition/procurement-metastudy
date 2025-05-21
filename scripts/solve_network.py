@@ -1255,7 +1255,7 @@ def res_capacity_constraints(n):
     ci = n.config["procurement"]["ci"]
     ci_location = {k: v["location"] for k, v in ci.items()}
 
-    for carrier in ["solar rooftop", "onwind"]:
+    for carrier in ["solar rooftop", "onwind", "offwind-ac", "offwind-dc", "offwind-float"]:
         ext_carrier = n.generators[
             (n.generators.carrier == carrier) & n.generators.p_nom_extendable
         ].copy()
@@ -2227,8 +2227,8 @@ def add_ci_load(n: pypsa.Network, config: dict) -> None:
 
     countries_chosen = []
 
-    for bus in n.buses[(n.buses.carrier == "AC") & (n.buses.country != "")].index:
-
+    for bus in [loc for loc in n.buses.location.unique() if loc != "EU"]:
+        
         country = n.buses.country[bus]
         if country in countries_chosen:
             continue
@@ -2238,7 +2238,13 @@ def add_ci_load(n: pypsa.Network, config: dict) -> None:
             load_year_countries.index == country
         ]  # select only the country of interest
 
-        n.add("Bus", f"{bus}" + " CI", country="", location = bus)
+        n.add("Bus",
+              f"{bus}" + " CI",
+              country=n.buses.loc[bus,"country"],
+              location=bus,
+              x=n.buses.loc[bus,"x"],
+              y=n.buses.loc[bus,"y"],
+              )
 
         n.add(
             "Link",
@@ -2298,7 +2304,13 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
 
         # ===================== Adding CI load to be supplied ========================
         # ============================================================================
-        n.add("Bus", name, country="")
+        n.add("Bus",
+              name,
+              country="",
+              location=location,
+              x=n.buses.loc[location,"x"],
+              y=n.buses.loc[location,"y"],
+              )
 
         n.add(
             "Load",
@@ -2359,7 +2371,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
         }
         gen_not_implemented = list(
             set(clean_techs).difference(
-                list(gen_implemented.keys()) + ["onwind", "solar"]
+                list(gen_implemented.keys()) + ["onwind", "offwind-ac", "offwind-dc", "offwind-float", "solar", "solar-hsat", "solar rooftop"]
             )
         )
         gen_available_carriers = list(
@@ -2416,7 +2428,8 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
         # ==================================================================================
 
         res_available_carriers = list(
-            set(clean_techs).intersection(["onwind", "solar", "solar-hsat", "solar rooftop"])
+            set(clean_techs).intersection(["onwind", "offwind-ac", "offwind-dc", "offwind-float", 
+                                           "solar", "solar-hsat", "solar rooftop"])
         )
 
         for carrier in res_available_carriers:
@@ -2425,16 +2438,12 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
                 bus = [location]
             elif scope == "country":
                 zone = n.buses.loc[location, "country"]
-                bus = n.buses[
-                    (n.buses.carrier == "AC") & (n.buses.country == zone)
-                ].index
+                bus = n.buses[n.buses.country == zone].location.unique()
             else:  # scope == "all" is the default
-                bus = n.buses[(n.buses.carrier == "AC") & (n.buses.country != "")].index
+                bus = [loc for loc in n.buses.location.unique() if loc != "EU"]
             
             if carrier == "solar rooftop":
                 bus = [b + " low voltage" for b in bus]
-                costs.at["solar rooftop", "capital_cost"] = costs.at["solar-rooftop", "capital_cost"]
-                costs.at["solar rooftop", "marginal_cost"] = costs.at["solar-rooftop", "marginal_cost"]
 
             res_df = n.generators.loc[
                 (n.generators.bus.isin(bus))
@@ -2443,28 +2452,30 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
             ].copy()
             res_df["gen_name"] = name + " " + res_df.index
             res_df["bus_name"] = name if scope == "node" else res_df["bus"]
+            res_df["capital_cost"] = n.generators.loc[res_df.index,"capital_cost"]
+            res_df["marginal_cost"] = n.generators.loc[res_df.index,"marginal_cost"]
 
             p_max_pu_df = n.generators_t.p_max_pu[res_df.index]
             p_max_pu_df = p_max_pu_df.rename(columns=res_df["gen_name"].to_dict())
 
-            res_df = res_df.set_index("bus_name")
+            res_df = res_df.set_index("gen_name")
 
-            grid_cost = (
-                costs.at["electricity grid connection", "capital_cost"]
-                if carrier in ["onwind", "solar", "solar-hsat"] 
-                and snakemake.config["sector"]["electricity_grid_connection"]
-                else 0
-            )
+            #grid_cost = (
+            #    costs.at["electricity grid connection", "capital_cost"]
+            #    if carrier in ["onwind", "solar", "solar-hsat"] 
+            #    and snakemake.config["sector"]["electricity_grid_connection"]
+            #    else 0
+            #)
 
             n.add(
                 "Generator",
-                res_df["gen_name"],
+                res_df.index,
                 carrier=carrier,
-                bus=res_df.index,
+                bus=res_df["bus_name"],
                 p_nom_extendable=True if strategy else False,
                 p_max_pu=p_max_pu_df,
-                capital_cost=costs.at[carrier, "capital_cost"] + grid_cost,
-                marginal_cost=costs.at[carrier, "marginal_cost"],
+                capital_cost=res_df["capital_cost"],
+                marginal_cost=res_df["marginal_cost"],
                 ci=name,  # C&I markers used in constraints
             )
 
