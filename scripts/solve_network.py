@@ -2171,6 +2171,20 @@ def load_profile(
         sys.exit()
 
     # CI consumer nominal load in MW
+    
+    load_year_val = (
+                load_year["ci_share"].values[0]
+                * (n.loads_t.p_set[location] * n.snapshot_weightings.objective).sum()
+            )  # MWh
+    if (snakemake.params.get("procurement_enable", False) and location in [v["location"] for v in procurement["ci"].values()]):
+        print("procurement_enable is activated")
+        logger.info(
+            f"CI load in {load_year.index.values[0]} (raw data from Eurostat/IEA):\nannual consumption: {round((load_year['total_demand'].values[0]) / 1000)} TWh\nreference raw data year: {load_year['reference_year'].values[0]}\nshare: {round(load_year['ci_share'].values[0] * 100, 0)}%"
+        )
+        logger.info(
+            f"CI load in {load_year.index.values[0]} (PyPSA data):\nannual consumption {round(load_year_val / 10**6)} TWh\nreference config year: {load['load_year']}"
+        )
+
     if procurement["strategy"] == "ref":
         profile = pd.Series(0, index = n.snapshots)
     else:
@@ -2179,19 +2193,6 @@ def load_profile(
             CI_daily_avg = load_year["ci_share"].values[0] * total_daily_avg
             profile = CI_daily_avg.reindex(n.snapshots, method="ffill")
         else:
-            load_year_val = (
-                load_year["ci_share"].values[0]
-                * (n.loads_t.p_set[location] * n.snapshot_weightings.objective).sum()
-            )  # MWh
-
-            if (snakemake.params.get("procurement_enable", False) and location in [v["location"] for v in procurement["ci"].values()]):
-                print("procurement_enable is activated")
-                logger.info(
-                    f"CI load in {load_year.index.values[0]} (raw data from Eurostat/IEA):\nannual consumption: {round((load_year['total_demand'].values[0]) / 1000)} TWh\nreference raw data year: {load_year['reference_year'].values[0]}\nshare: {round(load_year['ci_share'].values[0] * 100, 0)}%"
-                )
-                logger.info(
-                    f"CI load in {load_year.index.values[0]} (PyPSA data):\nannual consumption {round(load_year_val / 10**6)} TWh\nreference config year: {load['load_year']}"
-                )
             load = load_year_val / 8760 # MW
 
             load_day = load * 24
@@ -2459,13 +2460,6 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
             p_max_pu_df = p_max_pu_df.rename(columns=res_df["gen_name"].to_dict())
 
             res_df = res_df.set_index("gen_name")
-
-            #grid_cost = (
-            #    costs.at["electricity grid connection", "capital_cost"]
-            #    if carrier in ["onwind", "solar", "solar-hsat"] 
-            #    and snakemake.config["sector"]["electricity_grid_connection"]
-            #    else 0
-            #)
 
             n.add(
                 "Generator",
