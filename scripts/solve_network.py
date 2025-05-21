@@ -2160,6 +2160,7 @@ def load_profile(
         + [0.045] * 2
         + [0.009] * 2,
         "total_daily_avg": "total_daily_avg",
+        "total": "total",
     }
 
     try:
@@ -2188,7 +2189,9 @@ def load_profile(
     if procurement["strategy"] == "ref":
         profile = pd.Series(0, index = n.snapshots)
     else:
-        if shape == "total_daily_avg":
+        if shape == "total":
+            profile = load_year["ci_share"].values[0] * n.loads_t.p_set[location]
+        elif shape == "total_daily_avg":
             total_daily_avg = n.loads_t.p_set[location].resample('D').mean()
             CI_daily_avg = load_year["ci_share"].values[0] * total_daily_avg
             profile = CI_daily_avg.reindex(n.snapshots, method="ffill")
