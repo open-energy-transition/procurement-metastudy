@@ -2231,7 +2231,7 @@ def add_ci_load(n: pypsa.Network, config: dict) -> None:
 
         n.add(
             "Link",
-            f"{bus}" + " CI" + " export",
+            f"{bus}" + " CI export",
             bus0=f"{bus}" + " CI",
             bus1=bus,
             marginal_cost=0.1,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
@@ -2241,7 +2241,7 @@ def add_ci_load(n: pypsa.Network, config: dict) -> None:
 
         n.add(
             "Link",
-            f"{bus}" + " CI" + " import",
+            f"{bus}" + " CI import",
             bus0=bus,
             bus1=f"{bus}" + " CI",
             marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
@@ -2251,7 +2251,7 @@ def add_ci_load(n: pypsa.Network, config: dict) -> None:
 
         n.add(
             "Load",
-            f"{bus}" + " CI" + " load",
+            f"{bus}" + " CI load",
             carrier="electricity",
             bus=f"{bus}" + " CI",
             p_set=load_profile(n, load_year, config, bus),
@@ -2286,22 +2286,29 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
 
         # ===================== Adding CI load to be supplied ========================
         # ============================================================================
-        filtered_CI_load = n.loads[n.loads.bus == n.buses[(n.buses.index.str.contains("CI")) & (n.buses.location == location)].index.values[0]]
+        n.add("Bus", name, country="")
+
+        n.add(
+            "Load",
+            f"{name}" + " load",
+            carrier="electricity",
+            bus=name,
+            p_set=n.loads_t.p_set[f"{location}" + " CI load"] * participation / 100,
+            ci=name # C&I markers used in constraints
+        )
+
         if participation == 100: 
-            n.loads.rename(index = {filtered_CI_load.index.values[0]: f"{name}" + " load"}, inplace = True)
+            n.remove("Bus", f"{location}" + " CI")
+            n.remove("Load",f"{location}" + " CI load")
+            n.remove("Link",f"{location}" + " CI export")
+            n.remove("Link",f"{location}" + " CI import")
         else:
-            filtered_CI_load.rename(index = {filtered_CI_load.index.values[0]: f"{name}" + " load"}, inplace = True)
-            n.loads = pd.concat([n.loads, filtered_CI_load])
-            total_CI_load = n.loads_t.p_set[f"{location}" + " CI" + " load"]
-            n.loads_t.p_set[f"{name}" + " load"] = total_CI_load * participation / 100
-            n.loads_t.p_set[f"{location}" + " CI" + " load"] = total_CI_load * (100 - participation) / 100
-        
-        n.loads.loc[n.loads.index.str.contains(f"{name}"), "ci"] = name  # C&I markers used in constraints
+            n.loads_t.p_set[f"{location}" + " CI load"] *= (100 - participation) / 100
 
         n.add(
             "Link",
             f"{name}" + " export",
-            bus0=f"{location}" + " CI",
+            bus0=name,
             bus1=location,
             marginal_cost=0.1,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
             p_nom=1e6,
@@ -2312,7 +2319,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
             "Link",
             f"{name}" + " import",
             bus0=location,
-            bus1=f"{location}" + " CI",
+            bus1=name,
             marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
             p_nom=1e6,
             reversed=False,
@@ -2369,7 +2376,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
                 "Link",
                 name + " " + generator,
                 bus0=carrier_nodes,
-                bus1=f"{location}" + " CI",
+                bus1=name,
                 bus2="co2 atmosphere",
                 marginal_cost=costs.at[generator, "efficiency"]
                 * costs.at[generator, "VOM"],  # NB: VOM is per MWel
@@ -2423,7 +2430,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
                 & (n.generators.index.astype(str).str.contains(year))
             ].copy()
             res_df["gen_name"] = name + " " + res_df.index
-            res_df["bus_name"] = f"{location}" + " CI" if scope == "node" else res_df["bus"]
+            res_df["bus_name"] = name if scope == "node" else res_df["bus"]
 
             p_max_pu_df = n.generators_t.p_max_pu[res_df.index]
             p_max_pu_df = p_max_pu_df.rename(columns=res_df["gen_name"].to_dict())
@@ -2436,9 +2443,6 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
                 and snakemake.config["sector"]["electricity_grid_connection"]
                 else 0
             )
-
-            if carrier == "solar rooftop":
-                carrier = "solar-rooftop" # use costs name convention
 
             n.add(
                 "Generator",
