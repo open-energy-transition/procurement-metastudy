@@ -2159,6 +2159,7 @@ def load_profile(
         + [0.035] * 2
         + [0.045] * 2
         + [0.009] * 2,
+        "total_daily_avg": "total_daily_avg",
     }
 
     try:
@@ -2171,38 +2172,43 @@ def load_profile(
 
     # CI consumer nominal load in MW
     if procurement["strategy"] == "ref":
-        load = 0.0
+        profile = pd.Series(0, index = n.snapshots)
     else:
-        load_year_val = (
-            load_year["ci_share"].values[0]
-            * (n.loads_t.p_set[location] * n.snapshot_weightings.objective).sum()
-        )  # MWh
+        if shape == "total_daily_avg":
+            total_daily_avg = n.loads_t.p_set[location].resample('D').mean()
+            CI_daily_avg = load_year["ci_share"].values[0] * total_daily_avg
+            profile = CI_daily_avg.reindex(n.snapshots, method="ffill")
+        else:
+            load_year_val = (
+                load_year["ci_share"].values[0]
+                * (n.loads_t.p_set[location] * n.snapshot_weightings.objective).sum()
+            )  # MWh
 
-        if (snakemake.params.get("procurement_enable", False) and location in [v["location"] for v in procurement["ci"].values()]):
-            print("procurement_enable is activated")
-            logger.info(
-                f"CI load in {load_year.index.values[0]} (raw data from Eurostat/IEA):\nannual consumption: {round((load_year['total_demand'].values[0]) / 1000)} TWh\nreference raw data year: {load_year['reference_year'].values[0]}\nshare: {round(load_year['ci_share'].values[0] * 100, 0)}%"
-            )
-            logger.info(
-                f"CI load in {load_year.index.values[0]} (PyPSA data):\nannual consumption {round(load_year_val / 10**6)} TWh\nreference config year: {load['load_year']}"
-            )
-        load = load_year_val / 8760 # MW
+            if (snakemake.params.get("procurement_enable", False) and location in [v["location"] for v in procurement["ci"].values()]):
+                print("procurement_enable is activated")
+                logger.info(
+                    f"CI load in {load_year.index.values[0]} (raw data from Eurostat/IEA):\nannual consumption: {round((load_year['total_demand'].values[0]) / 1000)} TWh\nreference raw data year: {load_year['reference_year'].values[0]}\nshare: {round(load_year['ci_share'].values[0] * 100, 0)}%"
+                )
+                logger.info(
+                    f"CI load in {load_year.index.values[0]} (PyPSA data):\nannual consumption {round(load_year_val / 10**6)} TWh\nreference config year: {load['load_year']}"
+                )
+            load = load_year_val / 8760 # MW
 
-    load_day = load * 24
-    load_profile_day = pd.Series(shape) * load_day
-    load_profile_year = pd.concat([load_profile_day] * 365)
+            load_day = load * 24
+            load_profile_day = pd.Series(shape) * load_day
+            load_profile_year = pd.concat([load_profile_day] * 365)
 
-    if scaling != 1.0:
-        load_profile_year.index = pd.date_range(
-            start="2013-01-01", periods=len(load_profile_year), freq="h"
-        )
-        profile = (
-            load_profile_year.resample(f"{int(scaling)}h")
-            .mean()
-            .reindex(n.snapshots, method="nearest")
-        )
-    else:
-        profile = load_profile_year.set_axis(n.snapshots)
+            if scaling != 1.0:
+                load_profile_year.index = pd.date_range(
+                    start="2013-01-01", periods=len(load_profile_year), freq="h"
+                )
+                profile = (
+                    load_profile_year.resample(f"{int(scaling)}h")
+                    .mean()
+                    .reindex(n.snapshots, method="nearest")
+                )
+            else:
+                profile = load_profile_year.set_axis(n.snapshots)
 
     return profile
 
@@ -2222,7 +2228,7 @@ def add_ci_load(n: pypsa.Network, config: dict) -> None:
     countries_chosen = []
 
     for bus in n.buses[(n.buses.carrier == "AC") & (n.buses.country != "")].index:
-        
+
         country = n.buses.country[bus]
         if country in countries_chosen:
             continue
@@ -2264,6 +2270,7 @@ def add_ci_load(n: pypsa.Network, config: dict) -> None:
         )
 
         # C&I following voluntary clean energy procurement is a share of C&I load -> subtract it from node's profile
+        #total_daily_load = n.loads_t.p_set[bus].resample("D").
         n.loads_t.p_set[bus] -= n.loads_t.p_set[f"{bus}" + " CI" + " load"]
 
 def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> None:
