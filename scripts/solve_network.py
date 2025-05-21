@@ -2181,7 +2181,7 @@ def load_profile(
             logger.info(
                 f"CI load in {load_year.index.values[0]} (PyPSA data):\nannual consumption {round(load_year_val / 10**6)} TWh\nreference config year: {load['load_year']}"
             )
-        load = load_year_val / 8760 / 100  # MW
+        load = load_year_val / 8760 # MW
 
     load_day = load * 24
     load_profile_day = pd.Series(shape) * load_day
