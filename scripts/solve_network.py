@@ -2002,16 +2002,21 @@ def retrieve_ci_load(config):
 
     # 1 EUROSTAT data in GWh
     import requests
-
+    import os
     url = "https://ec.europa.eu/eurostat/api/dissemination/sdmx/3.0/data/dataflow/ESTAT/nrg_cb_e/1.0/*.*.*.*.*?c[freq]=A&c[nrg_bal]=FC,FC_IND_E,FC_OTH_CP_E&c[siec]=E7000&c[unit]=GWH&c[geo]=EU27_2020,EA20,BE,BG,CZ,DK,DE,EE,IE,EL,ES,FR,HR,IT,CY,LV,LT,LU,HU,MT,NL,AT,PL,PT,RO,SI,SK,FI,SE,IS,LI,NO,UK,BA,ME,MD,MK,GE,AL,RS,TR,UA,XK&c[TIME_PERIOD]=2023,2022,2021,2020&compress=false&format=csvdata&formatVersion=2.0&lang=en&labels=name"
-    try:
-        response = requests.get(url)
-        with open(load["load_path_1"], "wb") as file:
-            file.write(response.content)
-        data = pd.read_csv(load["load_path_1"])
-    except requests.ConnectionError:
-        logger.warning("No internet connection. Reading data from the local file.")
-        data = pd.read_csv(load["load_path_1"])
+    file_path = load["load_path_1"]
+    
+    if os.path.exists(file_path):
+        data = pd.read_csv(file_path)
+    else:
+        try:
+            response = requests.get(url)
+            with open(file_path, "wb") as file:
+                file.write(response.content)
+            data = pd.read_csv(file_path)
+        except requests.ConnectionError:
+            logger.warning("No internet connection and file not found locally.")
+            raise FileNotFoundError(f"File {file_path} not found and cannot download from the internet.")
 
     # Ensure data for the specified year exists for all countries
     data["reference_year"] = int(load["load_year"])
