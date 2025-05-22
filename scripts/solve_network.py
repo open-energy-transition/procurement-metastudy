@@ -2280,7 +2280,6 @@ def add_ci_load(n: pypsa.Network, config: dict) -> None:
         )
 
         # C&I following voluntary clean energy procurement is a share of C&I load -> subtract it from node's profile
-        #total_daily_load = n.loads_t.p_set[bus].resample("D").
         n.loads_t.p_set[bus] -= n.loads_t.p_set[f"{bus}" + " CI" + " load"]
 
 def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> None:

@@ -108,7 +108,7 @@ sector:
   heating: false
   biomass: false
   ammonia: false
-  methanol: false
+  # methanol: false
   industry: false
   shipping: false
   aviation: false
