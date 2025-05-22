@@ -21,7 +21,9 @@ remote:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#run
 run:
   prefix: ""
-  name: "baseline-3H"
+  name:
+  #- baseline-3H
+  - vol-match-DE-3H
   scenarios:
     enable: true
     file: config/scenarios.meta.yaml
@@ -88,6 +90,13 @@ electricity:
 
   transmission_limit: v1.0
 
+  ci_load:
+    load_path_1: data/CI-load.csv # path to Eurostat CI load input data (from https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e__custom_16270810/default/table?lang=en (CSV 2.0))
+    load_path_2: data/CI-load-missing.xlsx # path to IEA CI load input data (from https://www.iea.org/data-and-statistics/data-product/world-energy-balances-highlights)
+    load_year: 2023
+    profile: "total" # type of load profile (e.g., "baseload", "industry", "total_daily_avg", "total")
+
+
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#transmission_projects
 transmission_projects:
   include:
@@ -99,7 +108,7 @@ sector:
   heating: false
   biomass: false
   ammonia: false
-  #methanol: false
+  # methanol: false
   industry: false
   shipping: false
   aviation: false
@@ -156,6 +165,21 @@ clustering:
   temporal:
     resolution_sector: 3H
 
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#adjustments
+adjustments:
+  sector:
+    absolute:
+      links:
+        DC:
+          marginal_cost: 0.5
+        electricity distribution grid:
+          marginal_cost: 0.5
+
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#solving
+solving:
+  mem_mb: 50000 #50 GB is enough for vol-match 1 country, 150 GB is needed for multiple countries
+  runtime: 24h #runtime in humanfriendly style https://humanfriendly.readthedocs.io/en/latest/
+
 # ================ Procurment Metastudy ================
 res_target:
   EU_share_target: true
@@ -174,20 +198,14 @@ procurement:
   scope: "all" # "node", "country", "all"
   energy_matching: 100 # share of CI energy demand to be procured
   emission_matching: 100 # share of CI emissions to be compensated
-
-  load:
-    load_path_1: data/CI-load.csv # path to Eurostat CI load input data (from https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e__custom_16270810/default/table?lang=en (CSV 2.0))
-    load_path_2: data/CI-load-missing.xlsx # path to IEA CI load input data (from https://www.iea.org/data-and-statistics/data-product/world-energy-balances-highlights)
-    load_year: 2023
-    profile: "industry" # type of load profile (e.g., "baseload", "industry")
-    participation: 10 # share of CI load participating to the procurement
+  participation: 70 # share of CI load participating to the procurement
 
   #ci:
   #  Germany: # Set name here
   #    location: "DE0 0"
 
   technology:
-    generation_tech: ["onwind", "solar", "allam", "geothermal"]  # "nuclear"
+    generation_tech: ["onwind", "offwind-ac", "offwind-dc", "offwind-float", "solar", "solar-hsat", "solar rooftop"]  # "allam", "geothermal", "nuclear"
     storage_tech: ["li-ion battery"] # "iron-air battery"
 
   strip_network: false # [ true, false ] If true, model only the countries with the CI loads and their neighbors

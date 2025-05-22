@@ -122,6 +122,7 @@ rule solve_sector_network_myopic:
         ),
         # ================ New Params Start ================
         procurement_enable=config_provider("enable", "procurement"),
+        electricity=config_provider("electricity"),
         procurement=config_provider("procurement"),
         costs=config_provider("costs"),
         max_hours=config_provider("electricity", "max_hours"),

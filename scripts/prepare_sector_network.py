@@ -6449,10 +6449,13 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "prepare_sector_network",
+            run="vol-match-DE-3H",
             opts="",
-            clusters="10",
+            clusters="39",
+            configfiles="config/config.meta.yaml",
+            ll="v1.0",
             sector_opts="",
-            planning_horizons="2050",
+            planning_horizons="2030",
         )
 
     configure_logging(snakemake)  # pylint: disable=E0606
