@@ -623,12 +623,51 @@ def calculate_grid_score(
         n.buses_t[f"{name}_score"] = pd.DataFrame(
             0, index=n.snapshots, columns=grid_buses
         )
+        n.buses_t[f"{name}_lvl_score"] = pd.DataFrame(
+            0, index=n.snapshots, columns=grid_buses
+        )
         logger.info(f"{name}_score currently is empty")
+        return
     else:
         global_score = round(
             (weights @ n.buses_t[f"{name}_p"]).sum() / (weights @ all_p).sum() * 100, 2
         )
         logger.info(f"The average {name}_score is: {global_score}%")
+
+    # ===================== Add impact of interconnection =====================
+    # =========================================================================
+
+    def process_time_series(df, static_df, carrier=None, source_bus="bus0"):
+
+        if carrier:
+            df = df.loc[:, static_df.carrier == carrier]
+            
+        clipped_df = df.clip(lower=0).copy()
+    
+        dest_bus = "bus0" if source_bus == "bus1" else "bus1"
+        
+        clipped_df.columns = pd.MultiIndex.from_tuples(
+            [(static_df.loc[col, source_bus], static_df.loc[col, dest_bus]) for col in clipped_df.columns],
+            names=["source", "dest"]
+        )
+        
+        return clipped_df
+    
+    # Process lines and links
+    line_imp_subsetA = process_time_series(n.lines_t.p1, n.lines)
+    line_imp_subsetB = process_time_series(n.lines_t.p0, n.lines, source_bus = "bus1")
+    links_imp_subsetA = process_time_series(n.links_t.p1, n.links, carrier="DC")
+    links_imp_subsetB = process_time_series(n.links_t.p0, n.links, carrier="DC", source_bus = "bus1")
+    
+    df = pd.concat([line_imp_subsetA,line_imp_subsetB,links_imp_subsetA,links_imp_subsetB], axis=1)
+    df = df.T.groupby(["source","dest"]).sum().T
+    
+    clean_import = df.T.mul(n.buses_t[f"{name}_score"].T, level=0).groupby("dest").sum().T
+    all_import = df.T.groupby("dest").sum().T
+    
+    n.buses_t[f"{name}_lvl_score"] = (n.buses_t[f"{name}_p"] + clean_import) / (n.buses_t[f"{name}_all_p"] + all_import)
+    n.buses[f"{name}_lvl_score"] = (weights @ (n.buses_t[f"{name}_p"] + clean_import)) / (weights @ (n.buses_t[f"{name}_all_p"] + all_import))
+
 
 
 def add_CCL_constraints(
@@ -1274,6 +1313,29 @@ def res_capacity_constraints(n):
 
         n.model.add_constraints(gen <= p_nom_max, name=f"RES_capacity-{carrier}")
 
+def retrieve_ember_data(config):
+    file_path = config["res_target"]["res_path"]
+
+    # 1 EUROSTAT data in GWh
+    import requests
+    import os
+    url = "https://storage.googleapis.com/emb-prod-bkt-publicdata/public-downloads/res_tracker/outputs/targets_download.xlsx"
+    
+    if os.path.exists(file_path):
+        data = pd.read_excel(file_path, sheet_name="capacity_target_wide")
+    else:
+        try:
+            response = requests.get(url)
+            logger.info("Downloading EMBER 2030 global renewable target data")
+            with open(file_path, "wb") as file:
+                file.write(response.content)
+            data = pd.read_excel(file_path, sheet_name="capacity_target_wide")
+        except requests.ConnectionError:
+            logger.warning("No internet connection and file not found locally.")
+            raise FileNotFoundError(f"File {file_path} not found and cannot download from the internet.")
+        
+    return data
+
 
 def ember_res_target(n):
     """
@@ -1284,10 +1346,7 @@ def ember_res_target(n):
     Note that EU RE directive counts corporate PPA within NECPs.
     """
     # --- Load and prepare RES targets ---
-    df_ember = pd.read_excel(
-        "https://storage.googleapis.com/emb-prod-bkt-publicdata/public-downloads/res_tracker/outputs/targets_download.xlsx",
-        sheet_name="capacity_target_wide",
-    )
+    df_ember = retrieve_ember_data(n.config)
 
     # Convert ISO3 to ISO2, keeping "EU" unchanged
     df_ember["country"] = df_ember["country_code"].apply(
@@ -1556,7 +1615,7 @@ def cfe_constraints(n):
 
     for name in procurement["ci"]:
         location = procurement["ci"][name]["location"]
-        grid_supply_cfe = n.buses_t.cfe_score[location]
+        grid_supply_cfe = n.buses_t.cfe_lvl_score[location]
 
         gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
         links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
