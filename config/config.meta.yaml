@@ -186,6 +186,7 @@ res_target:
   country_share_target: false
   country_cap_target: true
   res_additionality: false # select if the procured renewables are part of the RE target (false) or are in addition to it (true).
+  res_path: data/ember_2030_res_targets.xlsx # path to EMBER 2030 global renewable target data (from https://storage.googleapis.com/emb-prod-bkt-publicdata/public-downloads/res_tracker/outputs/targets_download.xlsx)
 
 grid_policy:
   renewable_carriers: ["offwind", "offwind-ac", "offwind-dc", "offwind-float", "onwind", "ror", "hydro", "urban central solid biomass CHP", "geothermal", "solar", "solar-hsat", "solar rooftop"]
