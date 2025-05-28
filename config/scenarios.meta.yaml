@@ -510,4 +510,28 @@ vol-match-PL-DE-FR-ES-DK-IE-3H:
     ci:
       Ireland:
         location: "IE3 0"
-        
+
+# ======== Baseline model with emission matching ========
+# =====================================================
+
+emi-match-DE-3H:
+  enable:
+    procurement: true
+
+  electricity:
+   ci_load:
+      profile: "total"
+
+  procurement:
+    strategy: emi-match
+    scope: "all"
+    energy_matching: 100
+    participation: 70
+    emissionality:
+      emission_matching: 100
+      emission_signal:  aer
+      signal_source: model
+
+    ci:
+      Germany:
+        location: "DE0 0"

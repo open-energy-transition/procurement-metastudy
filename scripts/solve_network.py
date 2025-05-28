@@ -1678,23 +1678,61 @@ def emission_matching_constraints(n):
     """
     Implement strategies for emission matching.
 
-    The avoided emissions (according to MOER) from all CI-related generators (renewable carriers) and links (conventional/clean carriers) are greater than or equal to some percentage of their annual emissions from load consumption.
+    The avoided emissions from all CI-related generators (renewable carriers) and links (conventional/clean carriers) are greater than or equal to some percentage of their annual emissions from load consumption.
     """
     weights = n.snapshot_weightings["generators"]
-    emission_matching = n.config["procurement"]["emission_matching"] / 100
-    participation = n.config["procurement"]["load"]["participation"] / 100
-    moer = pd.Series(0.382, index=n.snapshots)  # t_CO2/MWh
+    participation = n.config["procurement"]["participation"] / 100
+
+    emission_matching = n.config["procurement"]["emissionality"]["emission_matching"] / 100
+    emission_signal = n.config["procurement"]["emissionality"]["emission_signal"]
+    signal_source = n.config["procurement"]["emissionality"]["signal_source"]
+
+    allowed_signals = {
+        "aer" : "Average Emission Rate (AER)",
+        "mber" : "Marginal Build Emission Rate (MBER)",
+        "moer" : "Marginal Operating Emission Rate (MOER)",
+    }
+
+    if emission_signal in allowed_signals.keys():
+        logger.info(f"The emission signal chosen is {allowed_signals[emission_signal]}")
+        if signal_source == "model":
+            signal_path = n.config["procurement"]["emissionality"]["signal_model"]
+        elif signal_source == "historical":
+            signal_path = n.config["procurement"]["emissionality"]["signal_historical"]
+        else:
+            raise KeyError(
+                f"'signal_source' option must be one of 'model' or 'historical'. Now is '{signal_source}'."
+            )
+    else:
+        raise KeyError(
+            f"'emission_signal' option must be one of 'aer', 'mber', or 'moer'. Now is '{emission_signal}'."
+        )
+
+    scaling = n.snapshot_weightings.objective.sum() / len(
+        n.snapshot_weightings.objective
+    )  # e.g., 3 for 3H time resolution
 
     for name in n.config["procurement"]["ci"]:
+
+        # Read the emission signal data
+        location = n.config["procurement"]["ci"][name]["location"]
+        country = n.buses[n.buses.index == location].country.values[0]
+        signal = pd.read_csv(f"{signal_path}" + f"/{country}.csv", index_col=0)[emission_signal]
+        signal.index = pd.to_datetime(signal.index)
+
+        # Resample emission signal
+        signal = signal.resample(f'{scaling}h').mean().reindex(n.snapshots, method="nearest")
+
+        # Build the constraint
         gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
         links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
 
-        gen_avoided = (n.model["Generator-p"].loc[:, gen_ci] * weights * moer).sum()
+        gen_avoided = (n.model["Generator-p"].loc[:, gen_ci] * weights * signal).sum()
         link_avoided = (
             n.model["Link-p"].loc[:, links_ci]
             * n.links.loc[links_ci].efficiency
             * weights
-            * moer
+            * signal
         ).sum()
 
         link_emitted = (
@@ -1706,7 +1744,7 @@ def emission_matching_constraints(n):
         lhs = emission_matching * (gen_avoided + link_avoided - link_emitted)
 
         total_emissions = (
-            participation * (n.loads_t.p_set[name + " load"] * weights * moer).sum()
+            participation * (n.loads_t.p_set[name + " load"] * weights * signal).sum()
         )
 
         n.model.add_constraints(
@@ -1803,7 +1841,7 @@ def extra_functionality(
         procurement = config["procurement"]
         strategy = procurement["strategy"]
         energy_matching = procurement["energy_matching"]
-        emission_matching = procurement["emission_matching"]
+        emission_matching = procurement["emissionality"]["emission_matching"]
         res_capacity_constraints(n)
 
         if strategy == "vol-match":
@@ -2226,7 +2264,7 @@ def load_profile(
         shape = shapes[load["profile"]]
     except KeyError:
         print(
-            f"'profile_shape' option must be one of 'baseload' or 'industry'. Now is {load['profile']}."
+            f"'profile_shape' option must be one of 'baseload', 'industry', 'total_daily_avg', or 'total'. Now is {load['profile']}."
         )
         sys.exit()
 
@@ -2263,7 +2301,7 @@ def load_profile(
 
             if scaling != 1.0:
                 load_profile_year.index = pd.date_range(
-                    start="2013-01-01", periods=len(load_profile_year), freq="h"
+                    start=n.snapshots[0], periods=len(load_profile_year), freq="h"
                 )
                 profile = (
                     load_profile_year.resample(f"{int(scaling)}h")
@@ -2628,7 +2666,7 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "solve_sector_network_myopic",
-            run="vol-match-DE-3H", #"baseline-3H"
+            run="emi-match-DE-3H", #"baseline-3H"
             opts="",
             clusters="39",
             configfiles="config/config.meta.yaml",
