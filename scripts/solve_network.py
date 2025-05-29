@@ -1681,7 +1681,6 @@ def emission_matching_constraints(n):
     The avoided emissions from all CI-related generators (renewable carriers) and links (conventional/clean carriers) are greater than or equal to some percentage of their annual emissions from load consumption.
     """
     weights = n.snapshot_weightings["generators"]
-    participation = n.config["procurement"]["participation"] / 100
 
     emission_matching = n.config["procurement"]["emissionality"]["emission_matching"] / 100
     emission_signal = n.config["procurement"]["emissionality"]["emission_signal"]
@@ -1743,9 +1742,7 @@ def emission_matching_constraints(n):
 
         lhs = emission_matching * (gen_avoided + link_avoided - link_emitted)
 
-        total_emissions = (
-            participation * (n.loads_t.p_set[name + " load"] * weights * signal).sum()
-        )
+        total_emissions = (n.loads_t.p_set[name + " load"] * weights * signal).sum()
 
         n.model.add_constraints(
             lhs >= total_emissions, name=f"emission_matching_{name}"
