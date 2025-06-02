@@ -101,6 +101,7 @@ electricity:
 transmission_projects:
   include:
     nep: false
+  new_link_capacity: keep #keep or zero
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#sector
 sector:
