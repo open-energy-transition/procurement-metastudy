@@ -1690,6 +1690,7 @@ def emission_matching_constraints(n):
         "aer" : "Average Emission Rate (AER)",
         "mber" : "Marginal Build Emission Rate (MBER)",
         "moer" : "Marginal Operating Emission Rate (MOER)",
+        "cmer" : "Combined Marginal Emission Rate (CMER)",
     }
 
     if emission_signal in allowed_signals.keys():
@@ -1716,11 +1717,21 @@ def emission_matching_constraints(n):
         # Read the emission signal data
         location = n.config["procurement"]["ci"][name]["location"]
         country = n.buses[n.buses.index == location].country.values[0]
-        signal = pd.read_csv(f"{signal_path}" + f"/{country}.csv", index_col=0)[emission_signal]
-        signal.index = pd.to_datetime(signal.index)
+        if signal_source == "model":
+            signal = pd.read_csv(f"{signal_path}" + f"/{country}.csv", index_col=0)[emission_signal]
+            signal.index = pd.to_datetime(signal.index)
 
-        # Resample emission signal
-        signal = signal.resample(f'{scaling}h').mean().reindex(n.snapshots, method="nearest")
+            # Resample emission signal
+            signal = signal.resample(f'{scaling}h').mean().reindex(n.snapshots, method="nearest")
+        else:
+            emission_signal = "flat_" + emission_signal.upper()
+            signal = pd.read_csv(f"{signal_path}", index_col=0)
+            signal.rename(index={"UK": "GB", "LX": "LU"}, inplace=True)
+            if country not in signal.index:
+                raise KeyError(
+                    f"Country {country} does not participate to the emissionality procurement strategy."
+                    )
+            signal = signal.loc[country, emission_signal] / 1000 # Convert kgCO2/MWh to tCO2/MWh
 
         # Build the constraint
         gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []

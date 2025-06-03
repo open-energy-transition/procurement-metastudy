@@ -200,10 +200,10 @@ procurement:
   energy_matching: 100 # share of CI energy demand to be procured
   emissionality:
     emission_matching: 100 # share of CI emissions to be compensated
-    emission_signal:  aer # type of emission signal: aer, mber, moer
+    emission_signal:  aer # type of emission signal: aer, mber, moer, cmer
     signal_source: model # source of emission signal: model, historical
     signal_model: data/emission-signals-model # folder path if aer, mber, or moer are chosen as emission_signal
-    signal_historical: data/emission-signals-historical # folder path if historical is chosen as emission_signal
+    signal_historical: data/emission-signals-historical/2023_weighted_em_rates.csv # folder path if historical is chosen as emission_signal
   participation: 70 # share of CI load participating to the procurement
 
   #ci:

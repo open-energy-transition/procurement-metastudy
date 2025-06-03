@@ -530,7 +530,7 @@ emi-match-DE-3H:
     emissionality:
       emission_matching: 100
       emission_signal:  aer
-      signal_source: model
+      signal_source: historical
 
     ci:
       Germany:
