@@ -2676,6 +2676,12 @@ if __name__ == "__main__":
                 print("stript_network is activated")
                 strip_network(n, procurement)
 
+            if procurement["strip_snapshots"]:
+                print("stript_snapshots is activated")
+                m = n.copy()
+                m.set_snapshots(n.snapshots[:168])
+                n = m.copy()
+
             Nyears = n.snapshot_weightings.objective.sum() / 8760.0
             costs = load_costs(
                 snakemake.input.costs,
