@@ -75,7 +75,7 @@ vol-match-short--3H:
     participation: 70
 
     strip_snapshots: true
-    strip_network: true
+    #strip_network: true
 
 vol-match-PL-DE-FR-ES-DK-IE-3H:
   enable:
@@ -156,3 +156,6 @@ vol-match-PL-DE-FR-ES-DK-IE-3H:
     scope: node
     energy_matching: 100
     participation: 70
+
+    strip_snapshots: true
+    #strip_network: true

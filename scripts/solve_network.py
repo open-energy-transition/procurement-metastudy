@@ -2672,11 +2672,11 @@ if __name__ == "__main__":
         ):
             procurement = snakemake.params.procurement
 
-            if procurement["strip_network"]:
+            if procurement.get("strip_network", False):
                 print("stript_network is activated")
                 strip_network(n, procurement)
 
-            if procurement["strip_snapshots"]:
+            if procurement.get("strip_snapshots", False):
                 print("stript_snapshots is activated")
                 m = n.copy()
                 m.set_snapshots(n.snapshots[:168])

@@ -29,23 +29,37 @@ def select_scenario(scenarios):
             print(f"'{answer}' not found in the list. Please try again.")
 
 def select_country(df):
+    available_countries = set(df["country"].unique())
+    main_countries = {"DE", "FR", "PL", "ES", "IE", "DK"}
+
     print("\nSelect which country or group of countries to execute:")
     print("  - main: DE, FR, PL, ES, IE, DK")
     print("  - all: all 34 countries individually")
+    print("  - or enter country codes separated by commas (e.g., DE,FR,PL)")
 
     while True:
         answer = input("Select a country or group (or press Enter to cancel): ").strip().lower()
         if not answer:
             return None, df
-        elif answer == "all":
+
+        if answer == "all":
             print("All 34 countries selected.")
             return "all", df
+
         elif answer == "main":
-            countries = ["DE", "FR", "PL", "ES", "IE", "DK"]
-            print(f"Selected main countries: {', '.join(countries)}")
-            return "main", df[df.country.isin(countries)]
+            print(f"Selected main countries: {', '.join(sorted(main_countries))}")
+            return "main", df[df["country"].isin(main_countries)]
+
         else:
-            print(f"'{answer}' is not a valid option. Please try again.")
+            # Split and normalize input
+            selected = {code.strip().upper() for code in answer.split(",")}
+            invalid = selected - available_countries
+
+            if invalid:
+                print(f"Invalid country code(s): {', '.join(sorted(invalid))}. Please try again.")
+            else:
+                print(f"Selected countries: {', '.join(sorted(selected))}")
+                return ",".join(sorted(selected)), df[df["country"].isin(selected)]
 
 def select_profile():
     while True:
@@ -76,10 +90,17 @@ def main():
 
     # User input
     selected_scenario = select_scenario(scenario_list)
-    selected_country, df = select_country(df)
-    selected_profile = select_profile()
+    if not selected_scenario:
+        print("\nOperation cancelled by user.")
+        return
 
-    if not selected_scenario or not selected_country or not selected_profile:
+    selected_country, df = select_country(df)
+    if not selected_country:
+        print("\nOperation cancelled by user.")
+        return
+
+    selected_profile = select_profile()
+    if not selected_profile:
         print("\nOperation cancelled by user.")
         return
 
