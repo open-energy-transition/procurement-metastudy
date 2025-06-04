@@ -143,7 +143,7 @@ def main():
 
     # Extract scenarios with '--'
     scenario_list = [key for key in config_s if "--" in key]
-    baseline_list = [key for key in config_s if "baseline" in key]
+    baseline_list = [key for key in config_s if "baseline" in key and os.path.exists(f"resources/{key}")]
 
     # User input
     selected_scenario = select_scenario(scenario_list, name="scenario")
@@ -163,11 +163,14 @@ def main():
         print("\nOperation cancelled by user.")
         return
 
-    print("\n=================================================================")    
-    selected_procedure = select_procedure()
-    if not selected_procedure:
-        print("\nOperation cancelled by user.")
-        return
+    if len(df) > 1:
+        print("\n=================================================================")    
+        selected_procedure = select_procedure()
+        if not selected_procedure:
+            print("\nOperation cancelled by user.")
+            return
+    else:
+        selected_procedure = "combined"
 
     print("\n=================================================================")
     selected_profile = select_profile()
