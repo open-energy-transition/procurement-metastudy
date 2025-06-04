@@ -2290,18 +2290,21 @@ def load_profile(
         logger.info(
             f"CI load in {load_year.index.values[0]} (PyPSA data):\nannual consumption {round(load_year_val / 10**6)} TWh\nreference config year: {load['load_year']}"
         )
+        logger.info(
+            f"Only {load['share']}% of the total CI load is moved to high voltage side, which corresponds to:\nannual consumption {round((load_year_val / 10**6) * load['share'] / 100)} TWh\nreference config year: {load['load_year']}"
+        )
 
     if procurement["strategy"] == "ref":
         profile = pd.Series(0, index = n.snapshots)
     else:
         if shape == "total":
-            profile = load_year["ci_share"].values[0] * n.loads_t.p_set[location]
+            profile = load['share'] / 100 * load_year["ci_share"].values[0] * n.loads_t.p_set[location]
         elif shape == "total_daily_avg":
             total_daily_avg = n.loads_t.p_set[location].resample('D').mean()
             CI_daily_avg = load_year["ci_share"].values[0] * total_daily_avg
-            profile = CI_daily_avg.reindex(n.snapshots, method="ffill")
+            profile = load['share'] / 100 * CI_daily_avg.reindex(n.snapshots, method="ffill")
         else:
-            load = load_year_val / 8760 # MW
+            load = load['share'] / 100 * load_year_val / 8760 # MW
 
             load_day = load * 24
             load_profile_day = pd.Series(shape) * load_day
@@ -2386,6 +2389,15 @@ def add_ci_load(n: pypsa.Network, config: dict) -> None:
 
         # C&I following voluntary clean energy procurement is a share of C&I load -> subtract it from node's profile
         n.loads_t.p_set[bus] -= n.loads_t.p_set[f"{bus}" + " CI" + " load"]
+
+    ci_load_cols = n.loads_t.p_set.filter(like="CI").columns
+    non_ci_load = n.loads_t.p_set.loc[:, ~n.loads_t.p_set.columns.isin(ci_load_cols)]
+    # Check for negative values in non_ci_load and collect their indices
+    negative_indices = non_ci_load.columns[(non_ci_load.min() < 400)].tolist()
+    if negative_indices:
+        logger.warning(
+            f"Negative background load values found during some snapshots for: {negative_indices}."
+        )
 
 def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> None:
     """

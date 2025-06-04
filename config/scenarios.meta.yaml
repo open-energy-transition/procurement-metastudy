@@ -520,7 +520,7 @@ emi-match-DE-3H:
 
   electricity:
    ci_load:
-      profile: "total"
+      profile: "baseload"
 
   procurement:
     strategy: emi-match
