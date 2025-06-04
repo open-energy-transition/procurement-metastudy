@@ -2426,7 +2426,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
         # ============================================================================
         n.add("Bus",
               name,
-              country="",
+              country= n.buses.country[location],
               location=location,
               x=n.buses.loc[location,"x"],
               y=n.buses.loc[location,"y"],
