@@ -2678,9 +2678,7 @@ if __name__ == "__main__":
 
             if procurement.get("strip_snapshots", False):
                 print("stript_snapshots is activated")
-                m = n.copy()
-                m.set_snapshots(n.snapshots[:168])
-                n = m.copy()
+                n.set_snapshots(n.snapshots[:168])
 
             Nyears = n.snapshot_weightings.objective.sum() / 8760.0
             costs = load_costs(
