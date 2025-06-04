@@ -1734,8 +1734,13 @@ def emission_matching_constraints(n):
                     f"Country {country} does not participate to the emissionality procurement strategy."
                     )
             signal_flat = signal.loc[country, emission_signal_flat]
-            signal_solar = signal.loc[country, emission_signal_solar]
-            signal_wind = signal.loc[country, emission_signal_wind]
+            if np.isnan(signal_flat):
+                raise ValueError(
+                    f"Flat emission signal {emission_signal_flat} for country {country} is not available."
+                )
+            else:
+                signal_solar = signal_flat if np.isnan(signal.loc[country, emission_signal_solar]) else signal.loc[country, emission_signal_solar]
+                signal_wind = signal_flat if np.isnan(signal.loc[country, emission_signal_wind]) else signal.loc[country, emission_signal_wind]
 
         # Build the constraint
         gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
