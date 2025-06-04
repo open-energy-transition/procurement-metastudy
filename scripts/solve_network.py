@@ -1724,32 +1724,60 @@ def emission_matching_constraints(n):
             # Resample emission signal
             signal = signal.resample(f'{scaling}h').mean().reindex(n.snapshots, method="nearest")
         else:
-            emission_signal = "flat_" + emission_signal.upper()
-            signal = pd.read_csv(f"{signal_path}", index_col=0)
+            emission_signal_flat = "flat_" + emission_signal.upper()
+            emission_signal_solar = "solar_" + emission_signal.upper()
+            emission_signal_wind = "wind_" + emission_signal.upper()
+            signal = pd.read_csv(f"{signal_path}", index_col=0) / 1000 # Convert kgCO2/MWh to tCO2/MWh
             signal.rename(index={"UK": "GB", "LX": "LU"}, inplace=True)
             if country not in signal.index:
                 raise KeyError(
                     f"Country {country} does not participate to the emissionality procurement strategy."
                     )
-            signal = signal.loc[country, emission_signal] / 1000 # Convert kgCO2/MWh to tCO2/MWh
+            signal_flat = signal.loc[country, emission_signal_flat]
+            signal_solar = signal.loc[country, emission_signal_solar]
+            signal_wind = signal.loc[country, emission_signal_wind]
 
         # Build the constraint
         gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
         links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
 
-        gen_avoided = (n.model["Generator-p"].loc[:, gen_ci] * weights * signal).sum()
-        link_avoided = (
-            n.model["Link-p"].loc[:, links_ci]
-            * n.links.loc[links_ci].efficiency
-            * weights
-            * signal
-        ).sum()
+        if signal_source == "model":
+            gen_avoided = (n.model["Generator-p"].loc[:, gen_ci] * weights * signal).sum()
+            
+            link_avoided = (
+                n.model["Link-p"].loc[:, links_ci]
+                * n.links.loc[links_ci].efficiency
+                * weights
+                * signal
+            ).sum()
 
-        link_emitted = (
-            n.model["Link-p"].loc[:, links_ci]
-            * n.links.loc[links_ci].efficiency2
-            * weights
-        ).sum()
+            link_emitted = (
+                n.model["Link-p"].loc[:, links_ci]
+                * n.links.loc[links_ci].efficiency2
+                * weights
+            ).sum()
+        else:
+            gen_ci_solar = [g for g in gen_ci if "solar" in g]
+            gen_ci_wind = [g for g in gen_ci if "wind" in g]
+            gen_ci_others = [g for g in gen_ci if g not in gen_ci_solar + gen_ci_wind]
+
+            gen_avoided_flat = (n.model["Generator-p"].loc[:, gen_ci_others] * weights * signal_flat).sum()
+            gen_avoided_solar = (n.model["Generator-p"].loc[:, gen_ci_solar] * weights * signal_solar).sum()
+            gen_avoided_wind = (n.model["Generator-p"].loc[:, gen_ci_wind] * weights * signal_wind).sum()
+            gen_avoided = gen_avoided_flat + gen_avoided_solar + gen_avoided_wind
+            
+            link_avoided = (
+                n.model["Link-p"].loc[:, links_ci]
+                * n.links.loc[links_ci].efficiency
+                * weights
+                * signal_flat
+            ).sum()
+
+            link_emitted = (
+                n.model["Link-p"].loc[:, links_ci]
+                * n.links.loc[links_ci].efficiency2
+                * weights
+            ).sum()
 
         lhs = emission_matching * (gen_avoided + link_avoided - link_emitted)
 
