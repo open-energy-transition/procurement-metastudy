@@ -2392,7 +2392,7 @@ def add_ci_load(n: pypsa.Network, config: dict) -> None:
 
     ci_load_cols = n.loads_t.p_set.filter(like="CI").columns
     non_ci_load = n.loads_t.p_set.loc[:, ~n.loads_t.p_set.columns.isin(ci_load_cols)]
-    # Check for negative values in non_ci_load and collect their indices
+    # Check for negative background load values
     negative_indices = non_ci_load.columns[(non_ci_load.min() < 400)].tolist()
     if negative_indices:
         logger.warning(
