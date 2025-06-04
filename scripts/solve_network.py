@@ -1756,6 +1756,8 @@ def emission_matching_constraints(n):
                 * n.links.loc[links_ci].efficiency2
                 * weights
             ).sum()
+
+            load_emissions = (n.loads_t.p_set[name + " load"] * weights * signal).sum()
         else:
             gen_ci_solar = [g for g in gen_ci if "solar" in g]
             gen_ci_wind = [g for g in gen_ci if "wind" in g]
@@ -1779,12 +1781,14 @@ def emission_matching_constraints(n):
                 * weights
             ).sum()
 
+            load_emissions = (n.loads_t.p_set[name + " load"] * weights * signal_flat).sum()
+
         lhs = emission_matching * (gen_avoided + link_avoided - link_emitted)
 
-        total_emissions = (n.loads_t.p_set[name + " load"] * weights * signal).sum()
+        rhs = load_emissions
 
         n.model.add_constraints(
-            lhs >= total_emissions, name=f"emission_matching_{name}"
+            lhs >= rhs, name=f"emission_matching_{name}"
         )
 
 
