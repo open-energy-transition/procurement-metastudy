@@ -524,6 +524,36 @@ def prepare_network(
         )
 
 
+def determine_storage_carrier(n):
+    """
+    Determine carriers associated with storage by:
+    - Finding links connecting storage-only buses to the grid
+    - Finding storage units without inflow
+
+    The goal is to identify carriers with a net negative balance for possible exclusion.
+    """
+
+    storage_only_buses = n.buses.loc[
+        n.buses.index.isin(n.stores.bus.unique()) &
+        ~n.buses.location.isin(["EU",""])
+    ].index
+    
+    grid_buses = n.buses[n.buses.carrier.isin(["AC", "low voltage"])].index
+    
+    storage_links = n.links.loc[
+        (n.links.bus0.isin(storage_only_buses) & n.links.bus1.isin(grid_buses)) |
+        (n.links.bus1.isin(storage_only_buses) & n.links.bus0.isin(grid_buses)) 
+    ].carrier.unique()
+
+    storage_units_with_inflow = n.storage_units_t.inflow.sum().loc[lambda x: x != 0].index
+    storage_units_without_inflow = n.storage_units.loc[
+        ~n.storage_units.index.isin(storage_units_with_inflow)
+    ]
+    storage_units = storage_units_without_inflow.carrier.unique()
+    
+    return list(storage_links) + list(storage_units)
+
+
 def calculate_grid_score(
     n: pypsa.Network, include_techs: list, name: str, include_ci=False
 ) -> None:
@@ -551,6 +581,9 @@ def calculate_grid_score(
     """
 
     weights = n.snapshot_weightings["generators"]
+    negative_carriers = determine_storage_carrier(n)
+    grid_carriers = ["electricity distribution grid", "AC", "DC"]
+    exclude_carriers = grid_carriers + negative_carriers
 
     def get_values(n, df, df_t, bus_col, include_techs, include_ci=False):
         # Map low-voltage bus to main grid bus
@@ -569,8 +602,7 @@ def calculate_grid_score(
         df_t = df_t.join(df[[bus_col, "carrier"]])
         df_t["bus"] = df_t[bus_col].map(low_voltage_map).fillna(df_t[bus_col])
 
-        # Filter out grid specific carriers
-        exclude_carriers = {"electricity distribution grid", "AC", "DC"}
+        # Filter out grid specific and storage carriers
         df_t = df_t[df_t["bus"].isin(grid_buses) & ~df_t.carrier.isin(exclude_carriers)]
 
         # Remove CI if include_ci is False
@@ -1364,7 +1396,10 @@ def ember_res_target(n):
     # --- Helper function to filter and assign country ---
     ci = procurement.get("ci", {})
     ci_location = {k: v["location"] for k, v in ci.items()}
+    negative_carriers = determine_storage_carrier(n)
     grid_carriers = ["electricity distribution grid", "AC", "DC", "low voltage"]
+    exclude_carriers = grid_carriers + negative_carriers
+    
     bus_list = n.buses[n.buses.carrier.isin(grid_carriers)].index
 
     def get_carriers(dataframe, bus_col):
@@ -1374,7 +1409,7 @@ def ember_res_target(n):
         return (
             df[
                 df[bus_col].isin(bus_list)
-                & ~df["carrier"].isin(grid_carriers)
+                & ~df["carrier"].isin(exclude_carriers)
                 & (
                     df["ci"].isin([np.NaN, ""])
                     if "ci" in df.columns and res_target["res_additionality"]
