@@ -96,6 +96,7 @@ electricity:
     load_year: 2023
     profile: "total" # type of load profile (e.g., "baseload", "industry", "total_daily_avg", "total")
 
+  freeze_capacity: false
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#transmission_projects
 transmission_projects:

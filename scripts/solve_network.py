@@ -2656,6 +2656,66 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
         logger.info(f"Include {storage_available_carriers} for the CI: {name}.")
 
 
+def freeze_capacity(n):
+    """
+    Freeze capacities of expandable variable renewable generators
+    """
+    # Define variable renewable carriers
+    res_carriers = [
+        "solar", "solar-hsat", "solar rooftop", 
+        "onwind", "offwind-ac", "offwind-dc", "offwind-float"
+    ]
+
+    # Freeze existing capacities for variable renewables
+    mask_res = (
+        n.generators.carrier.isin(res_carriers) & 
+        (n.generators.p_nom_max != np.inf)
+    )
+    n.generators.loc[mask_res, "p_nom_extendable"] = False
+
+    # Reallocate unused capacity to CI generators (if exist)
+    if "ci" in n.generators.columns:
+        logger.info("Freeze capacity activated — reallocating potential capacity to CI components")
+
+        # Calculate remaining extendable capacity 
+        remaining_cap = (
+            n.generators.loc[mask_res, "p_nom_max"] - 
+            n.generators.loc[mask_res, "p_nom"]
+        )
+
+        # Candidate gen_ci: must be extendable and in res_carriers
+        gen_ci = n.generators.loc[
+            n.generators.carrier.isin(res_carriers) & 
+            (n.generators.p_nom_extendable == True)
+        ]
+
+        # Extract (bus, carrier) pairs present in gen_ci
+        gen_ci_keys = set(zip(gen_ci.bus, gen_ci.carrier))
+
+        # Keep only (bus, carrier) pairs that exist in gen_ci
+        df_remaining = n.generators.loc[mask_res, ["bus", "carrier"]]
+        df_remaining["key"] = list(zip(df_remaining.bus, df_remaining.carrier))
+        df_remaining = df_remaining[df_remaining["key"].isin(gen_ci_keys)]
+
+        for idx, row in df_remaining.iterrows():
+            bus = row["bus"]
+            carrier = row["carrier"]
+            rem_cap = remaining_cap.loc[idx]
+
+            # Find matching gen_ci for that (bus, carrier)
+            match = gen_ci.loc[
+                (gen_ci.bus == bus) & 
+                (gen_ci.carrier == carrier)
+            ]
+
+            if not match.empty:
+                best_idx = match.sort_values("ci").index[0]
+                n.generators.at[best_idx, "p_nom_max"] = rem_cap
+                print(f"Reassigned {rem_cap:.2f} MW from {idx} → {best_idx}")
+    else:
+        logger.info("Freeze capacity activated")
+
+
 # %%
 if __name__ == "__main__":
     if "snakemake" not in globals():
@@ -2723,6 +2783,9 @@ if __name__ == "__main__":
                 Nyears,
             )
             add_ci_procurement(n, snakemake.wildcards.planning_horizons, snakemake.params, costs)
+
+        if snakemake.params.electricity.get("freeze_capacity", False):
+            freeze_capacity(n)
 
         solve_network(
             n,
