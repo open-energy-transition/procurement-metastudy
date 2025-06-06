@@ -18,13 +18,12 @@ baseline-3H:
   enable:
     procurement: false
 
-baseline-1H:
+baseline-2025-3H:
+  scenario:
+    planning_horizons: 2025
+  
   enable:
     procurement: false
-
-  clustering:
-    temporal:
-      resolution_sector: 1H
 
 # ======== Baseline model with volume matching ========
 # =====================================================
@@ -35,13 +34,31 @@ vol-match--3H:
   
   electricity:
    ci_load:
-      profile: "total"
+      profile: "baseload"
 
   procurement:
     strategy: vol-match
     scope: "all"
     energy_matching: 100
-    participation: 70
+    participation: 20
+
+vol-match-no_ember--3H:
+  enable:
+    procurement: true
+  
+  electricity:
+   ci_load:
+      profile: "baseload"
+  
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+
+  procurement:
+    strategy: vol-match
+    scope: "all"
+    energy_matching: 100
+    participation: 20
 
 vol-match-add--3H:
   enable:
@@ -49,7 +66,7 @@ vol-match-add--3H:
   
   electricity:
    ci_load:
-      profile: "total"
+      profile: "baseload"
 
   res_target:
     res_additionality: true
@@ -58,56 +75,26 @@ vol-match-add--3H:
     strategy: vol-match
     scope: "all"
     energy_matching: 100
-    participation: 70
+    participation: 20
 
-vol-match-short--3H:
+vol-match-add-no_ember--3H:
   enable:
     procurement: true
   
   electricity:
    ci_load:
-      profile: "total"
+      profile: "baseload"
 
-  procurement:
-    strategy: vol-match
-    scope: "country"
-    energy_matching: 100
-    participation: 70
-
-    strip_snapshots: true
-    #strip_network: true
-
-vol-match-PL-DE-FR-ES-DK-IE-3H:
-  enable:
-    procurement: true
-  
-  electricity:
-   ci_load:
-      profile: "total"
-  
-  solving:
-    mem_mb: 150000
-    runtime: 24h
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+    res_additionality: true
 
   procurement:
     strategy: vol-match
     scope: "all"
     energy_matching: 100
-    participation: 70
-
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Denmark:
-        location: "DK0 0"
-      Ireland:
-        location: "IE3 0"
+    participation: 20
 
 # ======== Baseline model with 247 CFE matching ========
 # ======================================================
@@ -118,13 +105,13 @@ vol-match-PL-DE-FR-ES-DK-IE-3H:
 
   electricity:
    ci_load:
-      profile: "total"
+      profile: "baseload"
 
   procurement:
     strategy: 247-cfe
     scope: node
     energy_matching: 100
-    participation: 70
+    participation: 20
 
 247-cfe-add--3H:
   enable:
@@ -132,7 +119,7 @@ vol-match-PL-DE-FR-ES-DK-IE-3H:
 
   electricity:
    ci_load:
-      profile: "total"
+      profile: "baseload"
 
   res_target:
     res_additionality: true
@@ -141,207 +128,12 @@ vol-match-PL-DE-FR-ES-DK-IE-3H:
     strategy: 247-cfe
     scope: node
     energy_matching: 100
-    participation: 70
-
-247-cfe-short--3H:
-  enable:
-    procurement: true
-
-  electricity:
-   ci_load:
-      profile: "total"
-
-  procurement:
-    strategy: 247-cfe
-    scope: node
-    energy_matching: 100
-    participation: 70
-
-    ci:
-      Germany:
-        location: "DE0 0"
-
-247-cfe-add-DE-3H:
-  enable:
-    procurement: true
-
-  electricity:
-   ci_load:
-      profile: "total"
-
-  res_target:
-    res_additionality: true
-
-  procurement:
-    strategy: 247-cfe
-    scope: node
-    energy_matching: 100
-    participation: 70
-
-    ci:
-      Germany:
-        location: "DE0 0"
-
-247-cfe-FR-3H:
-  enable:
-    procurement: true
-
-  electricity:
-   ci_load:
-      profile: "total"
-
-  procurement:
-    strategy: 247-cfe
-    scope: node
-    energy_matching: 100
-    participation: 70
-
-    ci:
-      France:
-        location: "FR0 0"
-
-247-cfe-add-FR-3H:
-  enable:
-    procurement: true
-
-  electricity:
-   ci_load:
-      profile: "total"
-
-  res_target:
-    res_additionality: true
-
-  procurement:
-    strategy: 247-cfe
-    scope: node
-    energy_matching: 100
-    participation: 70
-
-    ci:
-      France:
-        location: "FR0 0"
-
-247-cfe-ES-3H:
-  enable:
-    procurement: true
-
-  electricity:
-   ci_load:
-      profile: "total"
-
-  procurement:
-    strategy: 247-cfe
-    scope: node
-    energy_matching: 100
-    participation: 70
-
-    ci:
-      Spain:
-        location: "ES0 0"
-
-247-cfe-add-ES-3H:
-  enable:
-    procurement: true
-
-  electricity:
-   ci_load:
-      profile: "total"
-
-  res_target:
-    res_additionality: true
-
-  procurement:
-    strategy: 247-cfe
-    scope: node
-    energy_matching: 100
-    participation: 70
-
-    ci:
-      Spain:
-        location: "ES0 0"
-
-247-cfe-DK-3H:
-  enable:
-    procurement: true
-
-  electricity:
-   ci_load:
-      profile: "total"
-
-  procurement:
-    strategy: 247-cfe
-    scope: node
-    energy_matching: 100
-    participation: 70
-
-    ci:
-      Denmark:
-        location: "DK0 0"
-
-247-cfe-add-DK-3H:
-  enable:
-    procurement: true
-
-  electricity:
-   ci_load:
-      profile: "total"
-
-  res_target:
-    res_additionality: true
-
-  procurement:
-    strategy: 247-cfe
-    scope: node
-    energy_matching: 100
-    participation: 70
-
-    ci:
-      Denmark:
-        location: "DK0 0"
-
-247-cfe-IE-3H:
-  enable:
-    procurement: true
-
-  electricity:
-   ci_load:
-      profile: "total"
-
-  procurement:
-    strategy: 247-cfe
-    scope: node
-    energy_matching: 100
-    participation: 70
-
-    ci:
-      Ireland:
-        location: "IE3 0"
-
-247-cfe-add-IE-3H:
-  enable:
-    procurement: true
-
-  electricity:
-   ci_load:
-      profile: "total"
-
-  res_target:
-    res_additionality: true
-
-  procurement:
-    strategy: 247-cfe
-    scope: node
-    energy_matching: 100
-    participation: 70
-
-    ci:
-      Ireland:
-        location: "IE3 0"
+    participation: 20
 
 # ======== Baseline model with emission matching ========
 # =====================================================
 
-emi-match-DE-3H:
+emi-match-moer--3H:
   enable:
     procurement: true
 
@@ -353,12 +145,68 @@ emi-match-DE-3H:
     strategy: emi-match
     scope: "all"
     energy_matching: 100
-    participation: 70
+    participation: 20
     emissionality:
       emission_matching: 100
-      emission_signal:  aer
-      signal_source: historical
+      emission_signal:  moer
+      signal_source: model
 
-    ci:
-      Germany:
-        location: "DE0 0"
+emi-match-add-moer--3H:
+  enable:
+    procurement: true
+
+  electricity:
+   ci_load:
+      profile: "baseload"
+
+  res_target:
+    res_additionality: true
+
+  procurement:
+    strategy: emi-match
+    scope: "all"
+    energy_matching: 100
+    participation: 20
+    emissionality:
+      emission_matching: 100
+      emission_signal:  moer
+      signal_source: model
+
+emi-match-mber--3H:
+  enable:
+    procurement: true
+
+  electricity:
+   ci_load:
+      profile: "baseload"
+
+  procurement:
+    strategy: emi-match
+    scope: "all"
+    energy_matching: 100
+    participation: 20
+    emissionality:
+      emission_matching: 100
+      emission_signal:  mber
+      signal_source: model
+
+emi-match-add-mber--3H:
+  enable:
+    procurement: true
+
+  electricity:
+   ci_load:
+      profile: "baseload"
+
+  res_target:
+    res_additionality: true
+
+  procurement:
+    strategy: emi-match
+    scope: "all"
+    energy_matching: 100
+    participation: 20
+    emissionality:
+      emission_matching: 100
+      emission_signal:  mber
+      signal_source: model
