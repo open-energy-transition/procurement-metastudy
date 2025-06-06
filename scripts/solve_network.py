@@ -1678,39 +1678,118 @@ def emission_matching_constraints(n):
     """
     Implement strategies for emission matching.
 
-    The avoided emissions (according to MOER) from all CI-related generators (renewable carriers) and links (conventional/clean carriers) are greater than or equal to some percentage of their annual emissions from load consumption.
+    The avoided emissions from all CI-related generators (renewable carriers) and links (conventional/clean carriers) are greater than or equal to some percentage of their annual emissions from load consumption.
     """
     weights = n.snapshot_weightings["generators"]
-    emission_matching = n.config["procurement"]["emission_matching"] / 100
-    participation = n.config["procurement"]["load"]["participation"] / 100
-    moer = pd.Series(0.382, index=n.snapshots)  # t_CO2/MWh
+
+    emission_matching = n.config["procurement"]["emissionality"]["emission_matching"] / 100
+    emission_signal = n.config["procurement"]["emissionality"]["emission_signal"]
+    signal_source = n.config["procurement"]["emissionality"]["signal_source"]
+
+    allowed_signals = {
+        "aer" : "Average Emission Rate (AER)",
+        "mber" : "Marginal Build Emission Rate (MBER)",
+        "moer" : "Marginal Operating Emission Rate (MOER)",
+        "cmer" : "Combined Marginal Emission Rate (CMER)",
+    }
+
+    if emission_signal in allowed_signals.keys():
+        logger.info(f"The emission signal chosen is {allowed_signals[emission_signal]}")
+        if signal_source == "model":
+            signal_path = n.config["procurement"]["emissionality"]["signal_model"]
+        elif signal_source == "historical":
+            signal_path = n.config["procurement"]["emissionality"]["signal_historical"]
+        else:
+            raise KeyError(
+                f"'signal_source' option must be one of 'model' or 'historical'. Now is '{signal_source}'."
+            )
+    else:
+        raise KeyError(
+            f"'emission_signal' option must be one of 'aer', 'mber', or 'moer'. Now is '{emission_signal}'."
+        )
+
+    scaling = n.snapshot_weightings.objective.sum() / len(
+        n.snapshot_weightings.objective
+    )  # e.g., 3 for 3H time resolution
 
     for name in n.config["procurement"]["ci"]:
+
+        # Read the emission signal data
+        location = n.config["procurement"]["ci"][name]["location"]
+        country = n.buses[n.buses.index == location].country.values[0]
+        if signal_source == "model":
+            signal = pd.read_csv(f"{signal_path}" + f"/{country}.csv", index_col=0)[emission_signal]
+            signal.index = pd.to_datetime(signal.index)
+
+            # Resample emission signal
+            signal = signal.resample(f'{scaling}h').mean().reindex(n.snapshots, method="nearest")
+        else:
+            emission_signal_flat = "flat_" + emission_signal.upper()
+            emission_signal_solar = "solar_" + emission_signal.upper()
+            emission_signal_wind = "wind_" + emission_signal.upper()
+            signal = pd.read_csv(f"{signal_path}", index_col=0) / 1000 # Convert kgCO2/MWh to tCO2/MWh
+            signal.rename(index={"UK": "GB", "LX": "LU"}, inplace=True)
+            if country not in signal.index:
+                raise KeyError(
+                    f"Country {country} does not participate to the emissionality procurement strategy."
+                    )
+            signal_flat = signal.loc[country, emission_signal_flat]
+            if np.isnan(signal_flat):
+                raise ValueError(
+                    f"Flat emission signal {emission_signal_flat} for country {country} is not available."
+                )
+            else:
+                signal_solar = signal_flat if np.isnan(signal.loc[country, emission_signal_solar]) else signal.loc[country, emission_signal_solar]
+                signal_wind = signal_flat if np.isnan(signal.loc[country, emission_signal_wind]) else signal.loc[country, emission_signal_wind]
+
+        # Build the constraint
         gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
         links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
 
-        gen_avoided = (n.model["Generator-p"].loc[:, gen_ci] * weights * moer).sum()
-        link_avoided = (
-            n.model["Link-p"].loc[:, links_ci]
-            * n.links.loc[links_ci].efficiency
-            * weights
-            * moer
-        ).sum()
+        if signal_source == "model":
+            gen_avoided = (n.model["Generator-p"].loc[:, gen_ci] * weights * signal).sum()
+            
+            link_avoided = (
+                n.model["Link-p"].loc[:, links_ci]
+                * n.links.loc[links_ci].efficiency
+                * weights
+                * signal
+            ).sum()
+
+            load_emissions = (n.loads_t.p_set[name + " load"] * weights * signal).sum()
+        else:
+            gen_ci_solar = [g for g in gen_ci if "solar" in g]
+            gen_ci_wind = [g for g in gen_ci if "wind" in g]
+            gen_ci_others = [g for g in gen_ci if g not in gen_ci_solar + gen_ci_wind]
+
+            gen_avoided_flat = (n.model["Generator-p"].loc[:, gen_ci_others] * weights * signal_flat).sum()
+            if (signal_flat > signal_solar) & (signal_flat > signal_wind):
+                gen_avoided_solar = (n.model["Generator-p"].loc[:, gen_ci_solar] * weights * signal_flat*1.01).sum()
+                gen_avoided_wind = (n.model["Generator-p"].loc[:, gen_ci_wind] * weights * signal_flat*1.01).sum()
+            else:
+                gen_avoided_solar = (n.model["Generator-p"].loc[:, gen_ci_solar] * weights * signal_solar).sum()
+                gen_avoided_wind = (n.model["Generator-p"].loc[:, gen_ci_wind] * weights * signal_wind).sum()
+            gen_avoided = gen_avoided_flat + gen_avoided_solar + gen_avoided_wind
+            
+            link_avoided = (
+                n.model["Link-p"].loc[:, links_ci]
+                * n.links.loc[links_ci].efficiency
+                * weights
+                * signal_flat
+            ).sum()
+
+            load_emissions = (n.loads_t.p_set[name + " load"] * weights * signal_flat).sum()
 
         link_emitted = (
             n.model["Link-p"].loc[:, links_ci]
             * n.links.loc[links_ci].efficiency2
             * weights
-        ).sum()
-
+            ).sum()
+        
         lhs = emission_matching * (gen_avoided + link_avoided - link_emitted)
 
-        total_emissions = (
-            participation * (n.loads_t.p_set[name + " load"] * weights * moer).sum()
-        )
-
         n.model.add_constraints(
-            lhs >= total_emissions, name=f"emission_matching_{name}"
+            lhs >= load_emissions, name=f"emission_matching_{name}"
         )
 
 
@@ -1803,7 +1882,7 @@ def extra_functionality(
         procurement = config["procurement"]
         strategy = procurement["strategy"]
         energy_matching = procurement["energy_matching"]
-        emission_matching = procurement["emission_matching"]
+        emission_matching = procurement["emissionality"]["emission_matching"]
         res_capacity_constraints(n)
 
         if strategy == "vol-match":
@@ -2226,7 +2305,7 @@ def load_profile(
         shape = shapes[load["profile"]]
     except KeyError:
         print(
-            f"'profile_shape' option must be one of 'baseload' or 'industry'. Now is {load['profile']}."
+            f"'profile_shape' option must be one of 'baseload', 'industry', 'total_daily_avg', or 'total'. Now is {load['profile']}."
         )
         sys.exit()
 
@@ -2244,18 +2323,21 @@ def load_profile(
         logger.info(
             f"CI load in {load_year.index.values[0]} (PyPSA data):\nannual consumption {round(load_year_val / 10**6)} TWh\nreference config year: {load['load_year']}"
         )
+        logger.info(
+            f"Only {load['share']}% of the total CI load is moved to high voltage side, which corresponds to:\nannual consumption {round((load_year_val / 10**6) * load['share'] / 100)} TWh\nreference config year: {load['load_year']}"
+        )
 
     if procurement["strategy"] == "ref":
         profile = pd.Series(0, index = n.snapshots)
     else:
         if shape == "total":
-            profile = load_year["ci_share"].values[0] * n.loads_t.p_set[location]
+            profile = load['share'] / 100 * load_year["ci_share"].values[0] * n.loads_t.p_set[location]
         elif shape == "total_daily_avg":
             total_daily_avg = n.loads_t.p_set[location].resample('D').mean()
             CI_daily_avg = load_year["ci_share"].values[0] * total_daily_avg
-            profile = CI_daily_avg.reindex(n.snapshots, method="ffill")
+            profile = load['share'] / 100 * CI_daily_avg.reindex(n.snapshots, method="ffill")
         else:
-            load = load_year_val / 8760 # MW
+            load = load['share'] / 100 * load_year_val / 8760 # MW
 
             load_day = load * 24
             load_profile_day = pd.Series(shape) * load_day
@@ -2263,7 +2345,7 @@ def load_profile(
 
             if scaling != 1.0:
                 load_profile_year.index = pd.date_range(
-                    start="2013-01-01", periods=len(load_profile_year), freq="h"
+                    start=n.snapshots[0], periods=len(load_profile_year), freq="h"
                 )
                 profile = (
                     load_profile_year.resample(f"{int(scaling)}h")
@@ -2341,6 +2423,15 @@ def add_ci_load(n: pypsa.Network, config: dict) -> None:
         # C&I following voluntary clean energy procurement is a share of C&I load -> subtract it from node's profile
         n.loads_t.p_set[bus] -= n.loads_t.p_set[f"{bus}" + " CI" + " load"]
 
+    ci_load_cols = n.loads_t.p_set.filter(like="CI").columns
+    non_ci_load = n.loads_t.p_set.loc[:, ~n.loads_t.p_set.columns.isin(ci_load_cols)]
+    # Check for negative background load values
+    negative_indices = non_ci_load.columns[(non_ci_load.min() < 400)].tolist()
+    if negative_indices:
+        logger.warning(
+            f"Negative background load values found during some snapshots for: {negative_indices}."
+        )
+
 def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.DataFrame) -> None:
     """
     Add C&I buyer(s) to the network.
@@ -2368,7 +2459,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
         # ============================================================================
         n.add("Bus",
               name,
-              country="",
+              country= n.buses.country[location],
               location=location,
               x=n.buses.loc[location,"x"],
               y=n.buses.loc[location,"y"],
@@ -2628,7 +2719,7 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "solve_sector_network_myopic",
-            run="vol-match-DE-3H", #"baseline-3H"
+            run="emi-match-DE-3H", #"baseline-3H"
             opts="",
             clusters="39",
             configfiles="config/config.meta.yaml",
