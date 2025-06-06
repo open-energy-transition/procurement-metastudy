@@ -133,7 +133,7 @@ vol-match-add-no_ember--3H:
 # ======== Baseline model with emission matching ========
 # =====================================================
 
-emi-match-moer--3H:
+emi-match-model-moer--3H:
   enable:
     procurement: true
 
@@ -151,7 +151,7 @@ emi-match-moer--3H:
       emission_signal:  moer
       signal_source: model
 
-emi-match-add-moer--3H:
+emi-match-add-model-moer--3H:
   enable:
     procurement: true
 
@@ -172,7 +172,7 @@ emi-match-add-moer--3H:
       emission_signal:  moer
       signal_source: model
 
-emi-match-mber--3H:
+emi-match-model-mber--3H:
   enable:
     procurement: true
 
@@ -190,7 +190,7 @@ emi-match-mber--3H:
       emission_signal:  mber
       signal_source: model
 
-emi-match-add-mber--3H:
+emi-match-add-model-mber--3H:
   enable:
     procurement: true
 
