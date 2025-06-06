@@ -2763,9 +2763,13 @@ if __name__ == "__main__":
         ):
             procurement = snakemake.params.procurement
 
-            if procurement["strip_network"]:
+            if procurement.get("strip_network", False):
                 print("stript_network is activated")
                 strip_network(n, procurement)
+
+            if procurement.get("strip_snapshots", False):
+                print("stript_snapshots is activated")
+                n.set_snapshots(n.snapshots[:168])
 
             Nyears = n.snapshot_weightings.objective.sum() / 8760.0
             costs = load_costs(
