@@ -664,7 +664,8 @@ def calculate_grid_score(
         global_score = round(
             (weights @ n.buses_t[f"{name}_p"]).sum() / (weights @ all_p).sum() * 100, 2
         )
-        logger.info(f"The average {name}_score is: {global_score}%")
+        global_gen = round((weights @ n.buses_t[f"{name}_p"]).sum() / 1e6, 2)
+        logger.info(f"The average {name}_score is: {global_score}% and {global_gen} TWh")
 
     # ===================== Add impact of interconnection =====================
     # =========================================================================
@@ -2008,7 +2009,6 @@ def solve_network(
         status, condition = "", ""
     elif (
         n.params.get("procurement_enable", False)
-        and str(n.params.procurement.get("year", False)) == planning_horizons
         and n.params.procurement.get("strategy", False) == "247-cfe"
     ):
         status, condition = optimize_model_iteratively(n, config, **kwargs)
@@ -2682,6 +2682,8 @@ def freeze_capacity(n):
             n.generators.loc[mask_res, "p_nom_max"] - 
             n.generators.loc[mask_res, "p_nom"]
         )
+        # Remove p_nom_max of existing capacities
+        n.generators.loc[mask_res, "p_nom_max"] = 0
 
         # Candidate gen_ci: must be extendable and in res_carriers
         gen_ci = n.generators.loc[
@@ -2711,7 +2713,7 @@ def freeze_capacity(n):
             if not match.empty:
                 best_idx = match.sort_values("ci").index[0]
                 n.generators.at[best_idx, "p_nom_max"] = rem_cap
-                print(f"Reassigned {rem_cap:.2f} MW from {idx} → {best_idx}")
+                logger.info(f"Reassigned {rem_cap:.2f} MW from {idx} → {best_idx}")
     else:
         logger.info("Freeze capacity activated")
 
@@ -2760,19 +2762,16 @@ if __name__ == "__main__":
         
         add_ci_load(n, snakemake.params)
 
-        if (
-            snakemake.params.get("procurement_enable", False)
-            and str(snakemake.params.procurement.get("year", False))
-            == planning_horizons
-        ):
+        if snakemake.params.get("procurement_enable", False):
+            logger.info(f"Procurement is activated for the year {planning_horizons}")
             procurement = snakemake.params.procurement
 
             if procurement.get("strip_network", False):
-                print("stript_network is activated")
+                logger.info("stript_network is activated")
                 strip_network(n, procurement)
 
             if procurement.get("strip_snapshots", False):
-                print("stript_snapshots is activated")
+                logger.info("stript_snapshots is activated")
                 n.set_snapshots(n.snapshots[:168])
 
             Nyears = n.snapshot_weightings.objective.sum() / 8760.0
