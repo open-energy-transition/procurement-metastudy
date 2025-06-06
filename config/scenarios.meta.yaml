@@ -19,11 +19,24 @@ baseline-3H:
     procurement: false
 
 baseline-2025-3H:
-  scenario:
-    planning_horizons: 2025
+  # NOTE: scenario section can only be changed in config.meta.yaml
+  # scenario:
+  #   planning_horizons: 
+  #   - 2025
   
   enable:
     procurement: false
+
+  electricity:
+    powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
+    freeze_capacity: true
+
+  costs:
+    year: 2025
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
 
 # ======== Baseline model with volume matching ========
 # =====================================================
