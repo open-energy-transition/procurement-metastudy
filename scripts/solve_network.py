@@ -524,6 +524,36 @@ def prepare_network(
         )
 
 
+def determine_storage_carrier(n):
+    """
+    Determine carriers associated with storage by:
+    - Finding links connecting storage-only buses to the grid
+    - Finding storage units without inflow
+
+    The goal is to identify carriers with a net negative balance for possible exclusion.
+    """
+
+    storage_only_buses = n.buses.loc[
+        n.buses.index.isin(n.stores.bus.unique()) &
+        ~n.buses.location.isin(["EU",""])
+    ].index
+    
+    grid_buses = n.buses[n.buses.carrier.isin(["AC", "low voltage"])].index
+    
+    storage_links = n.links.loc[
+        (n.links.bus0.isin(storage_only_buses) & n.links.bus1.isin(grid_buses)) |
+        (n.links.bus1.isin(storage_only_buses) & n.links.bus0.isin(grid_buses)) 
+    ].carrier.unique()
+
+    storage_units_with_inflow = n.storage_units_t.inflow.sum().loc[lambda x: x != 0].index
+    storage_units_without_inflow = n.storage_units.loc[
+        ~n.storage_units.index.isin(storage_units_with_inflow)
+    ]
+    storage_units = storage_units_without_inflow.carrier.unique()
+    
+    return list(storage_links) + list(storage_units)
+
+
 def calculate_grid_score(
     n: pypsa.Network, include_techs: list, name: str, include_ci=False
 ) -> None:
@@ -551,6 +581,9 @@ def calculate_grid_score(
     """
 
     weights = n.snapshot_weightings["generators"]
+    negative_carriers = determine_storage_carrier(n)
+    grid_carriers = ["electricity distribution grid", "AC", "DC"]
+    exclude_carriers = grid_carriers + negative_carriers
 
     def get_values(n, df, df_t, bus_col, include_techs, include_ci=False):
         # Map low-voltage bus to main grid bus
@@ -569,8 +602,7 @@ def calculate_grid_score(
         df_t = df_t.join(df[[bus_col, "carrier"]])
         df_t["bus"] = df_t[bus_col].map(low_voltage_map).fillna(df_t[bus_col])
 
-        # Filter out grid specific carriers
-        exclude_carriers = {"electricity distribution grid", "AC", "DC"}
+        # Filter out grid specific and storage carriers
         df_t = df_t[df_t["bus"].isin(grid_buses) & ~df_t.carrier.isin(exclude_carriers)]
 
         # Remove CI if include_ci is False
@@ -632,7 +664,8 @@ def calculate_grid_score(
         global_score = round(
             (weights @ n.buses_t[f"{name}_p"]).sum() / (weights @ all_p).sum() * 100, 2
         )
-        logger.info(f"The average {name}_score is: {global_score}%")
+        global_gen = round((weights @ n.buses_t[f"{name}_p"]).sum() / 1e6, 2)
+        logger.info(f"The average {name}_score is: {global_score}% and {global_gen} TWh")
 
     # ===================== Add impact of interconnection =====================
     # =========================================================================
@@ -1364,7 +1397,10 @@ def ember_res_target(n):
     # --- Helper function to filter and assign country ---
     ci = procurement.get("ci", {})
     ci_location = {k: v["location"] for k, v in ci.items()}
+    negative_carriers = determine_storage_carrier(n)
     grid_carriers = ["electricity distribution grid", "AC", "DC", "low voltage"]
+    exclude_carriers = grid_carriers + negative_carriers
+    
     bus_list = n.buses[n.buses.carrier.isin(grid_carriers)].index
 
     def get_carriers(dataframe, bus_col):
@@ -1374,7 +1410,7 @@ def ember_res_target(n):
         return (
             df[
                 df[bus_col].isin(bus_list)
-                & ~df["carrier"].isin(grid_carriers)
+                & ~df["carrier"].isin(exclude_carriers)
                 & (
                     df["ci"].isin([np.NaN, ""])
                     if "ci" in df.columns and res_target["res_additionality"]
@@ -2052,7 +2088,6 @@ def solve_network(
         status, condition = "", ""
     elif (
         n.params.get("procurement_enable", False)
-        and str(n.params.procurement.get("year", False)) == planning_horizons
         and n.params.procurement.get("strategy", False) == "247-cfe"
     ):
         status, condition = optimize_model_iteratively(n, config, **kwargs)
@@ -2712,6 +2747,68 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
         logger.info(f"Include {storage_available_carriers} for the CI: {name}.")
 
 
+def freeze_capacity(n):
+    """
+    Freeze capacities of expandable variable renewable generators
+    """
+    # Define variable renewable carriers
+    res_carriers = [
+        "solar", "solar-hsat", "solar rooftop", 
+        "onwind", "offwind-ac", "offwind-dc", "offwind-float"
+    ]
+
+    # Freeze existing capacities for variable renewables
+    mask_res = (
+        n.generators.carrier.isin(res_carriers) & 
+        (n.generators.p_nom_max != np.inf)
+    )
+    n.generators.loc[mask_res, "p_nom_extendable"] = False
+
+    # Reallocate unused capacity to CI generators (if exist)
+    if "ci" in n.generators.columns:
+        logger.info("Freeze capacity activated — reallocating potential capacity to CI components")
+
+        # Calculate remaining extendable capacity 
+        remaining_cap = (
+            n.generators.loc[mask_res, "p_nom_max"] - 
+            n.generators.loc[mask_res, "p_nom"]
+        )
+        # Remove p_nom_max of existing capacities
+        n.generators.loc[mask_res, "p_nom_max"] = 0
+
+        # Candidate gen_ci: must be extendable and in res_carriers
+        gen_ci = n.generators.loc[
+            n.generators.carrier.isin(res_carriers) & 
+            (n.generators.p_nom_extendable == True)
+        ]
+
+        # Extract (bus, carrier) pairs present in gen_ci
+        gen_ci_keys = set(zip(gen_ci.bus, gen_ci.carrier))
+
+        # Keep only (bus, carrier) pairs that exist in gen_ci
+        df_remaining = n.generators.loc[mask_res, ["bus", "carrier"]]
+        df_remaining["key"] = list(zip(df_remaining.bus, df_remaining.carrier))
+        df_remaining = df_remaining[df_remaining["key"].isin(gen_ci_keys)]
+
+        for idx, row in df_remaining.iterrows():
+            bus = row["bus"]
+            carrier = row["carrier"]
+            rem_cap = remaining_cap.loc[idx]
+
+            # Find matching gen_ci for that (bus, carrier)
+            match = gen_ci.loc[
+                (gen_ci.bus == bus) & 
+                (gen_ci.carrier == carrier)
+            ]
+
+            if not match.empty:
+                best_idx = match.sort_values("ci").index[0]
+                n.generators.at[best_idx, "p_nom_max"] = rem_cap
+                logger.info(f"Reassigned {rem_cap:.2f} MW from {idx} → {best_idx}")
+    else:
+        logger.info("Freeze capacity activated")
+
+
 # %%
 if __name__ == "__main__":
     if "snakemake" not in globals():
@@ -2756,19 +2853,16 @@ if __name__ == "__main__":
         
         add_ci_load(n, snakemake.params)
 
-        if (
-            snakemake.params.get("procurement_enable", False)
-            and str(snakemake.params.procurement.get("year", False))
-            == planning_horizons
-        ):
+        if snakemake.params.get("procurement_enable", False):
+            logger.info(f"Procurement is activated for the year {planning_horizons}")
             procurement = snakemake.params.procurement
 
             if procurement.get("strip_network", False):
-                print("stript_network is activated")
+                logger.info("stript_network is activated")
                 strip_network(n, procurement)
 
             if procurement.get("strip_snapshots", False):
-                print("stript_snapshots is activated")
+                logger.info("stript_snapshots is activated")
                 n.set_snapshots(n.snapshots[:168])
 
             Nyears = n.snapshot_weightings.objective.sum() / 8760.0
@@ -2779,6 +2873,9 @@ if __name__ == "__main__":
                 Nyears,
             )
             add_ci_procurement(n, snakemake.wildcards.planning_horizons, snakemake.params, costs)
+
+        if snakemake.params.electricity.get("freeze_capacity", False):
+            freeze_capacity(n)
 
         solve_network(
             n,
