@@ -1756,12 +1756,6 @@ def emission_matching_constraints(n):
                 * signal
             ).sum()
 
-            link_emitted = (
-                n.model["Link-p"].loc[:, links_ci]
-                * n.links.loc[links_ci].efficiency2
-                * weights
-            ).sum()
-
             load_emissions = (n.loads_t.p_set[name + " load"] * weights * signal).sum()
         else:
             gen_ci_solar = [g for g in gen_ci if "solar" in g]
@@ -1769,8 +1763,12 @@ def emission_matching_constraints(n):
             gen_ci_others = [g for g in gen_ci if g not in gen_ci_solar + gen_ci_wind]
 
             gen_avoided_flat = (n.model["Generator-p"].loc[:, gen_ci_others] * weights * signal_flat).sum()
-            gen_avoided_solar = (n.model["Generator-p"].loc[:, gen_ci_solar] * weights * signal_solar).sum()
-            gen_avoided_wind = (n.model["Generator-p"].loc[:, gen_ci_wind] * weights * signal_wind).sum()
+            if (signal_flat > signal_solar) & (signal_flat > signal_wind):
+                gen_avoided_solar = (n.model["Generator-p"].loc[:, gen_ci_solar] * weights * signal_flat*1.01).sum()
+                gen_avoided_wind = (n.model["Generator-p"].loc[:, gen_ci_wind] * weights * signal_flat*1.01).sum()
+            else:
+                gen_avoided_solar = (n.model["Generator-p"].loc[:, gen_ci_solar] * weights * signal_solar).sum()
+                gen_avoided_wind = (n.model["Generator-p"].loc[:, gen_ci_wind] * weights * signal_wind).sum()
             gen_avoided = gen_avoided_flat + gen_avoided_solar + gen_avoided_wind
             
             link_avoided = (
@@ -1780,20 +1778,18 @@ def emission_matching_constraints(n):
                 * signal_flat
             ).sum()
 
-            link_emitted = (
-                n.model["Link-p"].loc[:, links_ci]
-                * n.links.loc[links_ci].efficiency2
-                * weights
-            ).sum()
-
             load_emissions = (n.loads_t.p_set[name + " load"] * weights * signal_flat).sum()
 
+        link_emitted = (
+            n.model["Link-p"].loc[:, links_ci]
+            * n.links.loc[links_ci].efficiency2
+            * weights
+            ).sum()
+        
         lhs = emission_matching * (gen_avoided + link_avoided - link_emitted)
 
-        rhs = load_emissions
-
         n.model.add_constraints(
-            lhs >= rhs, name=f"emission_matching_{name}"
+            lhs >= load_emissions, name=f"emission_matching_{name}"
         )
 
 
