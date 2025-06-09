@@ -1953,7 +1953,6 @@ def extra_functionality(
 
     if (
         n.params.get("procurement_enable", False)
-        and str(n.config.get("procurement", {}).get("year", False)) == planning_horizons
     ):
         procurement = config["procurement"]
         strategy = procurement["strategy"]
@@ -2004,8 +2003,8 @@ def optimize_model_iteratively(n: pypsa.Network, config: dict, **kwargs):
         Termination condition
     """
 
-    procurment = config["procurement"]
-    n_iterations = procurment["min_iterations"]
+    procurement = config["procurement"]
+    n_iterations = procurement["min_iterations"]
 
     for i in range(n_iterations):
         logger.info(f"Iteration: {i + 1}")
@@ -2856,7 +2855,7 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "solve_sector_network_myopic",
-            run="emi-match-DE-3H", #"baseline-3H"
+            run= "emi-match-DE-3H", #"baseline-3H",
             opts="",
             clusters="39",
             configfiles="config/config.meta.yaml",
