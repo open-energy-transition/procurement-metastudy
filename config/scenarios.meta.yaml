@@ -353,7 +353,7 @@ emi-match-DE-3H:
     strategy: emi-match
     scope: "all"
     energy_matching: 100
-    participation: 70
+    participation: 20
     emissionality:
       emission_matching: 100
       emission_signal:  aer
