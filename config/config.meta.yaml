@@ -23,7 +23,8 @@ run:
   prefix: ""
   name:
   #- baseline-3H
-  - emi-match-DE-3H
+  - emi-match-model-moer-DE-3H
+  - emi-match-model-mber-DE-3H
   scenarios:
     enable: true
     file: config/scenarios.meta.yaml

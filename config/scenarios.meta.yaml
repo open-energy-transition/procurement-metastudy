@@ -341,7 +341,7 @@ vol-match-PL-DE-FR-ES-DK-IE-3H:
 # ======== Baseline model with emission matching ========
 # =====================================================
 
-emi-match-DE-3H:
+emi-match-model-moer-DE-3H:
   enable:
     procurement: true
 
@@ -356,7 +356,29 @@ emi-match-DE-3H:
     participation: 20
     emissionality:
       emission_matching: 100
-      emission_signal:  aer
+      emission_signal:  moer
+      signal_source: model
+
+    ci:
+      Germany:
+        location: "DE0 0"
+
+emi-match-model-mber-DE-3H:
+  enable:
+    procurement: true
+
+  electricity:
+   ci_load:
+      profile: "baseload"
+
+  procurement:
+    strategy: emi-match
+    scope: "all"
+    energy_matching: 100
+    participation: 20
+    emissionality:
+      emission_matching: 100
+      emission_signal:  mber
       signal_source: model
 
     ci:
