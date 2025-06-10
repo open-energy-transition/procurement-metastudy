@@ -161,22 +161,19 @@ vol-match-PL-DE-FR-ES-DK-IE-3H:
       Germany:
         location: "DE0 0"
 
-247-cfe-add-DE-3H:
+247-cfe-DE-3H:
   enable:
     procurement: true
 
   electricity:
    ci_load:
-      profile: "total"
-
-  res_target:
-    res_additionality: true
+      profile: "baseload"
 
   procurement:
     strategy: 247-cfe
     scope: node
     energy_matching: 100
-    participation: 70
+    participation: 20
 
     ci:
       Germany:
