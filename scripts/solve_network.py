@@ -2858,7 +2858,7 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "solve_sector_network_myopic",
-            run= "emi-match-DE-3H", #"baseline-3H",
+            run= "vol-match-focus-3H", #"baseline-3H",
             opts="",
             clusters="39",
             configfiles="config/config.meta.yaml",

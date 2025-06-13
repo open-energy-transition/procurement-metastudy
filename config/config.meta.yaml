@@ -22,7 +22,8 @@ remote:
 run:
   prefix: ""
   name:
-  - baseline-1H
+  #- baseline-3H
+  - vol-match-focus-3H
   scenarios:
     enable: true
     file: config/scenarios.meta.yaml
@@ -205,7 +206,7 @@ procurement:
     signal_source: model # source of emission signal: model, historical
     signal_model: data/emission-signals-model # folder path if aer, mber, or moer are chosen as emission_signal
     signal_historical: data/emission-signals-historical/2023_weighted_em_rates.csv # folder path if historical is chosen as emission_signal
-  participation: 20 # share of CI load participating to the procurement
+  participation: 50 # share of CI load participating to the procurement (e.g., 50% of the high-voltage CI load actually corresponds to 25% of total CI load)
 
   #ci:
   #  Germany: # Set name here
