@@ -47,7 +47,7 @@ vol-match-focus-3H:
 
   procurement:
     strategy: vol-match
-    scope: "all"
+    scope: "region"
     energy_matching: 100
     participation: 50
 
