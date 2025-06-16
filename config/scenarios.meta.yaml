@@ -18,28 +18,32 @@ baseline-3H:
   enable:
     procurement: false
 
-baseline-1H:
+baseline-2025-3H:
+  # NOTE: scenario section can only be changed in config.meta.yaml
+  # scenario:
+  #   planning_horizons: 
+  #   - 2025
+  
   enable:
     procurement: false
 
-  clustering:
-    temporal:
-      resolution_sector: 1H
+  electricity:
+    powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
+    freeze_capacity: true
+
+  costs:
+    year: 2025
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
 
 # ======== Baseline model with volume matching ========
 # =====================================================
 
-vol-match-focus-3H:
+vol-match--3H:
   enable:
     procurement: true
-  
-  solving:
-    mem_mb: 300000
-    runtime: 72h
-
-  clustering:
-    temporal:
-      resolution_sector: 3H
   
   electricity:
    ci_load:
@@ -47,20 +51,175 @@ vol-match-focus-3H:
 
   procurement:
     strategy: vol-match
+    scope: "all"
+    energy_matching: 100
+    participation: 20
+
+vol-match-no_ember--3H:
+  enable:
+    procurement: true
+  
+  electricity:
+   ci_load:
+      profile: "baseload"
+  
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+
+  procurement:
+    strategy: vol-match
+    scope: "all"
+    energy_matching: 100
+    participation: 20
+
+vol-match-add--3H:
+  enable:
+    procurement: true
+  
+  electricity:
+   ci_load:
+      profile: "baseload"
+
+  res_target:
+    res_additionality: true
+
+  procurement:
+    strategy: vol-match
+    scope: "all"
+    energy_matching: 100
+    participation: 20
+
+vol-match-add-no_ember--3H:
+  enable:
+    procurement: true
+  
+  electricity:
+   ci_load:
+      profile: "baseload"
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+    res_additionality: true
+
+  procurement:
+    strategy: vol-match
     scope: "region"
     energy_matching: 100
-    participation: 50
+    participation: 20
 
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
+# ======== Baseline model with 247 CFE matching ========
+# ======================================================
+
+247-cfe--3H:
+  enable:
+    procurement: true
+
+  electricity:
+   ci_load:
+      profile: "baseload"
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 100
+    participation: 20
+
+247-cfe-add--3H:
+  enable:
+    procurement: true
+
+  electricity:
+   ci_load:
+      profile: "baseload"
+
+  res_target:
+    res_additionality: true
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 100
+    participation: 20
+
+# ======== Baseline model with emission matching ========
+# =====================================================
+
+emi-match-model-moer--3H:
+  enable:
+    procurement: true
+
+  electricity:
+   ci_load:
+      profile: "baseload"
+
+  procurement:
+    strategy: emi-match
+    scope: "all"
+    energy_matching: 100
+    participation: 20
+    emissionality:
+      emission_matching: 100
+      emission_signal:  moer
+      signal_source: model
+
+emi-match-add-model-moer--3H:
+  enable:
+    procurement: true
+
+  electricity:
+   ci_load:
+      profile: "baseload"
+
+  res_target:
+    res_additionality: true
+
+  procurement:
+    strategy: emi-match
+    scope: "all"
+    energy_matching: 100
+    participation: 20
+    emissionality:
+      emission_matching: 100
+      emission_signal:  moer
+      signal_source: model
+
+emi-match-model-mber--3H:
+  enable:
+    procurement: true
+
+  electricity:
+   ci_load:
+      profile: "baseload"
+
+  procurement:
+    strategy: emi-match
+    scope: "all"
+    energy_matching: 100
+    participation: 20
+    emissionality:
+      emission_matching: 100
+      emission_signal:  mber
+      signal_source: model
+
+emi-match-add-model-mber--3H:
+  enable:
+    procurement: true
+
+  electricity:
+   ci_load:
+      profile: "baseload"
+
+  res_target:
+    res_additionality: true
+
+  procurement:
+    strategy: emi-match
+    scope: "all"
+    energy_matching: 100
+    participation: 20
+    emissionality:
+      emission_matching: 100
+      emission_signal:  mber
+      signal_source: model

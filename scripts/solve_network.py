@@ -1954,9 +1954,7 @@ def extra_functionality(
     if config.get("res_target", False) and planning_horizons == "2030":
         ember_res_target(n)
 
-    if (
-        n.params.get("procurement_enable", False)
-    ):
+    if n.params.get("procurement_enable", False):
         procurement = config["procurement"]
         strategy = procurement["strategy"]
         energy_matching = procurement["energy_matching"]
