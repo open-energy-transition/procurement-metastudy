@@ -2891,7 +2891,8 @@ if __name__ == "__main__":
         filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
     ) as mem:
         
-        add_ci_load(n, snakemake.params)
+        if snakemake.params.get("ci_load", False):
+            add_ci_load(n, snakemake.params)
 
         if snakemake.params.get("procurement_enable", False):
             logger.info(f"Procurement is activated for the year {planning_horizons}")
@@ -2914,7 +2915,7 @@ if __name__ == "__main__":
             )
             add_ci_procurement(n, snakemake.wildcards.planning_horizons, snakemake.params, costs)
 
-        if snakemake.params.electricity.get("freeze_capacity", False):
+        if snakemake.params.get("electricity", {}).get("freeze_capacity", False):
             freeze_capacity(n)
 
         solve_network(

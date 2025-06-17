@@ -68,6 +68,7 @@ enable:
   custom_busmap: false
   drop_leap_day: true
   procurement: true  # [true, false ] If true, model the procurement strategies
+  ci_load: true
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#electricity
 electricity:

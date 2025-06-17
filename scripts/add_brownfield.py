@@ -15,6 +15,7 @@ import xarray as xr
 from scripts._helpers import (
     configure_logging,
     get_snapshots,
+    sanitize_custom_columns,
     set_scenario_config,
     update_config_from_wildcards,
 )
@@ -403,4 +404,7 @@ if __name__ == "__main__":
     sanitize_carriers(n, snakemake.config)
 
     n.meta = dict(snakemake.config, **dict(wildcards=dict(snakemake.wildcards)))
+
+    sanitize_custom_columns(n)
+    sanitize_carriers(n, snakemake.config)
     n.export_to_netcdf(snakemake.output[0])
