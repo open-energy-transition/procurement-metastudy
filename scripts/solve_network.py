@@ -1707,17 +1707,40 @@ def excess_constraints(n):
     weights = n.snapshot_weightings["generators"]
 
     for name in n.config["procurement"]["ci"]:
-        ci_export = n.model["Link-p"].loc[:, [name + " export"]]
-        excess = (ci_export * weights).sum()
-        total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
-        share = n.config["procurement"][
-            "excess_share"
-        ]  # 'sliding': max(0., energy_matching - 0.8)
+        if name + " export" in n.model["Link-p"].indexes["Link"]:
+            ci_export = n.model["Link-p"].loc[:, [name + " export"]]
+            excess = (ci_export * weights).sum()
+            total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
+            share = n.config["procurement"][
+                "excess_share"
+            ]  # 'sliding': max(0., energy_matching - 0.8)
 
-        n.model.add_constraints(
-            excess <= share * total_load, name=f"Excess_constraint_{name}"
-        )
+            n.model.add_constraints(
+                excess <= share * total_load, name=f"Excess_constraint_{name}"
+            )
 
+            limit = round(share * total_load / 1e6, 2)
+            logger.info(f"Limit electricity exports from {name} to a maximum of {limit} TWh")
+
+def import_constraints(n):
+    """
+    If enabled, each CI bus can only import electricty based on the proportion of the procured CI load demand
+    """
+    share = n.config["procurement"]["import_share"]
+
+    if not share:
+        return
+    
+    for name in n.config["procurement"]["ci"]:
+        if name + " import" in n.model["Link-p"].indexes["Link"]:
+            ci_import = n.model["Link-p"].loc[:, [name + " import"]]
+            load = n.loads_t.p_set[name + " load"]
+
+            n.model.add_constraints(
+                ci_import <= share * load, name=f"import_constraint_{name}"
+            )
+
+            logger.info(f"Limit electricity imports to {name} by a factor of {share} relative to the procuring CI load")
 
 def emission_matching_constraints(n):
     """
@@ -1960,15 +1983,15 @@ def extra_functionality(
         energy_matching = procurement["energy_matching"]
         emission_matching = procurement["emissionality"]["emission_matching"]
         res_capacity_constraints(n)
+        excess_constraints(n)
+        import_constraints(n)
 
         if strategy == "vol-match":
             logger.info(f"Setting annual volume matching of {energy_matching}%")
             res_annual_matching_constraints(n)
-            excess_constraints(n)
         elif strategy == "247-cfe":
             logger.info(f"Setting 247 CFE target of {energy_matching}")
             cfe_constraints(n)
-            excess_constraints(n)
         elif strategy == "emi-match":
             logger.info(
                 f"Setting annual avoided emission target of {emission_matching}%"
@@ -1976,7 +1999,6 @@ def extra_functionality(
             logger.info(f"Setting annual volume matching of {energy_matching}%")
             emission_matching_constraints(n)
             res_annual_matching_constraints(n)
-            excess_constraints(n)
         else:
             logger.info("no target set")
 
