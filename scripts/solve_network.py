@@ -2657,6 +2657,14 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
                     unit=gen_implemented[generator]["unit"],
                 )
 
+                n.add(
+                    "Generator",
+                    carrier_nodes,
+                    bus=carrier_nodes,
+                    carrier=carrier,
+                    p_nom_extendable=True,
+                )
+
             if scope == "node":
                 gen_df = pd.DataFrame({"bus1": [name]}, index=[name + " " + generator])
             else:
