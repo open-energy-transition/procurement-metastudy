@@ -1707,17 +1707,40 @@ def excess_constraints(n):
     weights = n.snapshot_weightings["generators"]
 
     for name in n.config["procurement"]["ci"]:
-        ci_export = n.model["Link-p"].loc[:, [name + " export"]]
-        excess = (ci_export * weights).sum()
-        total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
-        share = n.config["procurement"][
-            "excess_share"
-        ]  # 'sliding': max(0., energy_matching - 0.8)
+        if name + " export" in n.model["Link-p"].indexes["Link"]:
+            ci_export = n.model["Link-p"].loc[:, [name + " export"]]
+            excess = (ci_export * weights).sum()
+            total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
+            share = n.config["procurement"][
+                "excess_share"
+            ]  # 'sliding': max(0., energy_matching - 0.8)
 
-        n.model.add_constraints(
-            excess <= share * total_load, name=f"Excess_constraint_{name}"
-        )
+            n.model.add_constraints(
+                excess <= share * total_load, name=f"Excess_constraint_{name}"
+            )
 
+            limit = round(share * total_load / 1e6, 2)
+            logger.info(f"Limit electricity exports from {name} to a maximum of {limit} TWh")
+
+def import_constraints(n):
+    """
+    If enabled, each CI bus can only import electricty based on the proportion of the procured CI load demand
+    """
+    share = n.config["procurement"]["import_share"]
+
+    if not share:
+        return
+    
+    for name in n.config["procurement"]["ci"]:
+        if name + " import" in n.model["Link-p"].indexes["Link"]:
+            ci_import = n.model["Link-p"].loc[:, [name + " import"]]
+            load = n.loads_t.p_set[name + " load"]
+
+            n.model.add_constraints(
+                ci_import <= share * load, name=f"import_constraint_{name}"
+            )
+
+            logger.info(f"Limit electricity imports to {name} by a factor of {share} relative to the procuring CI load")
 
 def emission_matching_constraints(n):
     """
@@ -1803,10 +1826,9 @@ def emission_matching_constraints(n):
             emission_signal_solar = "solar_" + emission_signal.upper()
             emission_signal_wind = "wind_" + emission_signal.upper()
             signal = pd.read_csv(f"{signal_path}", index_col=0) / 1000 # Convert kgCO2/MWh to tCO2/MWh
-            signal.rename(index={"UK": "GB", "LX": "LU"}, inplace=True)
             if country_CI not in signal.index:
                 raise KeyError(
-                    f"Country {country_CI} (CI load) does not participate to the emissionality procurement strategy."
+                    f"Country {country_CI} does not participate to the emissionality procurement strategy."
                     )
             signal_load = signal.loc[country_CI, emission_signal_flat]
             for country_signal in n.buses.country.unique():
@@ -1960,15 +1982,15 @@ def extra_functionality(
         energy_matching = procurement["energy_matching"]
         emission_matching = procurement["emissionality"]["emission_matching"]
         res_capacity_constraints(n)
+        excess_constraints(n)
+        import_constraints(n)
 
         if strategy == "vol-match":
             logger.info(f"Setting annual volume matching of {energy_matching}%")
             res_annual_matching_constraints(n)
-            excess_constraints(n)
         elif strategy == "247-cfe":
             logger.info(f"Setting 247 CFE target of {energy_matching}")
             cfe_constraints(n)
-            excess_constraints(n)
         elif strategy == "emi-match":
             logger.info(
                 f"Setting annual avoided emission target of {emission_matching}%"
@@ -1976,7 +1998,6 @@ def extra_functionality(
             logger.info(f"Setting annual volume matching of {energy_matching}%")
             emission_matching_constraints(n)
             res_annual_matching_constraints(n)
-            excess_constraints(n)
         else:
             logger.info("no target set")
 
@@ -2577,6 +2598,17 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
             reversed=False,
         )
 
+        # Scope Definition
+
+        if scope == "node" or strategy == "247-cfe":
+            scope = "node"
+            bus = [location]
+        elif scope == "country":
+            zone = n.buses.loc[location, "country"]
+            bus = n.buses[n.buses.country == zone].location.unique()
+        else:  # scope == "all" is the default
+            bus = [loc for loc in n.buses.location.unique() if loc != "EU"]
+
         # ===================== Adding Dispatchable Technologies =====================
         # ============================================================================
 
@@ -2624,11 +2656,25 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
                     unit=gen_implemented[generator]["unit"],
                 )
 
+                n.add(
+                    "Generator",
+                    carrier_nodes,
+                    bus=carrier_nodes,
+                    carrier=carrier,
+                    p_nom_extendable=True,
+                )
+
+            if scope == "node":
+                gen_df = pd.DataFrame({"bus1": [name]}, index=[name + " " + generator])
+            else:
+                index_labels = [f"{name} {b} {generator}" for b in bus]
+                gen_df = pd.DataFrame({"bus1": bus}, index=index_labels)
+
             n.add(
                 "Link",
-                name + " " + generator,
+                gen_df.index,
                 bus0=carrier_nodes,
-                bus1=name,
+                bus1=gen_df.bus1,
                 bus2="co2 atmosphere",
                 marginal_cost=costs.at[generator, "efficiency"]
                 * costs.at[generator, "VOM"],  # NB: VOM is per MWel
@@ -2661,20 +2707,10 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
         )
 
         for carrier in res_available_carriers:
-            if scope == "node" or strategy == "247-cfe":
-                scope = "node"
-                bus = [location]
-            elif scope == "country":
-                zone = n.buses.loc[location, "country"]
-                bus = n.buses[n.buses.country == zone].location.unique()
-            else:  # scope == "all" is the default
-                bus = [loc for loc in n.buses.location.unique() if loc != "EU"]
-            
-            if carrier == "solar rooftop":
-                bus = [b + " low voltage" for b in bus]
+            bus_carrier = [b + " low voltage" for b in bus] if carrier == "solar rooftop" else bus
 
             res_df = n.generators.loc[
-                (n.generators.bus.isin(bus))
+                (n.generators.bus.isin(bus_carrier))
                 & (n.generators.carrier == carrier)
                 & (n.generators.index.astype(str).str.contains(year))
             ].copy()
@@ -2856,7 +2892,7 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "solve_sector_network_myopic",
-            run= "vol-match-focus-3H",
+            run= "emi-match-DK-3H",
             opts="",
             clusters="39",
             configfiles="config/config.meta.yaml",
