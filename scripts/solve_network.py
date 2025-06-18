@@ -1826,10 +1826,9 @@ def emission_matching_constraints(n):
             emission_signal_solar = "solar_" + emission_signal.upper()
             emission_signal_wind = "wind_" + emission_signal.upper()
             signal = pd.read_csv(f"{signal_path}", index_col=0) / 1000 # Convert kgCO2/MWh to tCO2/MWh
-            signal.rename(index={"UK": "GB", "LX": "LU"}, inplace=True)
             if country_CI not in signal.index:
                 raise KeyError(
-                    f"Country {country_CI} (CI load) does not participate to the emissionality procurement strategy."
+                    f"Country {country_CI} does not participate to the emissionality procurement strategy."
                     )
             signal_load = signal.loc[country_CI, emission_signal_flat]
             for country_signal in n.buses.country.unique():
@@ -2893,7 +2892,7 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "solve_sector_network_myopic",
-            run= "vol-match-focus-3H",
+            run= "emi-match-DK-3H",
             opts="",
             clusters="39",
             configfiles="config/config.meta.yaml",
