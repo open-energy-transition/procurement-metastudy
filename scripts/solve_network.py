@@ -2599,6 +2599,17 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
             reversed=False,
         )
 
+        # Scope Definition
+
+        if scope == "node" or strategy == "247-cfe":
+            scope = "node"
+            bus = [location]
+        elif scope == "country":
+            zone = n.buses.loc[location, "country"]
+            bus = n.buses[n.buses.country == zone].location.unique()
+        else:  # scope == "all" is the default
+            bus = [loc for loc in n.buses.location.unique() if loc != "EU"]
+
         # ===================== Adding Dispatchable Technologies =====================
         # ============================================================================
 
@@ -2646,11 +2657,17 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
                     unit=gen_implemented[generator]["unit"],
                 )
 
+            if scope == "node":
+                gen_df = pd.DataFrame({"bus1": [name]}, index=[name + " " + generator])
+            else:
+                index_labels = [f"{name} {b} {generator}" for b in bus]
+                gen_df = pd.DataFrame({"bus1": bus}, index=index_labels)
+
             n.add(
                 "Link",
-                name + " " + generator,
+                gen_df.index,
                 bus0=carrier_nodes,
-                bus1=name,
+                bus1=gen_df.bus1,
                 bus2="co2 atmosphere",
                 marginal_cost=costs.at[generator, "efficiency"]
                 * costs.at[generator, "VOM"],  # NB: VOM is per MWel
@@ -2683,20 +2700,10 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
         )
 
         for carrier in res_available_carriers:
-            if scope == "node" or strategy == "247-cfe":
-                scope = "node"
-                bus = [location]
-            elif scope == "country":
-                zone = n.buses.loc[location, "country"]
-                bus = n.buses[n.buses.country == zone].location.unique()
-            else:  # scope == "all" is the default
-                bus = [loc for loc in n.buses.location.unique() if loc != "EU"]
-            
-            if carrier == "solar rooftop":
-                bus = [b + " low voltage" for b in bus]
+            bus_carrier = [b + " low voltage" for b in bus] if carrier == "solar rooftop" else bus
 
             res_df = n.generators.loc[
-                (n.generators.bus.isin(bus))
+                (n.generators.bus.isin(bus_carrier))
                 & (n.generators.carrier == carrier)
                 & (n.generators.index.astype(str).str.contains(year))
             ].copy()
