@@ -2709,11 +2709,17 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
         for carrier in res_available_carriers:
             bus_carrier = [b + " low voltage" for b in bus] if carrier == "solar rooftop" else bus
 
-            res_df = n.generators.loc[
-                (n.generators.bus.isin(bus_carrier))
+            mask = (
+                n.generators.bus.isin(bus_carrier)
                 & (n.generators.carrier == carrier)
                 & (n.generators.index.astype(str).str.contains(year))
-            ].copy()
+            )
+
+            if "ci" in n.generators.columns:
+                mask &= n.generators.ci.isin([np.NaN, ""])
+
+            res_df = n.generators.loc[mask].copy()
+
             res_df["gen_name"] = name + " " + res_df.index
             res_df["bus_name"] = name if scope == "node" else res_df["bus"]
             res_df["capital_cost"] = n.generators.loc[res_df.index,"capital_cost"]
