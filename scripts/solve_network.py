@@ -1974,7 +1974,7 @@ def extra_functionality(
     if config.get("res_target", False) and planning_horizons == "2030":
         ember_res_target(n)
 
-    if n.params.get("procurement_enable", False):
+    if config["enable"].get("procurement", False):
         procurement = config["procurement"]
         strategy = procurement["strategy"]
         energy_matching = procurement["energy_matching"]
@@ -2146,8 +2146,8 @@ def solve_network(
         n.optimize.optimize_with_rolling_horizon(**kwargs)
         status, condition = "", ""
     elif (
-        n.params.get("procurement_enable", False)
-        and n.params.procurement.get("strategy", False) == "247-cfe"
+        config["enable"].get("procurement", False)
+        and config["procurement"].get("strategy", False) == "247-cfe"
     ):
         status, condition = optimize_model_iteratively(n, config, **kwargs)
     elif skip_iterations:
