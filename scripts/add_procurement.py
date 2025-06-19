@@ -1,3 +1,10 @@
+# SPDX-FileCopyrightText: Contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+#
+# SPDX-License-Identifier: MIT
+"""
+This script is part of a PyPSA-Eur workflow that adds Commercial & Industrial (C&I) electricity consumers 
+and their clean energy procurement strategies to a power system model.
+"""
 import logging
 import sys
 
@@ -11,7 +18,6 @@ from scripts._helpers import (
     get,
     set_scenario_config,
     update_config_from_wildcards,
-    #    create_tuples,
 )
 from scripts.add_electricity import add_missing_carriers, load_costs
 

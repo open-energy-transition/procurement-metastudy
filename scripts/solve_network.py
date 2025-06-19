@@ -50,9 +50,7 @@ from scripts._helpers import (
     get,
     set_scenario_config,
     update_config_from_wildcards,
-    #    create_tuples,
 )
-from scripts.add_electricity import add_missing_carriers, load_costs
 
 cc = coco.CountryConverter()
 
