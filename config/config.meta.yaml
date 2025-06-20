@@ -22,8 +22,7 @@ remote:
 run:
   prefix: ""
   name:
-  #- baseline-3H
-  - vol-match--3H
+  - baseline-2030-3H
   scenarios:
     enable: true
     file: config/scenarios.meta.yaml
@@ -181,7 +180,7 @@ adjustments:
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#solving
 solving:
-  mem_mb: 50000 #50 GB is enough for vol-match 1 country, 150 GB is needed for multiple countries
+  mem_mb: 300000 #50 GB is enough for vol-match 1 country, 150 GB is needed for multiple countries
   runtime: 24h #runtime in humanfriendly style https://humanfriendly.readthedocs.io/en/latest/
 
 # ================ Procurment Metastudy ================
@@ -207,7 +206,7 @@ procurement:
     signal_source: model # source of emission signal: model, historical
     signal_model: data/emission-signals-model # folder path if aer, mber, or moer are chosen as emission_signal
     signal_historical: data/emission-signals-historical/2023_weighted_em_rates.csv # folder path if historical is chosen as emission_signal
-  participation: 20 # share of CI load participating to the procurement
+  participation: 50 # share of CI load participating to the procurement
 
   #ci:
   #  Germany: # Set name here
@@ -220,4 +219,4 @@ procurement:
   strip_network: false # [ true, false ] If true, model only the countries with the CI loads and their neighbors
   excess_share: 0.  # share of excess CI generation that can be sold to the grid [percentage]
   import_share: 1.
-  min_iterations: 2
+  min_iterations: 1
