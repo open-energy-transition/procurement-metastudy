@@ -66,7 +66,10 @@ def duplicate_run_delete(scenario_name, selected_baseline, selected_profile):
     # Prepare resources
     new_folder = f"resources/{scenario_name}"
     old_folder = f"resources/{selected_baseline}"
-    files_to_copy = ["costs_2030.csv", "networks/base_s_39___2030_brownfield.nc"]
+
+    year = 2025 if "2025" in scenario_name else 2030
+
+    files_to_copy = [f"costs_{year}.csv", f"networks/base_s_39___{year}_brownfield.nc"]
 
     os.makedirs(os.path.join(new_folder, "networks"), exist_ok=True)
 
@@ -80,7 +83,7 @@ def duplicate_run_delete(scenario_name, selected_baseline, selected_profile):
             print(f"WARNING: File not found: {old_path}")
 
     # Run snakemake
-    run_cmd = f"snakemake {selected_profile} solve_sector_networks --configfile run/config.meta_temp.yaml --rerun-trigger mtime"
+    run_cmd = f"snakemake {selected_profile} solve_sector_networks --configfile run/config.meta_temp.yaml --rerun-trigger mtime -n"
     os.system(run_cmd + " --touch")
     os.system(run_cmd)
 

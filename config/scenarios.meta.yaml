@@ -16,7 +16,8 @@
 
 baseline-2025-3H: #1
   scenario:
-    planning_horizons: 2025
+    planning_horizons: 
+    - 2025
   
   enable:
     procurement: false
@@ -61,7 +62,8 @@ baseline-2030-NoResTargets-3H: #3
 
 vol-match-2025-ci25-3H: #1
   scenario:
-    planning_horizons: 2025
+    planning_horizons: 
+    - 2025
   
   enable:
     procurement: true
@@ -293,7 +295,8 @@ vol-match-2030-ci25-continent-3H: #bonus
 
 247-cfe-2025-ci25-cfe90-3H: #1
   scenario:
-    planning_horizons: 2025
+    planning_horizons: 
+    - 2025
   
   enable:
     procurement: true
@@ -336,7 +339,8 @@ vol-match-2030-ci25-continent-3H: #bonus
 
 247-cfe-2025-ci25-cfe100-3H: #2
   scenario:
-    planning_horizons: 2025
+    planning_horizons: 
+    - 2025
   
   enable:
     procurement: true
@@ -444,7 +448,8 @@ vol-match-2030-ci25-continent-3H: #bonus
 
 emi-match-2025-ci25-data-moer-3H: #1
   scenario:
-    planning_horizons: 2025
+    planning_horizons: 
+    - 2025
   
   enable:
     procurement: true
@@ -491,7 +496,8 @@ emi-match-2025-ci25-data-moer-3H: #1
 
 emi-match-2025-ci25-data-mber-3H: #2
   scenario:
-    planning_horizons: 2025
+    planning_horizons: 
+    - 2025
   
   enable:
     procurement: true
@@ -538,7 +544,8 @@ emi-match-2025-ci25-data-mber-3H: #2
 
 emi-match-2025-ci25-data-cmer-3H: #3
   scenario:
-    planning_horizons: 2025
+    planning_horizons: 
+    - 2025
   
   enable:
     procurement: true
@@ -585,7 +592,8 @@ emi-match-2025-ci25-data-cmer-3H: #3
 
 emi-match-2025-ci25-data-aer-3H: #4
   scenario:
-    planning_horizons: 2025
+    planning_horizons: 
+    - 2025
   
   enable:
     procurement: true
