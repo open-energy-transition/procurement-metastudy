@@ -83,7 +83,7 @@ def duplicate_run_delete(scenario_name, selected_baseline, selected_profile):
             print(f"WARNING: File not found: {old_path}")
 
     # Run snakemake
-    run_cmd = f"snakemake {selected_profile} solve_sector_networks --configfile run/config.meta_temp.yaml --rerun-trigger mtime -n"
+    run_cmd = f"snakemake {selected_profile} solve_sector_networks --configfile run/config.meta_temp.yaml --rerun-trigger mtime"
     os.system(run_cmd + " --touch")
     os.system(run_cmd)
 
