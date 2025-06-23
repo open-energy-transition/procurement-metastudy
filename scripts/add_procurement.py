@@ -673,7 +673,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
         logger.info(f"Include {storage_available_carriers} for the CI: {name}.")
 
 
-def freeze_capacity(n):
+def freeze_capacity(n, config):
     """
     Freeze capacities of expandable variable renewable generators
     """
@@ -713,6 +713,18 @@ def freeze_capacity(n):
 
         # Keep only (bus, carrier) pairs that exist in gen_ci
         df_remaining = n.generators.loc[mask_res, ["bus", "carrier"]]
+
+        # Check if procurement scope is set to "node"
+        if (
+            config.get("procurement_enable", False) 
+            and config.get("procurement", {}).get("scope") == "node"
+        ):
+            # Build a mapping from location codes to country names
+            ci = config["procurement"]["ci"]
+            ci_locations = {info.get('location'): name for name, info in ci.items()}
+            df_remaining['bus'] = df_remaining['bus'].map(ci_locations)
+            df_remaining = df_remaining.dropna(subset=['bus'])
+
         df_remaining["key"] = list(zip(df_remaining.bus, df_remaining.carrier))
         df_remaining = df_remaining[df_remaining["key"].isin(gen_ci_keys)]
 
@@ -781,6 +793,6 @@ if __name__ == "__main__":
         add_ci_procurement(n, snakemake.wildcards.planning_horizons, snakemake.params, costs)
 
     if snakemake.params.get("electricity", {}).get("freeze_capacity", False):
-        freeze_capacity(n)
+        freeze_capacity(n, snakemake.params)
 
     n.export_to_netcdf(snakemake.output.network)
