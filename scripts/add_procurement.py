@@ -746,6 +746,16 @@ def freeze_capacity(n, config):
     else:
         logger.info("Freeze capacity activated")
 
+def filter_TYNDP_build_year(n, year):
+    """
+    Remove transmission with build year later than the planning horizon
+    """
+    links = n.links[(n.links.project_status != "") & (n.links.build_year > int(year))]
+
+    logger.info(f"Remove transmission with build year later than {year}: \n{links[["build_year"]]}")
+
+    n.remove("Link",links.index)
+
 # %%
 if __name__ == "__main__":
     if "snakemake" not in globals():
@@ -790,9 +800,12 @@ if __name__ == "__main__":
             snakemake.params.max_hours,
             Nyears,
         )
-        add_ci_procurement(n, snakemake.wildcards.planning_horizons, snakemake.params, costs)
+        add_ci_procurement(n, planning_horizons, snakemake.params, costs)
 
     if snakemake.params.get("electricity", {}).get("freeze_capacity", False):
         freeze_capacity(n, snakemake.params)
+
+    if snakemake.params.get("electricity", {}).get("filter_TYNDP_build_year", False):
+        filter_TYNDP_build_year(n, planning_horizons)
 
     n.export_to_netcdf(snakemake.output.network)

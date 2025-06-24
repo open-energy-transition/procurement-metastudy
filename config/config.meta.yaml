@@ -98,6 +98,7 @@ electricity:
     share: 50 # share of CI load to be moved to high voltage level (to avoid negative values when profile is not "total")
 
   freeze_capacity: false
+  filter_TYNDP_build_year: true
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#transmission_projects
 transmission_projects:
