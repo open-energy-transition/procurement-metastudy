@@ -45,6 +45,14 @@ baseline-2030-3H: #2
     temporal:
       resolution_sector: 3H
 
+baseline-2030-1H: #bonus
+  enable:
+    procurement: false
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
 baseline-2030-NoResTargets-3H: #3
   enable:
     procurement: false

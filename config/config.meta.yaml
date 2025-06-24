@@ -22,7 +22,7 @@ remote:
 run:
   prefix: ""
   name:
-  - baseline-2030-3H
+  - baseline-2030-1H
   scenarios:
     enable: true
     file: config/scenarios.meta.yaml

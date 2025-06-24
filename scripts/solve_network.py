@@ -1627,15 +1627,6 @@ def res_annual_matching_constraints(n):
 
         total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
 
-        # Note equality sign
-        # if strategy == "vol-match":
-        #     n.model.add_constraints(
-        #         lhs == energy_matching * total_load, name=f"RES_annual_matching_{name}"
-        #     )
-        # else:
-        #     n.model.add_constraints(
-        #         lhs >= energy_matching * total_load, name=f"RES_annual_matching_{name}" #to avoid infeasibility of emissionality if signals by carriers < flat signals
-        #     )
         n.model.add_constraints(
                 lhs == energy_matching * total_load, name=f"RES_annual_matching_{name}"
             )
