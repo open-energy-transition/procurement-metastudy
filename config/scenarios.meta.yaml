@@ -751,7 +751,7 @@ emi-match-2030-ci25-model-cmer-3H: #7
       United Kingdom:
         location: "GB2 0"
 
-emi-match-2030-ci25-model-moer-3H: #8
+emi-match-2030-ci25-model-aer-3H: #8
   enable:
     procurement: true
 
