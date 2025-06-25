@@ -143,6 +143,27 @@ vol-match-2030-ci25-3H: #2
       United Kingdom:
         location: "GB2 0"
 
+vol-match-2030-ci25-DE-3H: #bonus
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: vol-match
+    scope: "all"
+    energy_matching: 100
+    participation: 50
+
+    ci:
+      Germany:
+        location: "DE0 0"
+
 vol-match-2030-country-ci25-3H: #3
   enable:
     procurement: true
@@ -206,6 +227,31 @@ vol-match-2030-NoResTargets-ci25-3H: #4
         location: "IT0 0"
       United Kingdom:
         location: "GB2 0"
+
+vol-match-2030-ci25-continent-DE-3H: #bonus
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+  
+  solving:
+    mem_mb: 150000
+    runtime: 24h
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: vol-match
+    scope: "continent"
+    energy_matching: 100
+    participation: 50
+
+    ci:
+      Germany:
+        location: "DE0 0"
 
 vol-match-2030-ci25-continent-6-3H: #bonus
   enable:
