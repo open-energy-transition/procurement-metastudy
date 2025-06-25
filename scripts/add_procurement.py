@@ -564,7 +564,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
 
             res_df = n.generators.loc[mask].copy()
 
-            res_df["gen_name"] = name + " " + res_df.index
+            res_df["gen_name"] = "CI" + " " + res_df.index if scope == "continent" else name + " " + res_df.index
             res_df["bus_name"] = name if scope == "node" else res_df["bus"]
             res_df["capital_cost"] = n.generators.loc[res_df.index,"capital_cost"]
             res_df["marginal_cost"] = n.generators.loc[res_df.index,"marginal_cost"]
@@ -583,7 +583,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
                 p_max_pu=p_max_pu_df,
                 capital_cost=res_df["capital_cost"],
                 marginal_cost=res_df["marginal_cost"],
-                ci=name,  # C&I markers used in constraints
+                ci="continent" if scope == "continent" else name,  # C&I markers used in constraints
             )
 
         logger.info(
@@ -763,7 +763,7 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "add_procurement",
-            run= "emi-match-DK-3H",
+            run= "vol-match-2030-ci25-continent-6-3H",
             opts="",
             clusters="39",
             configfiles="config/config.meta.yaml",

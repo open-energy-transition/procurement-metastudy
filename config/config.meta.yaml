@@ -22,7 +22,7 @@ remote:
 run:
   prefix: ""
   name:
-  - baseline-2030-1H
+  - vol-match-2030-ci25-continent-6-3H
   scenarios:
     enable: true
     file: config/scenarios.meta.yaml
@@ -199,7 +199,7 @@ grid_policy:
 
 procurement:
   strategy: emi-match # name of procurement strategy: vol-match, emi-match, 247-cfe
-  scope: "all" # "node", "country", "all"
+  scope: "all" # "node", "country", "all", "continent"
   energy_matching: 100 # share of CI energy demand to be procured
   emissionality:
     emission_matching: 100 # share of CI emissions to be compensated
