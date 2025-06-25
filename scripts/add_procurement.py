@@ -750,11 +750,13 @@ def filter_TYNDP_build_year(n, year):
     """
     Remove transmission with build year later than the planning horizon
     """
-    links = n.links[(n.links.project_status != "") & (n.links.build_year > int(year))]
+    links = n.links[(n.links.project_status != "") & (n.links.build_year > int(year))][["bus0","bus1","build_year","p_nom"]]
+    lines = n.lines[(n.lines.build_year > int(year))][["bus0","bus1","build_year","s_nom"]]
 
-    logger.info(f"Remove transmission with build year later than {year}: \n{links[["build_year"]]}")
+    logger.info(f"Remove transmission with build year later than {year}: \n{links}\n{lines}")
 
     n.remove("Link",links.index)
+    n.remove("Line",lines.index)
 
 # %%
 if __name__ == "__main__":
