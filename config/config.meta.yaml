@@ -22,7 +22,8 @@ remote:
 run:
   prefix: ""
   name:
-  - vol-match-2030-ci25-continent-6-3H
+  #- baseline-2030-1H
+  - emi-match-2030-ci25-model-moer-3H
   scenarios:
     enable: true
     file: config/scenarios.meta.yaml
