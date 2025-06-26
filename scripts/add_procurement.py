@@ -524,7 +524,8 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
                 marginal_cost=costs.at[generator, "efficiency"]
                 * costs.at[generator, "VOM"],  # NB: VOM is per MWel
                 capital_cost=costs.at[generator, "efficiency"]
-                * costs.at[generator, "capital_cost"],  # NB: fixed cost is per MWel
+                * costs.at[generator, "capital_cost"] 
+                * cap_premium, # NB: fixed cost is per MWel
                 p_nom_extendable=True if strategy else False,
                 p_max_pu=0.7
                 if carrier == "uranium"
@@ -659,7 +660,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
                     p_nom_extendable=True if strategy else False,
                     capital_cost=costs.at[
                         f"{cost_carrier} {max_hour}h", "capital_cost"
-                    ],
+                    ] * cap_premium,
                     marginal_cost=0.0,
                     efficiency_store=costs.at[lookup_store[carrier], "efficiency"]
                     ** roundtrip_correction,

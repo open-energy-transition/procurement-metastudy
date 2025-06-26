@@ -220,7 +220,7 @@ procurement:
   strip_network: false # [ true, false ] If true, model only the countries with the CI loads and their neighbors
   strip_snapshots: false
   
-  cap_premium: 1.05
+  cap_premium: 1.1
 
   excess_share: 0.  # share of excess CI generation that can be sold to the grid [percentage]
   import_share: 1.
