@@ -22,7 +22,7 @@ remote:
 run:
   prefix: ""
   name:
-  - baseline-2030-1H
+  - vol-match-2030-ci25-continent-6-3H
   scenarios:
     enable: true
     file: config/scenarios.meta.yaml
@@ -199,7 +199,7 @@ grid_policy:
 
 procurement:
   strategy: emi-match # name of procurement strategy: vol-match, emi-match, 247-cfe
-  scope: "all" # "node", "country", "all"
+  scope: "all" # "node", "country", "all", "continent"
   energy_matching: 100 # share of CI energy demand to be procured
   emissionality:
     emission_matching: 100 # share of CI emissions to be compensated
@@ -218,6 +218,12 @@ procurement:
     storage_tech: ["li-ion battery"] # "iron-air battery"
 
   strip_network: false # [ true, false ] If true, model only the countries with the CI loads and their neighbors
+  strip_snapshots: false
+  
+  cap_premium: 1.05
+
   excess_share: 0.  # share of excess CI generation that can be sold to the grid [percentage]
   import_share: 1.
   min_iterations: 1
+
+  
