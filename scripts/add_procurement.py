@@ -390,6 +390,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
     ci = procurement["ci"]
     strategy = procurement["strategy"]
     scope = procurement["scope"]
+    cap_premium = procurement["cap_premium"]
 
     for name in ci.keys():
         location = ci[name]["location"]
@@ -581,7 +582,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
                 bus=res_df["bus_name"],
                 p_nom_extendable=True if strategy else False,
                 p_max_pu=p_max_pu_df,
-                capital_cost=res_df["capital_cost"],
+                capital_cost=res_df["capital_cost"] * cap_premium,
                 marginal_cost=res_df["marginal_cost"],
                 ci="continent" if scope == "continent" else name,  # C&I markers used in constraints
             )
