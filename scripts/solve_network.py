@@ -1611,11 +1611,14 @@ def res_annual_matching_constraints(n):
     """
     weights = n.snapshot_weightings["generators"]
     energy_matching = n.config["procurement"]["energy_matching"] / 100
-    strategy = n.config["procurement"]["strategy"]
 
-    for name in n.config["procurement"]["ci"]:
-        gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
-        links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
+    if n.config["procurement"]["scope"] == "continent":
+        total_load = 0
+        for name in n.config["procurement"]["ci"]:
+            total_load += (n.loads_t.p_set[name + " load"] * weights).sum()
+
+        gen_ci = list(n.generators[n.generators.ci == "continent"].index) if "ci" in n.generators.columns else []
+        links_ci = list(n.links[n.links.ci == "continent"].index) if "ci" in n.links.columns else []
 
         gen_sum = (n.model["Generator-p"].loc[:, gen_ci] * weights).sum()
         link_sum = (
@@ -1625,20 +1628,27 @@ def res_annual_matching_constraints(n):
         ).sum()
         lhs = gen_sum + link_sum
 
-        total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
-
-        # Note equality sign
-        # if strategy == "vol-match":
-        #     n.model.add_constraints(
-        #         lhs == energy_matching * total_load, name=f"RES_annual_matching_{name}"
-        #     )
-        # else:
-        #     n.model.add_constraints(
-        #         lhs >= energy_matching * total_load, name=f"RES_annual_matching_{name}" #to avoid infeasibility of emissionality if signals by carriers < flat signals
-        #     )
         n.model.add_constraints(
-                lhs == energy_matching * total_load, name=f"RES_annual_matching_{name}"
+                lhs == energy_matching * total_load, name=f"RES_annual_matching_continent"
             )
+    else:
+        for name in n.config["procurement"]["ci"]:
+            gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
+            links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
+
+            gen_sum = (n.model["Generator-p"].loc[:, gen_ci] * weights).sum()
+            link_sum = (
+                n.model["Link-p"].loc[:, links_ci]
+                * n.links.loc[links_ci].efficiency
+                * weights
+            ).sum()
+            lhs = gen_sum + link_sum
+
+            total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
+
+            n.model.add_constraints(
+                    lhs == energy_matching * total_load, name=f"RES_annual_matching_{name}"
+                )
 
 
 def cfe_constraints(n):
@@ -2187,7 +2197,7 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "solve_sector_network_myopic",
-            run= "emi-match-DK-3H",
+            run= "vol-match-2030-ci25-continent-6-3H",
             opts="",
             clusters="39",
             configfiles="config/config.meta.yaml",

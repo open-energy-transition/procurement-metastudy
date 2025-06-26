@@ -390,6 +390,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
     ci = procurement["ci"]
     strategy = procurement["strategy"]
     scope = procurement["scope"]
+    cap_premium = procurement["cap_premium"]
 
     for name in ci.keys():
         location = ci[name]["location"]
@@ -564,7 +565,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
 
             res_df = n.generators.loc[mask].copy()
 
-            res_df["gen_name"] = name + " " + res_df.index
+            res_df["gen_name"] = "CI" + " " + res_df.index if scope == "continent" else name + " " + res_df.index
             res_df["bus_name"] = name if scope == "node" else res_df["bus"]
             res_df["capital_cost"] = n.generators.loc[res_df.index,"capital_cost"]
             res_df["marginal_cost"] = n.generators.loc[res_df.index,"marginal_cost"]
@@ -581,9 +582,9 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
                 bus=res_df["bus_name"],
                 p_nom_extendable=True if strategy else False,
                 p_max_pu=p_max_pu_df,
-                capital_cost=res_df["capital_cost"],
+                capital_cost=res_df["capital_cost"] * cap_premium,
                 marginal_cost=res_df["marginal_cost"],
-                ci=name,  # C&I markers used in constraints
+                ci="continent" if scope == "continent" else name,  # C&I markers used in constraints
             )
 
         logger.info(
@@ -673,7 +674,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
         logger.info(f"Include {storage_available_carriers} for the CI: {name}.")
 
 
-def freeze_capacity(n):
+def freeze_capacity(n, config):
     """
     Freeze capacities of expandable variable renewable generators
     """
@@ -713,6 +714,18 @@ def freeze_capacity(n):
 
         # Keep only (bus, carrier) pairs that exist in gen_ci
         df_remaining = n.generators.loc[mask_res, ["bus", "carrier"]]
+
+        # Check if procurement scope is set to "node"
+        if (
+            config.get("procurement_enable", False) 
+            and config.get("procurement", {}).get("scope") == "node"
+        ):
+            # Build a mapping from location codes to country names
+            ci = config["procurement"]["ci"]
+            ci_locations = {info.get('location'): name for name, info in ci.items()}
+            df_remaining['bus'] = df_remaining['bus'].map(ci_locations)
+            df_remaining = df_remaining.dropna(subset=['bus'])
+
         df_remaining["key"] = list(zip(df_remaining.bus, df_remaining.carrier))
         df_remaining = df_remaining[df_remaining["key"].isin(gen_ci_keys)]
 
@@ -734,6 +747,18 @@ def freeze_capacity(n):
     else:
         logger.info("Freeze capacity activated")
 
+def filter_TYNDP_build_year(n, year):
+    """
+    Remove transmission with build year later than the planning horizon
+    """
+    links = n.links[(n.links.project_status != "") & (n.links.build_year > int(year))][["bus0","bus1","build_year","p_nom"]]
+    lines = n.lines[(n.lines.build_year > int(year))][["bus0","bus1","build_year","s_nom"]]
+
+    logger.info(f"Remove transmission with build year later than {year}: \n{links}\n{lines}")
+
+    n.remove("Link",links.index)
+    n.remove("Line",lines.index)
+
 # %%
 if __name__ == "__main__":
     if "snakemake" not in globals():
@@ -741,7 +766,7 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "add_procurement",
-            run= "emi-match-DK-3H",
+            run= "vol-match-2030-ci25-continent-6-3H",
             opts="",
             clusters="39",
             configfiles="config/config.meta.yaml",
@@ -778,9 +803,12 @@ if __name__ == "__main__":
             snakemake.params.max_hours,
             Nyears,
         )
-        add_ci_procurement(n, snakemake.wildcards.planning_horizons, snakemake.params, costs)
+        add_ci_procurement(n, planning_horizons, snakemake.params, costs)
 
     if snakemake.params.get("electricity", {}).get("freeze_capacity", False):
-        freeze_capacity(n)
+        freeze_capacity(n, snakemake.params)
+
+    if snakemake.params.get("electricity", {}).get("filter_TYNDP_build_year", False):
+        filter_TYNDP_build_year(n, planning_horizons)
 
     n.export_to_netcdf(snakemake.output.network)

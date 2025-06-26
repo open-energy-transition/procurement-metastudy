@@ -22,8 +22,7 @@ remote:
 run:
   prefix: ""
   name:
-  #- baseline-3H
-  - vol-match--3H
+  - vol-match-2030-ci25-continent-6-3H
   scenarios:
     enable: true
     file: config/scenarios.meta.yaml
@@ -99,6 +98,7 @@ electricity:
     share: 50 # share of CI load to be moved to high voltage level (to avoid negative values when profile is not "total")
 
   freeze_capacity: false
+  filter_TYNDP_build_year: true
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#transmission_projects
 transmission_projects:
@@ -181,7 +181,7 @@ adjustments:
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#solving
 solving:
-  mem_mb: 50000 #50 GB is enough for vol-match 1 country, 150 GB is needed for multiple countries
+  mem_mb: 300000 #50 GB is enough for vol-match 1 country, 150 GB is needed for multiple countries
   runtime: 24h #runtime in humanfriendly style https://humanfriendly.readthedocs.io/en/latest/
 
 # ================ Procurment Metastudy ================
@@ -199,7 +199,7 @@ grid_policy:
 
 procurement:
   strategy: emi-match # name of procurement strategy: vol-match, emi-match, 247-cfe
-  scope: "all" # "node", "country", "all"
+  scope: "all" # "node", "country", "all", "continent"
   energy_matching: 100 # share of CI energy demand to be procured
   emissionality:
     emission_matching: 100 # share of CI emissions to be compensated
@@ -207,7 +207,7 @@ procurement:
     signal_source: model # source of emission signal: model, historical
     signal_model: data/emission-signals-model # folder path if aer, mber, or moer are chosen as emission_signal
     signal_historical: data/emission-signals-historical/2023_weighted_em_rates.csv # folder path if historical is chosen as emission_signal
-  participation: 20 # share of CI load participating to the procurement
+  participation: 50 # share of CI load participating to the procurement
 
   #ci:
   #  Germany: # Set name here
@@ -218,6 +218,12 @@ procurement:
     storage_tech: ["li-ion battery"] # "iron-air battery"
 
   strip_network: false # [ true, false ] If true, model only the countries with the CI loads and their neighbors
+  strip_snapshots: false
+  
+  cap_premium: 1.05
+
   excess_share: 0.  # share of excess CI generation that can be sold to the grid [percentage]
   import_share: 1.
-  min_iterations: 2
+  min_iterations: 1
+
+  
