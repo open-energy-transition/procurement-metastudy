@@ -675,91 +675,6 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
         logger.info(f"Include {storage_available_carriers} for the CI: {name}.")
 
 
-def freeze_capacity(n, config):
-    """
-    Freeze capacities of expandable variable renewable generators
-    """
-    # Define variable renewable carriers
-    res_carriers = [
-        "solar", "solar-hsat", "solar rooftop", 
-        "onwind", "offwind-ac", "offwind-dc", "offwind-float"
-    ]
-
-    # Freeze existing capacities for variable renewables
-    mask_res = (
-        n.generators.carrier.isin(res_carriers) & 
-        (n.generators.p_nom_max != np.inf)
-    )
-    n.generators.loc[mask_res, "p_nom_extendable"] = False
-
-    # Reallocate unused capacity to CI generators (if exist)
-    if "ci" in n.generators.columns:
-        logger.info("Freeze capacity activated — reallocating potential capacity to CI components")
-
-        # Calculate remaining extendable capacity 
-        remaining_cap = (
-            n.generators.loc[mask_res, "p_nom_max"] - 
-            n.generators.loc[mask_res, "p_nom"]
-        )
-        # Remove p_nom_max of existing capacities
-        n.generators.loc[mask_res, "p_nom_max"] = 0
-
-        # Candidate gen_ci: must be extendable and in res_carriers
-        gen_ci = n.generators.loc[
-            n.generators.carrier.isin(res_carriers) & 
-            (n.generators.p_nom_extendable == True)
-        ]
-
-        # Extract (bus, carrier) pairs present in gen_ci
-        gen_ci_keys = set(zip(gen_ci.bus, gen_ci.carrier))
-
-        # Keep only (bus, carrier) pairs that exist in gen_ci
-        df_remaining = n.generators.loc[mask_res, ["bus", "carrier"]]
-
-        # Check if procurement scope is set to "node"
-        if (
-            config.get("procurement_enable", False) 
-            and config.get("procurement", {}).get("scope") == "node"
-        ):
-            # Build a mapping from location codes to country names
-            ci = config["procurement"]["ci"]
-            ci_locations = {info.get('location'): name for name, info in ci.items()}
-            df_remaining['bus'] = df_remaining['bus'].map(ci_locations)
-            df_remaining = df_remaining.dropna(subset=['bus'])
-
-        df_remaining["key"] = list(zip(df_remaining.bus, df_remaining.carrier))
-        df_remaining = df_remaining[df_remaining["key"].isin(gen_ci_keys)]
-
-        for idx, row in df_remaining.iterrows():
-            bus = row["bus"]
-            carrier = row["carrier"]
-            rem_cap = remaining_cap.loc[idx]
-
-            # Find matching gen_ci for that (bus, carrier)
-            match = gen_ci.loc[
-                (gen_ci.bus == bus) & 
-                (gen_ci.carrier == carrier)
-            ]
-
-            if not match.empty:
-                best_idx = match.sort_values("ci").index[0]
-                n.generators.at[best_idx, "p_nom_max"] = rem_cap
-                logger.info(f"Reassigned {rem_cap:.2f} MW from {idx} → {best_idx}")
-    else:
-        logger.info("Freeze capacity activated")
-
-def filter_TYNDP_build_year(n, year):
-    """
-    Remove transmission with build year later than the planning horizon
-    """
-    links = n.links[(n.links.project_status != "") & (n.links.build_year > int(year))][["bus0","bus1","build_year","p_nom"]]
-    lines = n.lines[(n.lines.build_year > int(year))][["bus0","bus1","build_year","s_nom"]]
-
-    logger.info(f"Remove transmission with build year later than {year}: \n{links}\n{lines}")
-
-    n.remove("Link",links.index)
-    n.remove("Line",lines.index)
-
 # %%
 if __name__ == "__main__":
     if "snakemake" not in globals():
@@ -805,11 +720,5 @@ if __name__ == "__main__":
             Nyears,
         )
         add_ci_procurement(n, planning_horizons, snakemake.params, costs)
-
-    if snakemake.params.get("electricity", {}).get("freeze_capacity", False):
-        freeze_capacity(n, snakemake.params)
-
-    if snakemake.params.get("electricity", {}).get("filter_TYNDP_build_year", False):
-        filter_TYNDP_build_year(n, planning_horizons)
 
     n.export_to_netcdf(snakemake.output.network)
