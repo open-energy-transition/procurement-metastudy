@@ -398,6 +398,7 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
 
         # ===================== Adding CI load to be supplied ========================
         # ============================================================================
+
         n.add("Bus",
               name,
               country= n.buses.country[location],
@@ -441,155 +442,6 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
             marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
             p_nom=1e6,
             reversed=False,
-        )
-
-        # Scope Definition
-
-        if scope == "node" or strategy == "247-cfe":
-            scope = "node"
-            bus = [location]
-        elif scope == "country":
-            zone = n.buses.loc[location, "country"]
-            bus = n.buses[n.buses.country == zone].location.unique()
-        else:  # scope == "all" is the default
-            bus = [loc for loc in n.buses.location.unique() if loc != "EU"]
-
-        # ===================== Adding Dispatchable Technologies =====================
-        # ============================================================================
-
-        gen_implemented = {
-            "nuclear": {
-                "carrier": "uranium",
-                "carrier_nodes": "EU uranium",
-                "unit": "MWh_th",
-            },
-            "allam": {
-                "carrier": "gas",
-                "carrier_nodes": "EU gas",
-                "unit": "MWh_LHV",
-            },
-            "geothermal": {
-                "carrier": "geothermal",
-                "carrier_nodes": "EU enhanced geothermal systems",
-                "unit": "MWh_th",
-            },
-        }
-        gen_not_implemented = list(
-            set(clean_techs).difference(
-                list(gen_implemented.keys()) + ["onwind", "offwind-ac", "offwind-dc", "offwind-float", "solar", "solar-hsat", "solar rooftop"]
-            )
-        )
-        gen_available_carriers = list(
-            set(clean_techs).intersection(gen_implemented.keys())
-        )
-        if len(gen_not_implemented) > 0:
-            logger.warning(
-                f"{gen_not_implemented} are not yet implemented as Clean technologies for CI in PyPSA-Eur"
-            )
-
-        for generator in gen_available_carriers:
-            carrier = gen_implemented[generator]["carrier"]
-            carrier_nodes = gen_implemented[generator]["carrier_nodes"]
-
-            if carrier_nodes not in n.buses.index:
-                logger.info(f"Missing buses: {carrier_nodes}. Adding them now for CI")
-                n.add(
-                    "Bus",
-                    carrier_nodes,
-                    carrier=carrier,
-                    location="EU",
-                    unit=gen_implemented[generator]["unit"],
-                )
-
-                n.add(
-                    "Generator",
-                    carrier_nodes,
-                    bus=carrier_nodes,
-                    carrier=carrier,
-                    p_nom_extendable=True,
-                )
-
-            if scope == "node":
-                gen_df = pd.DataFrame({"bus1": [name]}, index=[name + " " + generator])
-            else:
-                index_labels = [f"{name} {b} {generator}" for b in bus]
-                gen_df = pd.DataFrame({"bus1": bus}, index=index_labels)
-
-            n.add(
-                "Link",
-                gen_df.index,
-                bus0=carrier_nodes,
-                bus1=gen_df.bus1,
-                bus2="co2 atmosphere",
-                marginal_cost=costs.at[generator, "efficiency"]
-                * costs.at[generator, "VOM"],  # NB: VOM is per MWel
-                capital_cost=costs.at[generator, "efficiency"]
-                * costs.at[generator, "capital_cost"] 
-                * cap_premium, # NB: fixed cost is per MWel
-                p_nom_extendable=True if strategy else False,
-                p_max_pu=0.7
-                if carrier == "uranium"
-                else 1,  # be conservative for nuclear (maintenance or unplanned shut downs)
-                carrier=generator,
-                efficiency=costs.at[generator, "efficiency"],
-                efficiency2=costs.at[carrier, "CO2 intensity"]
-                if generator != "allam"
-                else 0.02 * costs.at[carrier, "CO2 intensity"],
-                lifetime=costs.at[generator, "lifetime"],
-                reversed=False,
-                ci=name,  # C&I markers used in constraints
-            )
-
-        add_missing_carriers(n, gen_available_carriers)
-
-        logger.info(f"Include {gen_available_carriers} for the CI: {name}.")
-
-        # ===================== Adding Variable Renewable Technologies =====================
-        # ==================================================================================
-
-        res_available_carriers = list(
-            set(clean_techs).intersection(["onwind", "offwind-ac", "offwind-dc", "offwind-float", 
-                                           "solar", "solar-hsat", "solar rooftop"])
-        )
-
-        for carrier in res_available_carriers:
-            bus_carrier = [b + " low voltage" for b in bus] if carrier == "solar rooftop" else bus
-
-            mask = (
-                n.generators.bus.isin(bus_carrier)
-                & (n.generators.carrier == carrier)
-                & (n.generators.index.astype(str).str.contains(year))
-            )
-
-            if "ci" in n.generators.columns:
-                mask &= n.generators.ci.isin([np.NaN, ""])
-
-            res_df = n.generators.loc[mask].copy()
-
-            res_df["gen_name"] = "CI" + " " + res_df.index if scope == "continent" else name + " " + res_df.index
-            res_df["bus_name"] = name if scope == "node" else res_df["bus"]
-            res_df["capital_cost"] = n.generators.loc[res_df.index,"capital_cost"]
-            res_df["marginal_cost"] = n.generators.loc[res_df.index,"marginal_cost"]
-
-            p_max_pu_df = n.generators_t.p_max_pu[res_df.index]
-            p_max_pu_df = p_max_pu_df.rename(columns=res_df["gen_name"].to_dict())
-
-            res_df = res_df.set_index("gen_name")
-
-            n.add(
-                "Generator",
-                res_df.index,
-                carrier=carrier,
-                bus=res_df["bus_name"],
-                p_nom_extendable=True if strategy else False,
-                p_max_pu=p_max_pu_df,
-                capital_cost=res_df["capital_cost"] * cap_premium,
-                marginal_cost=res_df["marginal_cost"],
-                ci="continent" if scope == "continent" else name,  # C&I markers used in constraints
-            )
-
-        logger.info(
-            f"Include {res_available_carriers} for the CI: {name} with the scope: {scope}."
         )
 
         # ===================== Adding Storage Technologies =====================
@@ -673,6 +525,165 @@ def add_ci_procurement(n: pypsa.Network, year: str, config: dict, costs: pd.Data
                 )
 
         logger.info(f"Include {storage_available_carriers} for the CI: {name}.")
+
+    for name in ci.keys():
+        location = ci[name]["location"]
+
+        if scope == "node" or strategy == "247-cfe":
+            scope = "node"
+            bus = [location]
+        elif scope == "country":
+            zone = n.buses.loc[location, "country"]
+            bus = n.buses[n.buses.country == zone].location.unique()
+        else:  # scope == "all" or "continent" is the default
+            bus = [loc for loc in n.buses.location.unique() if loc != "EU"]
+
+        if scope == "continent":
+            ci_name, prefix = "continent", "CI"
+        else:
+            ci_name = prefix = name
+
+        # ===================== Adding Dispatchable Technologies =====================
+        # ============================================================================
+
+        gen_implemented = {
+            "nuclear": {
+                "carrier": "uranium",
+                "carrier_nodes": "EU uranium",
+                "unit": "MWh_th",
+            },
+            "allam": {
+                "carrier": "gas",
+                "carrier_nodes": "EU gas",
+                "unit": "MWh_LHV",
+            },
+            "geothermal": {
+                "carrier": "geothermal",
+                "carrier_nodes": "EU enhanced geothermal systems",
+                "unit": "MWh_th",
+            },
+        }
+        gen_not_implemented = list(
+            set(clean_techs).difference(
+                list(gen_implemented.keys()) + ["onwind", "offwind-ac", "offwind-dc", "offwind-float", "solar", "solar-hsat", "solar rooftop"]
+            )
+        )
+        gen_available_carriers = list(
+            set(clean_techs).intersection(gen_implemented.keys())
+        )
+        if len(gen_not_implemented) > 0:
+            logger.warning(
+                f"{gen_not_implemented} are not yet implemented as Clean technologies for CI in PyPSA-Eur"
+            )
+
+        for generator in gen_available_carriers:
+            carrier = gen_implemented[generator]["carrier"]
+            carrier_nodes = gen_implemented[generator]["carrier_nodes"]
+
+            if carrier_nodes not in n.buses.index:
+                logger.info(f"Missing buses: {carrier_nodes}. Adding them now for CI")
+                n.add(
+                    "Bus",
+                    carrier_nodes,
+                    carrier=carrier,
+                    location="EU",
+                    unit=gen_implemented[generator]["unit"],
+                )
+
+                n.add(
+                    "Generator",
+                    carrier_nodes,
+                    bus=carrier_nodes,
+                    carrier=carrier,
+                    p_nom_extendable=True,
+                )
+
+            if scope == "node":
+                gen_df = pd.DataFrame({"bus1": [name]}, index=[name + " " + generator])
+            else:
+                index_labels = [f"{prefix} {b} {generator}" for b in bus]
+                gen_df = pd.DataFrame({"bus1": bus}, index=index_labels)
+
+            n.add(
+                "Link",
+                gen_df.index,
+                bus0=carrier_nodes,
+                bus1=gen_df.bus1,
+                bus2="co2 atmosphere",
+                marginal_cost=costs.at[generator, "efficiency"]
+                * costs.at[generator, "VOM"],  # NB: VOM is per MWel
+                capital_cost=costs.at[generator, "efficiency"]
+                * costs.at[generator, "capital_cost"] 
+                * cap_premium, # NB: fixed cost is per MWel
+                p_nom_extendable=True if strategy else False,
+                p_max_pu=0.7
+                if carrier == "uranium"
+                else 1,  # be conservative for nuclear (maintenance or unplanned shut downs)
+                carrier=generator,
+                efficiency=costs.at[generator, "efficiency"],
+                efficiency2=costs.at[carrier, "CO2 intensity"]
+                if generator != "allam"
+                else 0.02 * costs.at[carrier, "CO2 intensity"],
+                lifetime=costs.at[generator, "lifetime"],
+                reversed=False,
+                ci=ci_name,  # C&I markers used in constraints
+            )
+
+        add_missing_carriers(n, gen_available_carriers)
+
+        logger.info(f"Include {gen_available_carriers} for the CI: {ci_name}.")
+
+        # ===================== Adding Variable Renewable Technologies =====================
+        # ==================================================================================
+
+        res_available_carriers = list(
+            set(clean_techs).intersection(["onwind", "offwind-ac", "offwind-dc", "offwind-float", 
+                                           "solar", "solar-hsat", "solar rooftop"])
+        )
+
+        for carrier in res_available_carriers:
+            bus_carrier = [b + " low voltage" for b in bus] if carrier == "solar rooftop" else bus
+
+            mask = (
+                n.generators.bus.isin(bus_carrier)
+                & (n.generators.carrier == carrier)
+                & (n.generators.index.astype(str).str.contains(year))
+            )
+
+            if "ci" in n.generators.columns:
+                mask &= n.generators.ci.isin([np.NaN, ""])
+
+            res_df = n.generators.loc[mask].copy()
+
+            res_df["gen_name"] = prefix + " " + res_df.index
+            res_df["bus_name"] = name if scope == "node" else res_df["bus"]
+            res_df["capital_cost"] = n.generators.loc[res_df.index,"capital_cost"]
+            res_df["marginal_cost"] = n.generators.loc[res_df.index,"marginal_cost"]
+
+            p_max_pu_df = n.generators_t.p_max_pu[res_df.index]
+            p_max_pu_df = p_max_pu_df.rename(columns=res_df["gen_name"].to_dict())
+
+            res_df = res_df.set_index("gen_name")
+
+            n.add(
+                "Generator",
+                res_df.index,
+                carrier=carrier,
+                bus=res_df["bus_name"],
+                p_nom_extendable=True if strategy else False,
+                p_max_pu=p_max_pu_df,
+                capital_cost=res_df["capital_cost"] * cap_premium,
+                marginal_cost=res_df["marginal_cost"],
+                ci=ci_name,  # C&I markers used in constraints
+            )
+
+        logger.info(
+            f"Include {res_available_carriers} for the CI: {ci_name} with the scope: {scope}."
+        )
+    
+        # contient only need one iteration
+        if scope == "continent":
+            break
 
 
 # %%
