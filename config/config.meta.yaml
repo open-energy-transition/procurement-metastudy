@@ -24,6 +24,7 @@ run:
   name:
   #- baseline-2030-1H
   - emi-match-2030-ci25-model-moer-3H
+  - emi-match-2030-ci25-model-moer-continent-6-3H
   scenarios:
     enable: true
     file: config/scenarios.meta.yaml
@@ -219,7 +220,7 @@ procurement:
     storage_tech: ["li-ion battery"] # "iron-air battery"
 
   strip_network: false # [ true, false ] If true, model only the countries with the CI loads and their neighbors
-  strip_snapshots: false
+  strip_snapshots: true
   
   cap_premium: 1.1
 
