@@ -1,0 +1,782 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Procurement Configuration (Under Construction) &#8212; WattTime Impact Metastudy</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '11-baseline';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Scenarios Configuration (Under Construction)" href="12-scenarios.html" />
+    <link rel="prev" title="Features (Under Construction)" href="03-features.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="00-readme.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/logo_WattTime_OET.png" class="logo__image only-light" alt="WattTime Impact Metastudy - Home"/>
+    <script>document.write(`<img src="_static/logo_WattTime_OET.png" class="logo__image only-dark" alt="WattTime Impact Metastudy - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="00-readme.html">
+                    Introduction
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Preparation</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="01-installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="02-tutorials.html">Tutorials (Under Construction)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="03-features.html">Features (Under Construction)</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Configuration</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Procurement Configuration (Under Construction)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="12-scenarios.html">Scenarios Configuration (Under Construction)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="13-kpis.html">KPIs Configuration (May not be needed)</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Assumption</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="21-segmentation.html">Segmentation Temporal Clustering</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/open-energy-transition/procurement-metastudy" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/open-energy-transition/procurement-metastudy/issues/new?title=Issue%20on%20page%20%2F11-baseline.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/11-baseline.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Procurement Configuration (Under Construction)</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#run"><code class="docutils literal notranslate"><span class="pre">run</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foresight"><code class="docutils literal notranslate"><span class="pre">foresight</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scenario"><code class="docutils literal notranslate"><span class="pre">scenario</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#countries"><code class="docutils literal notranslate"><span class="pre">countries</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#snapshots"><code class="docutils literal notranslate"><span class="pre">snapshots</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#enable"><code class="docutils literal notranslate"><span class="pre">enable</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#co2-budget"><code class="docutils literal notranslate"><span class="pre">co2</span> <span class="pre">budget</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#electricity"><code class="docutils literal notranslate"><span class="pre">electricity</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#atlite"><code class="docutils literal notranslate"><span class="pre">atlite</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#renewable"><code class="docutils literal notranslate"><span class="pre">renewable</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#conventional"><code class="docutils literal notranslate"><span class="pre">conventional</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lines"><code class="docutils literal notranslate"><span class="pre">lines</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#transmission-projects"><code class="docutils literal notranslate"><span class="pre">transmission_projects</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#existing-capacities"><code class="docutils literal notranslate"><span class="pre">existing_capacities</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sector"><code class="docutils literal notranslate"><span class="pre">sector</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#load"><code class="docutils literal notranslate"><span class="pre">load</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#costs"><code class="docutils literal notranslate"><span class="pre">costs</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#clustering"><code class="docutils literal notranslate"><span class="pre">clustering</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solving"><code class="docutils literal notranslate"><span class="pre">solving</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plotting"><code class="docutils literal notranslate"><span class="pre">plotting</span></code></a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="procurement-configuration-under-construction">
+<h1>Procurement Configuration (Under Construction)<a class="headerlink" href="#procurement-configuration-under-construction" title="Link to this heading">#</a></h1>
+<p>This is the base configuration outline used in the analysis “The Role of Energy Storage in Germany”.
+The complete explaination of each configuration can be found in <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html">PyPSA-Eur: Configuration</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The PyPSA-Eur configuration files follow a pyramid-like structure, where the parameters in the highest configuration file add to and override those in the configuration file below it.
+The order is as follows:</p>
+<ol class="arabic simple">
+<li><p><a class="reference external" href="https://open-energy-transition.github.io/procurement-metastudy/12-scenarios.html">scenarios.form.yaml</a></p></li>
+<li><p>config.form.yaml (<strong>this section</strong>)</p></li>
+<li><p><a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html">config.default.yaml</a></p></li>
+<li><p><a class="reference external" href="https://open-energy-transition.github.io/procurement-metastudy/13-kpis.html">config.kpi.yaml</a></p></li>
+</ol>
+</div>
+<p>Thus, for example changes specified in <cite>scenario.form.yaml</cite> will add to and override configurations in <cite>config.form.yaml</cite> and so on.</p>
+<section id="run">
+<h2><code class="docutils literal notranslate"><span class="pre">run</span></code><a class="headerlink" href="#run" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#run">Run Documentation</a>.</p>
+<p>This is the only few section in the file that needs to be changed in order to run the scenario.</p>
+<ul class="simple">
+<li><p>prefix: (optional) directory for output results</p></li>
+<li><p>name: Scenario name from <code class="docutils literal notranslate"><span class="pre">config/scenarios.form.yaml</span></code></p></li>
+</ul>
+</section>
+<section id="foresight">
+<h2><code class="docutils literal notranslate"><span class="pre">foresight</span></code><a class="headerlink" href="#foresight" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#foresight">Foresight Documentation</a>.</p>
+<p>The scope of this work is based on myopic foresight.</p>
+</section>
+<section id="scenario">
+<h2><code class="docutils literal notranslate"><span class="pre">scenario</span></code><a class="headerlink" href="#scenario" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#scenario">Scenario Documentation</a></p></li>
+<li><p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/wildcards.html">Wildcard Documentation</a></p></li>
+</ul>
+<ul class="simple">
+<li><p><strong>ll</strong>: v1.11 indicates that the existing transmission network capacity can be increased by 11%.</p></li>
+<li><p><strong>clusters</strong>: The model results are grouped into 52 nodes; see the clustering section for the disaggregation list.</p></li>
+<li><p><strong>planning_horizons</strong>: The model is simulating the year 2035.</p></li>
+</ul>
+</section>
+<section id="countries">
+<h2><code class="docutils literal notranslate"><span class="pre">countries</span></code><a class="headerlink" href="#countries" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#countries">Countries Documentation</a>.</p>
+<p>The analysis includes Germany and its grid neighboring countries, along with Italy. The complete list:</p>
+<ul class="simple">
+<li><p>AT: Austria</p></li>
+<li><p>BE: Belgium</p></li>
+<li><p>CH: Switzerland</p></li>
+<li><p>CZ: Czech Republic</p></li>
+<li><p>DE: Germany</p></li>
+<li><p>DK: Denmark</p></li>
+<li><p>FR: France</p></li>
+<li><p>IT: Italy</p></li>
+<li><p>LU: Luxembourg</p></li>
+<li><p>NL: Netherlands</p></li>
+<li><p>PL: Poland</p></li>
+<li><p>SE: Sweden</p></li>
+</ul>
+</section>
+<section id="snapshots">
+<h2><code class="docutils literal notranslate"><span class="pre">snapshots</span></code><a class="headerlink" href="#snapshots" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#snapshots">Snapshots Documentation</a>.</p>
+<p>The baseline scenario is based on the climate year 2013, with the snapshots adjusted in each scenarios accordingly.</p>
+</section>
+<section id="enable">
+<h2><code class="docutils literal notranslate"><span class="pre">enable</span></code><a class="headerlink" href="#enable" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#enable">Enable Documentation</a>.</p>
+<p>For the first run, it is recommended to set <code class="docutils literal notranslate"><span class="pre">retrieve_databundle</span></code>, <code class="docutils literal notranslate"><span class="pre">retrieve_cost_data</span></code> and <code class="docutils literal notranslate"><span class="pre">retrieve_cutout</span></code> as true.</p>
+</section>
+<section id="co2-budget">
+<h2><code class="docutils literal notranslate"><span class="pre">co2</span> <span class="pre">budget</span></code><a class="headerlink" href="#co2-budget" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#co2-budget">CO2 Budget Documentation</a>.</p>
+<p>The CO2 budget is derived from individual countries carbon emission targets for included sectors excluding fossil fuel domestic transport emissions from scope
+This means that the total budget is 315.4 MtCO2, equivalent to 10.7% of 1990 emissions for this scope. The complete calculation can be seen in the <a class="reference external" href="https://open-energy-transition.github.io/procurement-metastudy/22-co2_calculation.html">Carbon Emission Calculation</a> section.</p>
+</section>
+<section id="electricity">
+<h2><code class="docutils literal notranslate"><span class="pre">electricity</span></code><a class="headerlink" href="#electricity" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#electricity">Electricity Documentation</a>.</p>
+<p>Configuration changes made:</p>
+<ul class="simple">
+<li><p>Lithium-ion are disaggregated into 1h, 2h, 4h and 8h for a more detail analysis.</p></li>
+<li><p>Iron-air batteries have a maximum storage duration (<code class="docutils literal notranslate"><span class="pre">max</span> <span class="pre">hours</span></code>) of 100 hours</p></li>
+<li><p>Nuclear, Hard Coal, and Lignite power plants are excluded from the powerplantmatching database.</p></li>
+<li><p>Instead, we use a validated dataset of power plants from <code class="docutils literal notranslate"><span class="pre">data/custom_powerplants.csv</span></code> where German nuclear, coal and lignite power plants are phased out for 2035.</p></li>
+</ul>
+</section>
+<section id="atlite">
+<h2><code class="docutils literal notranslate"><span class="pre">atlite</span></code><a class="headerlink" href="#atlite" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#atlite">Atlite Documentation</a>.</p>
+<p>Define and specify the <code class="docutils literal notranslate"><span class="pre">atlite.Cutout</span></code> used for calculating renewable potentials and time-series. All options except for <code class="docutils literal notranslate"><span class="pre">features</span></code> are directly used as <a class="reference external" href="https://atlite.readthedocs.io/en/latest/ref_api.html#cutout">cutout parameters</a>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">default_cutout</span></code> is derived for 2013 from SARAH-3 weather data, with missing values filled in using ERA-5 weather data.</p>
+</section>
+<section id="renewable">
+<h2><code class="docutils literal notranslate"><span class="pre">renewable</span></code><a class="headerlink" href="#renewable" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#renewable">Renewable Documentation</a>.</p>
+<p>The maximum storage duration for pumped hydro storages are set to 10h, instead of the default 6h.</p>
+</section>
+<section id="conventional">
+<h2><code class="docutils literal notranslate"><span class="pre">conventional</span></code><a class="headerlink" href="#conventional" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#conventional">Conventional Documentation</a>.</p>
+<p>The minimum energy dispatch for nuclear power plants is set to 50%.</p>
+</section>
+<section id="lines">
+<h2><code class="docutils literal notranslate"><span class="pre">lines</span></code><a class="headerlink" href="#lines" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#lines">Lines Documentation</a>.</p>
+<p>The maximum line capacity is set to 50% of its total capacity, rather than 70%,
+to better approximate security and reserve capacity for reactive power flows given the clustered spatial resolution of the model.</p>
+</section>
+<section id="transmission-projects">
+<h2><code class="docutils literal notranslate"><span class="pre">transmission_projects</span></code><a class="headerlink" href="#transmission-projects" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#transmission_projects">Transmission Projects Documentation</a>.</p>
+<p>Configuration changes made:</p>
+<ul class="simple">
+<li><p>The Ten Year Network Development Plan (TYNDP) 2020 transmission plan has been excluded from the model.</p></li>
+<li><p>The Netzentwicklungsplan (NEP) of Germany has been included in the model.</p></li>
+<li><p>Only transmission projects that are under construction, in permitting, or confirmed are included.</p></li>
+</ul>
+<p>Since the focus is on Germany, a conservative assumption is made regarding transmission projects,
+specifically by selecting only those that are most likely to be realized.
+This is why the NEP is preferred over the TYNDP.</p>
+</section>
+<section id="existing-capacities">
+<h2><code class="docutils literal notranslate"><span class="pre">existing_capacities</span></code><a class="headerlink" href="#existing-capacities" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#existing_capacities">Existing Capacities Documentation</a>.</p>
+<p>The content is kept identical to the default configuration file.</p>
+</section>
+<section id="sector">
+<h2><code class="docutils literal notranslate"><span class="pre">sector</span></code><a class="headerlink" href="#sector" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#sector">Sector Documentation</a>.</p>
+<p>Configuration changes made:</p>
+<ul class="simple">
+<li><p>This analysis includes the power, heating and electric transport sector.</p></li>
+<li><p>This analysis excludes the biomass, agriculture, industry, and fossil transport sector.</p></li>
+<li><p>The availability of battery electric vehicles (BEV) for demand-side management is reduced from 50% to 20%.</p></li>
+<li><p>The charging rate for BEVs is reduced from 11 kW to 7 kW.</p></li>
+<li><p>The predicted share of land electric vehicles is reduced from 45% to 30% by 2035.</p></li>
+<li><p>Land transport emissions are excluded from the model, as they are determined exogenously.</p></li>
+<li><p>The reduction in space heating demand is increased from 11% to 21% by 2035 to adjust for the geographical scope of the model.</p></li>
+<li><p>Li-ion batteries, vanadium, liquid air, CAES, and Iron-air batteries are defined as storage unit components rather than stores.</p></li>
+<li><p>The hydrogen network is excluded from the model as to the limited scope of H2 in the rest of the model and as a trade-off with model complexity, particularly in terms of computational time.</p></li>
+</ul>
+</section>
+<section id="load">
+<h2><code class="docutils literal notranslate"><span class="pre">load</span></code><a class="headerlink" href="#load" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#load">Load Documentation</a>.</p>
+<p>The model’s electricity load is based on data from 2013.
+By 2035, electricity demand is projected to increase by 26% compared to 2013 (<a class="reference external" href="https://www.agora-energiewende.de/fileadmin/Projekte/2021/2021_11_DE_KNStrom2035/2022-06-23_Praesentation_Klimaneutrales_Stromsystem_2035.pdf">Source from Agora Energiewende</a>).</p>
+</section>
+<section id="costs">
+<h2><code class="docutils literal notranslate"><span class="pre">costs</span></code><a class="headerlink" href="#costs" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#costs">Costs Documentation</a>.</p>
+<p>Configuration changes made:</p>
+<ul class="simple">
+<li><p>The cost data from PyPSA technology cost database is based on the year 2035, instead of 2030.</p></li>
+<li><p>Gas price is set at 38.84 EUR/MWh. <a class="reference external" href="https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:52022SC0230">Source from the EU Comission (Annex)</a></p></li>
+<li><p>Coal price is set at 24.57 EUR/MWh <a class="reference external" href="https://businessanalytiq.com/procurementanalytics/index/subbituminous-coal-price-index/">Source from Business Analytiq (2024 Coal price)</a></p></li>
+<li><p>Lignite price is set at 22.11 EUR/MWh <a class="reference external" href="https://businessanalytiq.com/procurementanalytics/index/lignite-coal-price-index/">Source from Business Analytiq (2024 Lignite price)</a></p></li>
+<li><p>Uranium price is set at 1.75 EUR/MWh <a class="reference external" href="https://markets.businessinsider.com/commodities/uranium-price">Source from Business Insider (2024 price)</a></p></li>
+<li><p>Iron-air battery price is set at 23,500 EUR/MWh (2024).</p></li>
+<li><p>Storage energy cost for CAES is set at 30,000 EUR/MWh (2022).</p></li>
+<li><p>Storage power cost for CAES is set at 1,725,000 EUR/MW (2022).</p></li>
+<li><p>The lifetime of CAES is reduced to 40 years.</p></li>
+</ul>
+</section>
+<section id="clustering">
+<h2><code class="docutils literal notranslate"><span class="pre">clustering</span></code><a class="headerlink" href="#clustering" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#clustering">Clustering Documentation</a>.</p>
+<p>Germany has a focus weight of 0.6, which means that out of 52 nodes, the distribution is as follows:</p>
+<ul class="simple">
+<li><p>Germany: 31 nodes</p></li>
+<li><p>France: 6 nodes</p></li>
+<li><p>Italy: 5 nodes</p></li>
+<li><p>Denmark: 2 nodes</p></li>
+</ul>
+<p>The following countries each have 1 node, contributing to a total of 9 nodes:</p>
+<ul class="simple">
+<li><p>Austria</p></li>
+<li><p>Belgium</p></li>
+<li><p>Switzerland</p></li>
+<li><p>Czech Republic</p></li>
+<li><p>Luxembourg</p></li>
+<li><p>Netherlands</p></li>
+<li><p>Poland</p></li>
+<li><p>Sweden</p></li>
+</ul>
+<p>The temporal resolution is segmented into 4380 snapshots, equivalent to an average temporal clustering of 2 hourly resolution.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>High segmentation temporal resolution such as <cite>4380SEG</cite> has shown to yield similar results to 1 hourly temporal resolution, while providing a good compromise in terms of computational cost.
+See <a class="reference external" href="https://open-energy-transition.github.io/procurement-metastudy/21-segmentation.html">Segmentation Temporal Clustering</a> for more details</p>
+</div>
+</section>
+<section id="solving">
+<h2><code class="docutils literal notranslate"><span class="pre">solving</span></code><a class="headerlink" href="#solving" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#solving">Solving Documentation</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>As noted in the <a class="reference external" href="https://open-energy-transition.github.io/procurement-metastudy/01-installation.html">Installation</a> section,
+there are several solvers compatible with PyPSA. Please choose the ones that are available to you.</p>
+<p>Each solver has a solver-specific parameter settings (<code class="docutils literal notranslate"><span class="pre">options</span></code>) to chose from:</p>
+<ul class="simple">
+<li><p><strong>gurobi</strong>: <code class="docutils literal notranslate"><span class="pre">gurobi-default</span></code>, <code class="docutils literal notranslate"><span class="pre">gurobi-numeric-focus</span></code>, <code class="docutils literal notranslate"><span class="pre">gurobi-fallback</span></code></p></li>
+<li><p><strong>highs</strong>: <code class="docutils literal notranslate"><span class="pre">highs-default</span></code></p></li>
+<li><p><strong>cplex</strong>: <code class="docutils literal notranslate"><span class="pre">cplex-default</span></code></p></li>
+<li><p><strong>copt</strong>: <code class="docutils literal notranslate"><span class="pre">copt-default</span></code>, <code class="docutils literal notranslate"><span class="pre">copt-gpu</span></code></p></li>
+<li><p><strong>cbc</strong>: <code class="docutils literal notranslate"><span class="pre">cbc-default</span></code></p></li>
+<li><p><strong>glpk</strong>: <code class="docutils literal notranslate"><span class="pre">glpk-default</span></code></p></li>
+</ul>
+</div>
+</section>
+<section id="plotting">
+<h2><code class="docutils literal notranslate"><span class="pre">plotting</span></code><a class="headerlink" href="#plotting" title="Link to this heading">#</a></h2>
+<p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#plotting">Plotting Documentation</a>.</p>
+<p>Compared to the default configuration, the coloring scheme has been customized to the scope of this study.</p>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="03-features.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Features (Under Construction)</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="12-scenarios.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Scenarios Configuration (Under Construction)</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#run"><code class="docutils literal notranslate"><span class="pre">run</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foresight"><code class="docutils literal notranslate"><span class="pre">foresight</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scenario"><code class="docutils literal notranslate"><span class="pre">scenario</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#countries"><code class="docutils literal notranslate"><span class="pre">countries</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#snapshots"><code class="docutils literal notranslate"><span class="pre">snapshots</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#enable"><code class="docutils literal notranslate"><span class="pre">enable</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#co2-budget"><code class="docutils literal notranslate"><span class="pre">co2</span> <span class="pre">budget</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#electricity"><code class="docutils literal notranslate"><span class="pre">electricity</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#atlite"><code class="docutils literal notranslate"><span class="pre">atlite</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#renewable"><code class="docutils literal notranslate"><span class="pre">renewable</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#conventional"><code class="docutils literal notranslate"><span class="pre">conventional</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lines"><code class="docutils literal notranslate"><span class="pre">lines</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#transmission-projects"><code class="docutils literal notranslate"><span class="pre">transmission_projects</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#existing-capacities"><code class="docutils literal notranslate"><span class="pre">existing_capacities</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sector"><code class="docutils literal notranslate"><span class="pre">sector</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#load"><code class="docutils literal notranslate"><span class="pre">load</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#costs"><code class="docutils literal notranslate"><span class="pre">costs</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#clustering"><code class="docutils literal notranslate"><span class="pre">clustering</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solving"><code class="docutils literal notranslate"><span class="pre">solving</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plotting"><code class="docutils literal notranslate"><span class="pre">plotting</span></code></a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By WattTime and Open Energy Transition
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
