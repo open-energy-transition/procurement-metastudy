@@ -26,7 +26,7 @@ run:
   - baseline-2030-3H
   scenarios:
     enable: true
-    file: config/scenarios.meta.yaml
+    file: config/scenarios.meta-3H.yaml
   disable_progressbar: false
   shared_resources:
     policy: false

@@ -105,8 +105,16 @@ def duplicate_run_delete(scenario_name, selected_baseline, selected_profile):
 # ---------------------- Main Script ----------------------
 
 def main():
+    scenario_yaml = ["scenarios.meta-1H.yaml", "scenarios.meta-3H.yaml"]
+
+    selected_scenario_yaml = select_scenario(scenario_yaml, name="time resolution")
+    if not selected_scenario_yaml:
+        print("\nOperation cancelled by user.")
+        return
+
+    print("\n=================================================================")
     # Load scenario configuration
-    with open('config/scenarios.meta.yaml', 'r') as file:
+    with open(f'config/{selected_scenario_yaml}', 'r') as file:
         config_s = yaml.safe_load(file)
 
     # Extract scenarios with '--'

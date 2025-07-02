@@ -57,14 +57,6 @@ baseline-2030-NoResTargets-3H: #3
     EU_share_target: false
     country_cap_target: false
 
-baseline-2030-1H: #Needed for calculating the model-based emission signals (for emi-match-model cases)
-  enable:
-    procurement: false
-
-  clustering:
-    temporal:
-      resolution_sector: 1H
-
 # ======== Annual volume matching =====================
 # =====================================================
 
