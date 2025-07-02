@@ -1612,13 +1612,9 @@ def res_annual_matching_constraints(n):
     weights = n.snapshot_weightings["generators"]
     energy_matching = n.config["procurement"]["energy_matching"] / 100
 
-    if n.config["procurement"]["scope"] == "continent":
-        total_load = 0
-        for name in n.config["procurement"]["ci"]:
-            total_load += (n.loads_t.p_set[name + " load"] * weights).sum()
-
-        gen_ci = list(n.generators[n.generators.ci == "continent"].index) if "ci" in n.generators.columns else []
-        links_ci = list(n.links[n.links.ci == "continent"].index) if "ci" in n.links.columns else []
+    for name in n.config["procurement"]["ci"]:
+        gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
+        links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
 
         gen_sum = (n.model["Generator-p"].loc[:, gen_ci] * weights).sum()
         link_sum = (
@@ -1628,27 +1624,39 @@ def res_annual_matching_constraints(n):
         ).sum()
         lhs = gen_sum + link_sum
 
+        total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
+
         n.model.add_constraints(
-                lhs == energy_matching * total_load, name=f"RES_annual_matching_continent"
+                lhs == energy_matching * total_load, name=f"RES_annual_matching_{name}"
             )
-    else:
-        for name in n.config["procurement"]["ci"]:
-            gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
-            links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
 
-            gen_sum = (n.model["Generator-p"].loc[:, gen_ci] * weights).sum()
-            link_sum = (
-                n.model["Link-p"].loc[:, links_ci]
-                * n.links.loc[links_ci].efficiency
-                * weights
-            ).sum()
-            lhs = gen_sum + link_sum
+def res_annual_matching_constraints_continent(n):
+    """
+    Implement strategies for annual renewable procurement matching.
 
-            total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
+    The total generation from all CI-related generators (renewable carriers) and links (conventional/clean carriers) must equal to its own load consumption.
+    """
+    weights = n.snapshot_weightings["generators"]
+    energy_matching = n.config["procurement"]["energy_matching"] / 100
 
-            n.model.add_constraints(
-                    lhs == energy_matching * total_load, name=f"RES_annual_matching_{name}"
-                )
+    total_load = 0
+    for name in n.config["procurement"]["ci"]:
+        total_load += (n.loads_t.p_set[name + " load"] * weights).sum()
+
+    gen_ci = list(n.generators[n.generators.ci == "continent"].index) if "ci" in n.generators.columns else []
+    links_ci = list(n.links[n.links.ci == "continent"].index) if "ci" in n.links.columns else []
+
+    gen_sum = (n.model["Generator-p"].loc[:, gen_ci] * weights).sum()
+    link_sum = (
+        n.model["Link-p"].loc[:, links_ci]
+        * n.links.loc[links_ci].efficiency
+        * weights
+    ).sum()
+    lhs = gen_sum + link_sum
+
+    n.model.add_constraints(
+            lhs == energy_matching * total_load, name=f"RES_annual_matching_continent"
+        )
 
 
 def cfe_constraints(n):
@@ -1750,6 +1758,55 @@ def import_constraints(n):
 
             logger.info(f"Limit electricity imports to {name} by a factor of {share} relative to the procuring CI load")
 
+def determine_signal_per_country(comp, techs_ci, df_signal):
+    buses = n.generators.loc[techs_ci, "bus"] if comp == "gen" else n.links.loc[techs_ci, "bus1"]
+    countries = n.buses.loc[buses, "country"].values
+        
+    country_per_tech = xr.DataArray(countries, dims=["Generator"], coords={"Generator": techs_ci})
+    signal_per_country = xr.DataArray(
+            df_signal.values,
+            coords={"snapshot": df_signal.index, "country": df_signal.columns},
+            dims=["snapshot", "country"]
+            )
+    signal_per_gen = signal_per_country.sel(country=country_per_tech)
+
+    return signal_per_gen
+
+def read_signal_data(signal_source, emission_signal):
+
+    scaling = n.snapshot_weightings.objective.sum() / len(
+        n.snapshot_weightings.objective
+    )  # e.g., 3 for 3H time resolution
+
+    if signal_source == "model":
+        signal_path = n.config["procurement"]["emissionality"]["signal_model"]
+        df_signal = []
+        for country_signal in n.buses.country.unique():
+            if country_signal != "":
+                signal = pd.read_csv(f"{signal_path}" + f"/{country_signal}.csv", index_col=0)[emission_signal]
+                signal.index = pd.to_datetime(signal.index)
+
+                # Resample emission signal
+                signal = signal.resample(f'{scaling}h').mean().reindex(n.snapshots, method="nearest")
+                signal = signal.rename(country_signal)
+                df_signal.append(signal)
+        
+        emission_signal_flat = 0
+        emission_signal_solar = 0
+        emission_signal_wind = 0
+        df_signal = pd.concat(df_signal, axis=1)
+    
+    else: #historical
+
+        signal_path = n.config["procurement"]["emissionality"]["signal_historical"]
+        emission_signal_flat = "flat_" + emission_signal.upper()
+        emission_signal_solar = "solar_" + emission_signal.upper()
+        emission_signal_wind = "wind_" + emission_signal.upper()
+        df_signal = pd.read_csv(f"{signal_path}", index_col=0) / 1000 # Convert kgCO2/MWh to tCO2/MWh
+
+    return emission_signal_flat, emission_signal_solar, emission_signal_wind, df_signal
+    
+    
 def emission_matching_constraints(n):
     """
     Implement strategies for emission matching.
@@ -1757,9 +1814,6 @@ def emission_matching_constraints(n):
     The avoided emissions from all CI-related generators (renewable carriers) and links (conventional/clean carriers) are greater than or equal to some percentage of their annual emissions from load consumption.
     """
     weights = n.snapshot_weightings["generators"]
-    scaling = n.snapshot_weightings.objective.sum() / len(
-        n.snapshot_weightings.objective
-    )  # e.g., 3 for 3H time resolution
 
     emission_matching = n.config["procurement"]["emissionality"]["emission_matching"] / 100
     emission_signal = n.config["procurement"]["emissionality"]["emission_signal"]
@@ -1772,95 +1826,94 @@ def emission_matching_constraints(n):
         "cmer" : "Combined Marginal Emission Rate (CMER)",
     }
 
-    if emission_signal in allowed_signals.keys():
-        logger.info(f"The emission signal chosen is {allowed_signals[emission_signal]}")
-    else:
-        raise KeyError(
-            f"'emission_signal' option must be one of 'aer', 'mber', or 'moer'. Now is '{emission_signal}'."
-        )
-
-    def determine_signal_per_country(comp, techs_ci, df_signal):
-        _buses = n.generators.loc[techs_ci, "bus"] if comp == "gen" else n.links.loc[links_ci, "bus1"]
-        _countries = n.buses.loc[_buses, "country"].values
-            
-        _country_per_tech = xr.DataArray(_countries, dims=["Generator"], coords={"Generator": techs_ci})
-        _signal_per_country = xr.DataArray(
-                df_signal.values,
-                coords={"snapshot": df_signal.index, "country": df_signal.columns},
-                dims=["snapshot", "country"]
-                )
-        signal_per_gen = _signal_per_country.sel(country=_country_per_tech)
-
-        return signal_per_gen
+    allowed_sources = ["model", "historical"]
     
-    for name in n.config["procurement"]["ci"]:
+    if emission_signal not in allowed_signals:
+        raise KeyError(f"'emission_signal' must be one of {list(allowed_signals.keys())}. Now is '{emission_signal}'.")
+    logger.info(f"Emission signal chosen: {allowed_signals[emission_signal]}")
 
-        location = n.config["procurement"]["ci"][name]["location"]
-        country_CI = n.buses[n.buses.index == location].country.values[0]
+    emission_signal_flat, emission_signal_solar, emission_signal_wind, df_signal = read_signal_data(signal_source, emission_signal)
+    
+    if signal_source not in allowed_sources:
+        raise KeyError(
+                        f"'signal_source' option must be one of 'model' or 'historical'. Now is '{signal_source}'."
+                    )
 
-        gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
-        #gen_ci = ["Germany DK0 0 0 offwind-float-2030", "Germany DK0 0 0 solar-2030", "Germany GB3 0 0 solar-2030"]
-        links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
-
-        if signal_source == "model":
-            #1 Read the emission signal data
-            signal_path = n.config["procurement"]["emissionality"]["signal_model"]
-            df_signal = []
-            for country_signal in n.buses.country.unique():
-                if country_signal != "":
-                    signal = pd.read_csv(f"{signal_path}" + f"/{country_signal}.csv", index_col=0)[emission_signal]
-                    signal.index = pd.to_datetime(signal.index)
-
-                    # Resample emission signal
-                    signal = signal.resample(f'{scaling}h').mean().reindex(n.snapshots, method="nearest")
-                    if country_signal == country_CI:
-                        signal_load = signal
-                    signal = signal.rename(country_signal)
-                    df_signal.append(signal)
-            df_signal = pd.concat(df_signal, axis=1)
+    elif signal_source == "model":
             
-            #2 Build the constraint
+        for name in n.config["procurement"]["ci"]:
+            
+            location = n.config["procurement"]["ci"][name]["location"]
+            country_CI = n.buses[n.buses.index == location].country.values[0]
+            signal_load = df_signal.loc[:, country_CI]
+            load_emissions = (n.loads_t.p_set[name + " load"] * weights * signal_load).sum()
+            
+            gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
+            #gen_ci = ["Germany DK0 0 0 offwind-float-2030", "Germany DK0 0 0 solar-2030", "Germany GB3 0 0 solar-2030"] #test
+            links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
+            
             signal_per_gen = determine_signal_per_country("gen", gen_ci, df_signal)
             signal_per_link = determine_signal_per_country("link", links_ci, df_signal)
+    
             gen_avoided = (n.model["Generator-p"].loc[:, gen_ci] * weights * signal_per_gen).sum()
+    
+            link_avoided = (
+                n.model["Link-p"].loc[:, links_ci]
+                * n.links.loc[links_ci].efficiency
+                * weights
+                * signal_per_link
+                ).sum()
 
-        elif signal_source == "historical":
-            #1 Read the emission signal data
-            signal_path = n.config["procurement"]["emissionality"]["signal_historical"]
+            link_emitted = (
+                n.model["Link-p"].loc[:, links_ci]
+                * n.links.loc[links_ci].efficiency2
+                * weights
+                ).sum()
+            
+            lhs = emission_matching * (gen_avoided + link_avoided - link_emitted)
+            
+            n.model.add_constraints(
+                lhs >= load_emissions, name=f"emission_matching_{name}"
+            )
+
+    else: #historical
+        for name in n.config["procurement"]["ci"]:
             df_signal_solar = []
             df_signal_wind = []
             df_signal_other = []
-            emission_signal_flat = "flat_" + emission_signal.upper()
-            emission_signal_solar = "solar_" + emission_signal.upper()
-            emission_signal_wind = "wind_" + emission_signal.upper()
-            signal = pd.read_csv(f"{signal_path}", index_col=0) / 1000 # Convert kgCO2/MWh to tCO2/MWh
-            if country_CI not in signal.index:
+            location = n.config["procurement"]["ci"][name]["location"]
+            country_CI = n.buses[n.buses.index == location].country.values[0]
+            if country_CI not in df_signal.index:
                 raise KeyError(
                     f"Country {country_CI} does not participate to the emissionality procurement strategy."
                     )
-            signal_load = signal.loc[country_CI, emission_signal_flat]
+            signal_load = df_signal.loc[country_CI, emission_signal_flat]
+            if np.isnan(signal_load):
+                        raise ValueError(
+                            f"Flat emission signal {emission_signal_flat} for country {country_CI} is not available."
+                        )
+            else:
+                load_emissions = (n.loads_t.p_set[name + " load"] * weights * signal_load).sum()
+
             for country_signal in n.buses.country.unique():
                 if country_signal != "":
-                    if country_signal not in signal.index:
+                    if country_signal not in df_signal.index:
                         logger.info(f"Country {country_signal} (CI procurement) does not participate to the emissionality procurement strategy.")
                         df_signal_solar.append(pd.Series(0, index = n.snapshots).rename(country_signal, inplace=True))
                         df_signal_wind.append(pd.Series(0, index = n.snapshots).rename(country_signal, inplace=True))
                         df_signal_other.append(pd.Series(0, index = n.snapshots).rename(country_signal, inplace=True))
-                        continue
-                    if np.isnan(signal_load):
-                        raise ValueError(
-                            f"Flat emission signal {emission_signal_flat} for country {country_CI} is not available."
-                        )
                     else:
-                        df_signal_solar.append(pd.Series(signal_load if np.isnan(signal.loc[country_CI, emission_signal_solar]) else signal.loc[country_signal, emission_signal_solar], index = n.snapshots).rename(country_signal, inplace=True))
-                        df_signal_wind.append(pd.Series(signal_load if np.isnan(signal.loc[country_CI, emission_signal_wind]) else signal.loc[country_signal, emission_signal_wind], index = n.snapshots).rename(country_signal, inplace=True))
-                        df_signal_other.append(pd.Series(signal.loc[country_signal, emission_signal_flat], index = n.snapshots).rename(country_signal, inplace=True))
+                        df_signal_solar.append(pd.Series(df_signal.loc[country_signal, emission_signal_solar], index = n.snapshots).rename(country_signal, inplace=True))
+                        df_signal_wind.append(pd.Series(df_signal.loc[country_signal, emission_signal_wind], index = n.snapshots).rename(country_signal, inplace=True))
+                        df_signal_other.append(pd.Series(df_signal.loc[country_signal, emission_signal_flat], index = n.snapshots).rename(country_signal, inplace=True))
 
             df_signal_solar = pd.concat(df_signal_solar, axis=1)
             df_signal_wind = pd.concat(df_signal_wind, axis=1)
             df_signal_other = pd.concat(df_signal_other, axis=1)
+
+            gen_ci = list(n.generators.query("ci == @name").index) if "ci" in n.generators.columns else []
+            links_ci = list(n.links.query("ci == @name").index) if "ci" in n.links.columns else []
             
-            #2 Build the constraint
             gen_ci_solar = [g for g in gen_ci if "solar" in g]
             gen_ci_wind = [g for g in gen_ci if "wind" in g]
             gen_ci_others = [g for g in gen_ci if g not in gen_ci_solar + gen_ci_wind]
@@ -1875,10 +1928,75 @@ def emission_matching_constraints(n):
             gen_avoided_flat = (n.model["Generator-p"].loc[:, gen_ci_others] * weights * signal_per_gen_others).sum()
             
             gen_avoided = gen_avoided_flat + gen_avoided_solar + gen_avoided_wind
-        else:
-            raise KeyError(
-                    f"'signal_source' option must be one of 'model' or 'historical'. Now is '{signal_source}'."
-                )
+
+            link_avoided = (
+                n.model["Link-p"].loc[:, links_ci]
+                * n.links.loc[links_ci].efficiency
+                * weights
+                * signal_per_link
+                ).sum()
+
+            link_emitted = (
+                n.model["Link-p"].loc[:, links_ci]
+                * n.links.loc[links_ci].efficiency2
+                * weights
+                ).sum()
+            
+            lhs = emission_matching * (gen_avoided + link_avoided - link_emitted)
+            
+            n.model.add_constraints(
+                lhs >= load_emissions, name=f"emission_matching_{name}"
+            )
+
+def emission_matching_constraints_continent(n): #to update
+    """
+    Implement strategies for emission matching.
+
+    The avoided emissions from all CI-related generators (renewable carriers) and links (conventional/clean carriers) are greater than or equal to some percentage of their annual emissions from load consumption.
+    """
+    weights = n.snapshot_weightings["generators"]
+
+    emission_matching = n.config["procurement"]["emissionality"]["emission_matching"] / 100
+    emission_signal = n.config["procurement"]["emissionality"]["emission_signal"]
+    signal_source = n.config["procurement"]["emissionality"]["signal_source"]
+
+    allowed_signals = {
+        "aer" : "Average Emission Rate (AER)",
+        "mber" : "Marginal Build Emission Rate (MBER)",
+        "moer" : "Marginal Operating Emission Rate (MOER)",
+        "cmer" : "Combined Marginal Emission Rate (CMER)",
+    }
+    
+    allowed_sources = ["model", "historical"]
+
+    if emission_signal not in allowed_signals:
+        raise KeyError(f"'emission_signal' must be one of {list(allowed_signals.keys())}. Now is '{emission_signal}'.")
+    logger.info(f"Emission signal chosen: {allowed_signals[emission_signal]}")
+
+    emission_signal_flat, emission_signal_solar, emission_signal_wind, df_signal = read_signal_data(signal_source, emission_signal)
+    
+    if signal_source not in allowed_sources:
+        raise KeyError(
+                        f"'signal_source' option must be one of 'model' or 'historical'. Now is '{signal_source}'."
+                    )
+
+    elif signal_source == "model":
+   
+        load_emissions = 0
+        for name in n.config["procurement"]["ci"]:
+            
+            location = n.config["procurement"]["ci"][name]["location"]
+            country_CI = n.buses[n.buses.index == location].country.values[0]
+            signal_load = df_signal.loc[:, country_CI]
+            load_emissions += (n.loads_t.p_set[name + " load"] * weights * signal_load).sum()
+            
+        gen_ci = list(n.generators[n.generators.ci == "continent"].index) if "ci" in n.generators.columns else []
+        links_ci = list(n.links[n.links.ci == "continent"].index) if "ci" in n.links.columns else []
+            
+        signal_per_gen = determine_signal_per_country("gen", gen_ci, df_signal)
+        signal_per_link = determine_signal_per_country("link", links_ci, df_signal)
+
+        gen_avoided = (n.model["Generator-p"].loc[:, gen_ci] * weights * signal_per_gen).sum()
 
         link_avoided = (
             n.model["Link-p"].loc[:, links_ci]
@@ -1894,13 +2012,84 @@ def emission_matching_constraints(n):
             ).sum()
         
         lhs = emission_matching * (gen_avoided + link_avoided - link_emitted)
-
-        load_emissions = (n.loads_t.p_set[name + " load"] * weights * signal_load).sum()
         
         n.model.add_constraints(
-            lhs >= load_emissions, name=f"emission_matching_{name}"
+            lhs >= load_emissions, name=f"emission_matching_continent"
         )
 
+    else: #historical
+
+        load_emissions = 0
+        for name in n.config["procurement"]["ci"]:
+            location = n.config["procurement"]["ci"][name]["location"]
+            country_CI = n.buses[n.buses.index == location].country.values[0]
+            if country_CI not in df_signal.index:
+                raise KeyError(
+                    f"Country {country_CI} does not participate to the emissionality procurement strategy."
+                    )
+            signal_load = df_signal.loc[country_CI, emission_signal_flat]
+            if np.isnan(signal_load):
+                        raise ValueError(
+                            f"Flat emission signal {emission_signal_flat} for country {country_CI} is not available."
+                        )
+            else:
+                load_emissions += (n.loads_t.p_set[name + " load"] * weights * signal_load).sum()
+
+        df_signal_solar = []
+        df_signal_wind = []
+        df_signal_other = []
+        for country_signal in n.buses.country.unique():
+            if country_signal != "":
+                if country_signal not in df_signal.index:
+                    logger.info(f"Country {country_signal} (CI procurement) does not participate to the emissionality procurement strategy.")
+                    df_signal_solar.append(pd.Series(0, index = n.snapshots).rename(country_signal, inplace=True))
+                    df_signal_wind.append(pd.Series(0, index = n.snapshots).rename(country_signal, inplace=True))
+                    df_signal_other.append(pd.Series(0, index = n.snapshots).rename(country_signal, inplace=True))
+                else:
+                    df_signal_solar.append(pd.Series(df_signal.loc[country_signal, emission_signal_solar], index = n.snapshots).rename(country_signal, inplace=True))
+                    df_signal_wind.append(pd.Series(df_signal.loc[country_signal, emission_signal_wind], index = n.snapshots).rename(country_signal, inplace=True))
+                    df_signal_other.append(pd.Series(df_signal.loc[country_signal, emission_signal_flat], index = n.snapshots).rename(country_signal, inplace=True))
+
+        df_signal_solar = pd.concat(df_signal_solar, axis=1)
+        df_signal_wind = pd.concat(df_signal_wind, axis=1)
+        df_signal_other = pd.concat(df_signal_other, axis=1)
+
+        gen_ci = list(n.generators[n.generators.ci == "continent"].index) if "ci" in n.generators.columns else []
+        links_ci = list(n.links[n.links.ci == "continent"].index) if "ci" in n.links.columns else []
+        
+        gen_ci_solar = [g for g in gen_ci if "solar" in g]
+        gen_ci_wind = [g for g in gen_ci if "wind" in g]
+        gen_ci_others = [g for g in gen_ci if g not in gen_ci_solar + gen_ci_wind]
+
+        signal_per_gen_solar = determine_signal_per_country("gen", gen_ci_solar, df_signal_solar)
+        signal_per_gen_wind = determine_signal_per_country("gen", gen_ci_wind, df_signal_wind)
+        signal_per_gen_others = determine_signal_per_country("gen", gen_ci_others, df_signal_other)
+        signal_per_link = determine_signal_per_country("link", links_ci, df_signal_other)
+        
+        gen_avoided_solar = (n.model["Generator-p"].loc[:, gen_ci_solar] * weights * signal_per_gen_solar).sum()
+        gen_avoided_wind = (n.model["Generator-p"].loc[:, gen_ci_wind] * weights * signal_per_gen_wind).sum()
+        gen_avoided_flat = (n.model["Generator-p"].loc[:, gen_ci_others] * weights * signal_per_gen_others).sum()
+        
+        gen_avoided = gen_avoided_flat + gen_avoided_solar + gen_avoided_wind
+
+        link_avoided = (
+            n.model["Link-p"].loc[:, links_ci]
+            * n.links.loc[links_ci].efficiency
+            * weights
+            * signal_per_link
+            ).sum()
+
+        link_emitted = (
+            n.model["Link-p"].loc[:, links_ci]
+            * n.links.loc[links_ci].efficiency2
+            * weights
+            ).sum()
+        
+        lhs = emission_matching * (gen_avoided + link_avoided - link_emitted)
+        
+        n.model.add_constraints(
+            lhs >= load_emissions, name=f"emission_matching_continent"
+        )
 
 def extra_functionality(
     n: pypsa.Network, snapshots: pd.DatetimeIndex, planning_horizons: str | None = None
@@ -1987,6 +2176,7 @@ def extra_functionality(
     if config["enable"].get("procurement", False):
         procurement = config["procurement"]
         strategy = procurement["strategy"]
+        scope = procurement["scope"]
         energy_matching = procurement["energy_matching"]
         emission_matching = procurement["emissionality"]["emission_matching"]
         res_capacity_constraints(n)
@@ -1995,7 +2185,10 @@ def extra_functionality(
 
         if strategy == "vol-match":
             logger.info(f"Setting annual volume matching of {energy_matching}%")
-            res_annual_matching_constraints(n)
+            if scope != "continent":
+                res_annual_matching_constraints(n)
+            else:
+                res_annual_matching_constraints_continent(n)
         elif strategy == "247-cfe":
             logger.info(f"Setting 247 CFE target of {energy_matching}")
             cfe_constraints(n)
@@ -2004,8 +2197,12 @@ def extra_functionality(
                 f"Setting annual avoided emission target of {emission_matching}%"
             )
             logger.info(f"Setting annual volume matching of {energy_matching}%")
-            emission_matching_constraints(n)
-            res_annual_matching_constraints(n)
+            if scope != "continent":
+                emission_matching_constraints(n)
+                res_annual_matching_constraints(n)
+            else:
+                emission_matching_constraints_continent(n)
+                res_annual_matching_constraints_continent(n)
         else:
             logger.info("no target set")
 
@@ -2189,6 +2386,91 @@ def solve_network(
         n.model.print_infeasibilities()
         raise RuntimeError("Solving status 'infeasible'. Infeasibilities computed.")
     
+def freeze_capacity(n, config):
+    """
+    Freeze capacities of expandable variable renewable generators
+    """
+    # Define variable renewable carriers
+    res_carriers = [
+        "solar", "solar-hsat", "solar rooftop", 
+        "onwind", "offwind-ac", "offwind-dc", "offwind-float"
+    ]
+
+    # Freeze existing capacities for variable renewables
+    mask_res = (
+        n.generators.carrier.isin(res_carriers) & 
+        (n.generators.p_nom_max != np.inf)
+    )
+    n.generators.loc[mask_res, "p_nom_extendable"] = False
+
+    # Reallocate unused capacity to CI generators (if exist)
+    if "ci" in n.generators.columns:
+        logger.info("Freeze capacity activated — reallocating potential capacity to CI components")
+
+        # Calculate remaining extendable capacity 
+        remaining_cap = (
+            n.generators.loc[mask_res, "p_nom_max"] - 
+            n.generators.loc[mask_res, "p_nom"]
+        )
+        # Remove p_nom_max of existing capacities
+        n.generators.loc[mask_res, "p_nom_max"] = 0
+
+        # Candidate gen_ci: must be extendable and in res_carriers
+        gen_ci = n.generators.loc[
+            n.generators.carrier.isin(res_carriers) & 
+            (n.generators.p_nom_extendable == True)
+        ]
+
+        # Extract (bus, carrier) pairs present in gen_ci
+        gen_ci_keys = set(zip(gen_ci.bus, gen_ci.carrier))
+
+        # Keep only (bus, carrier) pairs that exist in gen_ci
+        df_remaining = n.generators.loc[mask_res, ["bus", "carrier"]]
+
+        # Check if procurement scope is set to "node"
+        if (
+            config.get("enable", {}).get("procurement") 
+            and config.get("procurement", {}).get("scope") == "node"
+        ):
+            # Build a mapping from location codes to country names
+            ci = config["procurement"]["ci"]
+            ci_locations = {info.get('location'): name for name, info in ci.items()}
+            df_remaining['bus'] = df_remaining['bus'].map(ci_locations)
+            df_remaining = df_remaining.dropna(subset=['bus'])
+
+        df_remaining["key"] = list(zip(df_remaining.bus, df_remaining.carrier))
+        df_remaining = df_remaining[df_remaining["key"].isin(gen_ci_keys)]
+
+        for idx, row in df_remaining.iterrows():
+            bus = row["bus"]
+            carrier = row["carrier"]
+            rem_cap = remaining_cap.loc[idx]
+
+            # Find matching gen_ci for that (bus, carrier)
+            match = gen_ci.loc[
+                (gen_ci.bus == bus) & 
+                (gen_ci.carrier == carrier)
+            ]
+
+            if not match.empty:
+                best_idx = match.sort_values("ci").index[0]
+                n.generators.at[best_idx, "p_nom_max"] = rem_cap
+                logger.info(f"Reassigned {rem_cap:.2f} MW from {idx} → {best_idx}")
+    else:
+        logger.info("Freeze capacity activated")
+
+def filter_TYNDP_build_year(n, year):
+    """
+    Remove transmission with build year later than the planning horizon
+    """
+    links = n.links[(n.links.project_status != "") & (n.links.build_year > int(year))][["bus0","bus1","build_year","p_nom"]]
+    lines = n.lines[(n.lines.build_year > int(year))][["bus0","bus1","build_year","s_nom"]]
+
+    logger.info(f"Remove transmission with build year later than {year}: \n{links}\n{lines}")
+
+    n.remove("Link",links.index)
+    n.remove("Line",lines.index)
+
 
 # %%
 if __name__ == "__main__":
@@ -2197,7 +2479,7 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "solve_sector_network_myopic",
-            run= "vol-match-2030-ci25-continent-6-3H",
+            run= "emi-match-2030-ci25-model-moer-continent-6-3H", #emi-match-2030-ci25-model-moer-continent-6-3H #emi-match-2030-ci25-model-moer-3H
             opts="",
             clusters="39",
             configfiles="config/config.meta.yaml",
@@ -2224,6 +2506,12 @@ if __name__ == "__main__":
         co2_sequestration_potential=snakemake.params["co2_sequestration_potential"],
         limit_max_growth=snakemake.params.get("sector", {}).get("limit_max_growth"),
     )
+
+    if snakemake.config.get("electricity", {}).get("freeze_capacity", False):
+        freeze_capacity(n, snakemake.config)
+
+    if snakemake.config.get("electricity", {}).get("filter_TYNDP_build_year", False):
+        filter_TYNDP_build_year(n, planning_horizons)
 
     logging_frequency = snakemake.config.get("solving", {}).get(
         "mem_logging_frequency", 30

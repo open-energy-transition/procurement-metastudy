@@ -45,14 +45,6 @@ baseline-2030-3H: #2
     temporal:
       resolution_sector: 3H
 
-baseline-2030-1H: #bonus
-  enable:
-    procurement: false
-
-  clustering:
-    temporal:
-      resolution_sector: 1H
-
 baseline-2030-NoResTargets-3H: #3
   enable:
     procurement: false
@@ -94,23 +86,9 @@ vol-match-2025-ci25-3H: #1
 
   procurement:
     strategy: vol-match
-    scope: "all"
+    scope: continent
     energy_matching: 100
     participation: 50
-
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
 
 vol-match-2030-ci25-3H: #2
   enable:
@@ -125,44 +103,9 @@ vol-match-2030-ci25-3H: #2
 
   procurement:
     strategy: vol-match
-    scope: "all"
+    scope: continent
     energy_matching: 100
     participation: 50
-
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
-
-vol-match-2030-ci25-DE-3H: #bonus
-  enable:
-    procurement: true
-
-  clustering:
-    temporal:
-      resolution_sector: 3H
-
-  res_target:
-    res_additionality: false
-
-  procurement:
-    strategy: vol-match
-    scope: "all"
-    energy_matching: 100
-    participation: 50
-
-    ci:
-      Germany:
-        location: "DE0 0"
 
 vol-match-2030-country-ci25-3H: #3
   enable:
@@ -177,23 +120,9 @@ vol-match-2030-country-ci25-3H: #3
 
   procurement:
     strategy: vol-match
-    scope: "country"
+    scope: country
     energy_matching: 100
     participation: 50
-
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
 
 vol-match-2030-NoResTargets-ci25-3H: #4
   enable:
@@ -210,174 +139,9 @@ vol-match-2030-NoResTargets-ci25-3H: #4
 
   procurement:
     strategy: vol-match
-    scope: "all"
+    scope: continent
     energy_matching: 100
     participation: 50
-
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
-
-vol-match-2030-ci25-continent-DE-3H: #bonus
-  enable:
-    procurement: true
-
-  clustering:
-    temporal:
-      resolution_sector: 3H
-  
-  solving:
-    mem_mb: 150000
-    runtime: 24h
-
-  res_target:
-    res_additionality: false
-
-  procurement:
-    strategy: vol-match
-    scope: "continent"
-    energy_matching: 100
-    participation: 50
-
-    ci:
-      Germany:
-        location: "DE0 0"
-
-vol-match-2030-ci25-continent-6-3H: #bonus
-  enable:
-    procurement: true
-
-  clustering:
-    temporal:
-      resolution_sector: 3H
-  
-  solving:
-    mem_mb: 150000
-    runtime: 24h
-
-  res_target:
-    res_additionality: false
-
-  procurement:
-    strategy: vol-match
-    scope: "continent"
-    energy_matching: 100
-    participation: 50
-
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
-
-vol-match-2030-ci25-continent-34-3H: #bonus
-  enable:
-    procurement: true
-
-  clustering:
-    temporal:
-      resolution_sector: 3H
-
-  solving:
-    mem_mb: 150000
-    runtime: 24h
-
-  res_target:
-    res_additionality: false
-
-  procurement:
-    strategy: vol-match
-    scope: "continent"
-    energy_matching: 100
-    participation: 50
-
-    ci:
-      Albania:
-        location: "AL0 0"
-      Austria:
-        location: "AT0 0"
-      Bosnia and Herzegovina:
-        location: "BA0 0"
-      Belgium:
-        location: "BE0 0"
-      Bulgaria:
-        location: "BG0 0"
-      Switzerland:
-        location: "CH0 0"
-      Czech Republic:
-        location: "CZ0 0"
-      Germany:
-        location: "DE0 0"
-      Denmark:
-        location: "DK0 0"
-      Estonia:
-        location: "EE0 0"
-      Spain:
-        location: "ES0 0"
-      Finland:
-        location: "FI1 0"
-      France:
-        location: "FR0 0"
-      United Kingdom:
-        location: "GB2 0"
-      Greece:
-        location: "GR0 0"
-      Croatia:
-        location: "HR0 0"
-      Hungary:
-        location: "HU0 0"
-      Ireland:
-        location: "IE3 0"
-      Italy:
-        location: "IT0 0"
-      Lithuania:
-        location: "LT0 0"
-      Luxembourg:
-        location: "LU0 0"
-      Latvia:
-        location: "LV0 0"
-      Montenegro:
-        location: "ME0 0"
-      North Macedonia:
-        location: "MK0 0"
-      Netherlands:
-        location: "NL0 0"
-      Norway:
-        location: "NO1 0"
-      Poland:
-        location: "PL0 0"
-      Portugal:
-        location: "PT0 0"
-      Romania:
-        location: "RO0 0"
-      Serbia:
-        location: "RS0 0"
-      Sweden:
-        location: "SE1 0"
-      Slovenia:
-        location: "SI0 0"
-      Slovakia:
-        location: "SK0 0"
-      Kosovo:
-        location: "XK0 0"
 
 # ======== 247 CFE matching ============================
 # ======================================================
@@ -412,20 +176,6 @@ vol-match-2030-ci25-continent-34-3H: #bonus
     energy_matching: 90
     participation: 50
 
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
-
 247-cfe-2025-ci25-cfe100-3H: #2
   scenario:
     planning_horizons: 
@@ -456,20 +206,6 @@ vol-match-2030-ci25-continent-34-3H: #bonus
     energy_matching: 100
     participation: 50
 
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
-
 247-cfe-2030-ci25-cfe90-3H: #3
   enable:
     procurement: true
@@ -487,20 +223,6 @@ vol-match-2030-ci25-continent-34-3H: #bonus
     energy_matching: 90
     participation: 50
 
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
-
 247-cfe-2030-ci25-cfe100-3H: #4
   enable:
     procurement: true
@@ -517,20 +239,6 @@ vol-match-2030-ci25-continent-34-3H: #bonus
     scope: node
     energy_matching: 100
     participation: 50
-
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
 
 # ======== Emission matching ==========================
 # =====================================================
@@ -561,27 +269,13 @@ emi-match-2025-ci25-data-moer-3H: #1
 
   procurement:
     strategy: emi-match
-    scope: "all"
+    scope: continent
     energy_matching: 100
     participation: 50
     emissionality:
       emission_matching: 100
       emission_signal: moer
       signal_source: historical
-
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
 
 emi-match-2025-ci25-data-mber-3H: #2
   scenario:
@@ -609,27 +303,13 @@ emi-match-2025-ci25-data-mber-3H: #2
 
   procurement:
     strategy: emi-match
-    scope: "all"
+    scope: continent
     energy_matching: 100
     participation: 50
     emissionality:
       emission_matching: 100
       emission_signal: mber
       signal_source: historical
-
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
 
 emi-match-2025-ci25-data-cmer-3H: #3
   scenario:
@@ -657,27 +337,13 @@ emi-match-2025-ci25-data-cmer-3H: #3
 
   procurement:
     strategy: emi-match
-    scope: "all"
+    scope: continent
     energy_matching: 100
     participation: 50
     emissionality:
       emission_matching: 100
       emission_signal: cmer
       signal_source: historical
-
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
 
 emi-match-2025-ci25-data-aer-3H: #4
   scenario:
@@ -705,27 +371,13 @@ emi-match-2025-ci25-data-aer-3H: #4
 
   procurement:
     strategy: emi-match
-    scope: "all"
+    scope: continent
     energy_matching: 100
     participation: 50
     emissionality:
       emission_matching: 100
       emission_signal: aer
       signal_source: historical
-
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
 
 emi-match-2030-ci25-model-moer-3H: #5
   enable:
@@ -740,27 +392,13 @@ emi-match-2030-ci25-model-moer-3H: #5
 
   procurement:
     strategy: emi-match
-    scope: "all"
+    scope: continent
     energy_matching: 100
     participation: 50
     emissionality:
       emission_matching: 100
       emission_signal: moer
       signal_source: model
-
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
 
 emi-match-2030-ci25-model-mber-3H: #6
   enable:
@@ -775,27 +413,13 @@ emi-match-2030-ci25-model-mber-3H: #6
 
   procurement:
     strategy: emi-match
-    scope: "all"
+    scope: continent
     energy_matching: 100
     participation: 50
     emissionality:
       emission_matching: 100
       emission_signal: mber
       signal_source: model
-
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
 
 emi-match-2030-ci25-model-cmer-3H: #7
   enable:
@@ -810,27 +434,13 @@ emi-match-2030-ci25-model-cmer-3H: #7
 
   procurement:
     strategy: emi-match
-    scope: "all"
+    scope: continent
     energy_matching: 100
     participation: 50
     emissionality:
       emission_matching: 100
       emission_signal: cmer
       signal_source: model
-
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"
 
 emi-match-2030-ci25-model-aer-3H: #8
   enable:
@@ -845,7 +455,7 @@ emi-match-2030-ci25-model-aer-3H: #8
     
   procurement:
     strategy: emi-match
-    scope: "all"
+    scope: continent
     energy_matching: 100
     participation: 50
     emissionality:
@@ -853,16 +463,3 @@ emi-match-2030-ci25-model-aer-3H: #8
       emission_signal: aer
       signal_source: model
 
-    ci:
-      Poland:
-        location: "PL0 0"
-      Germany:
-        location: "DE0 0"
-      France:
-        location: "FR0 0"
-      Spain:
-        location: "ES0 0"
-      Italy:
-        location: "IT0 0"
-      United Kingdom:
-        location: "GB2 0"

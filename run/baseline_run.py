@@ -118,29 +118,22 @@ def main():
         config_s = yaml.safe_load(file)
 
     # Extract scenarios with '--'
-    scenario_list = [key for key in config_s if "baseline" not in key]
-    baseline_list = [key for key in config_s if "baseline" in key and os.path.exists(f"resources/{key}")]
+    baseline_list = [key for key in config_s if "baseline" in key]
 
-    scenario_pair = {}
+    scenario_pair = []
     while True:
         # User input
-        selected_scenario = select_scenario(scenario_list, name="scenario")
-        if not selected_scenario:
-            print("\nOperation cancelled by user.")
-            return
-        
-        print("\n=================================================================")
         selected_baseline = select_scenario(baseline_list, name="baseline")
         if not selected_baseline:
             print("\nOperation cancelled by user.")
             return
 
-        scenario_pair[selected_scenario] = selected_baseline
+        scenario_pair += [selected_baseline]
 
         print("\nFinal selection:")
-        print("Scenario -> Baseline:")
-        for selected_scenario, selected_baseline in scenario_pair.items():
-            print(f"{selected_scenario} -> {selected_baseline}")    
+        print("Baseline:")
+        for selected_baseline in scenario_pair:
+            print(f"{selected_baseline}")    
 
         selected_multiruns = select_multiruns()
         if not selected_multiruns:
@@ -155,23 +148,22 @@ def main():
     print(f"Profile: {selected_profile}")
 
     # Iterate runs
-    for selected_scenario, selected_baseline in scenario_pair.items():
+    for selected_baseline in scenario_pair:
         print("\n=================================================================")
         print("Currently running:")
-        print(f"Scenario: {selected_scenario}")
         print(f"Baseline: {selected_baseline}")
 
         with open('config/config.meta.yaml', 'r') as file:
                 config = yaml.safe_load(file)
 
-        deep_update(config, config_s[selected_scenario])
+        deep_update(config, config_s[selected_baseline])
 
         # Modify config per country
-        scenario_name = selected_scenario
+        scenario_name = selected_baseline
 
         config_update = {
             "run": {
-                "name": selected_scenario,
+                "name": selected_baseline,
                 "scenarios": {"enable": False}
             }
         }
@@ -182,7 +174,16 @@ def main():
         with open('run/config.meta_temp.yaml', 'w') as file:
             yaml.safe_dump(config, file, default_flow_style=False)
 
-        duplicate_run_delete(scenario_name, selected_baseline, selected_profile)
+        run_cmd = f"snakemake {selected_profile} solve_sector_networks --configfile run/config.meta_temp.yaml"
+        os.system(run_cmd)
+
+        temp_file = 'run/config.meta_temp.yaml'
+
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+            print(f"Deleted file: {temp_file}")
+        else:
+            print(f"File does not exist: {temp_file}")
 
 if __name__ == "__main__":
     main()
