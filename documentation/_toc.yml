@@ -11,10 +11,11 @@ parts:
   - file: 03-features.rst
 - caption: Configuration
   chapters:
-  - file: 11-baseline.rst
-  - file: 12-scenarios.rst
-  - file: 13-kpis.rst
-- caption: Assumption
+  - file: 11-baseline-config.rst
+  - file: 12-procure-config.rst
+  - file: 13-scenario-config.rst
+- caption: Definition
   chapters:
-  - file: 21-segmentation.md
-  - file: 22-co2_calculation
+  - file: 21-vol-match.md
+  - file: 22-247-cfe.md
+  - file: 23-emi-match.md

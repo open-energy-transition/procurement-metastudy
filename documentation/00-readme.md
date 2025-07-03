@@ -52,7 +52,8 @@ To balance spatial and temporal resolution with computational efficiency, the mo
 
 To view all the changes in detail, refer to:
 
-* [Procurement Configuration](https://open-energy-transition.github.io/procurement-metastudy/11-baseline.html)
+* [Base Configuration](https://open-energy-transition.github.io/procurement-metastudy/11-baseline-config.html)
+* [Procurement Configuration](https://open-energy-transition.github.io/procurement-metastudy/12-procure-config.html)
 * [Features](https://open-energy-transition.github.io/procurement-metastudy/03-features.html)
 
 ## PyPSA-Eur: A Sector-Coupled Open Optimisation Model of the European Energy System

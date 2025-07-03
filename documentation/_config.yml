@@ -8,7 +8,7 @@
 title: WattTime Impact Metastudy # The title of the book. Will be placed in the left navbar.
 author: WattTime and Open Energy Transition # The author of the book
 copyright: "2025"                                    # Copyright year to be placed in the footer
-logo: logo_WattTime_OET.png                           # A path to the book logo
+logo: img/logo_WattTime_OET.png                           # A path to the book logo
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
