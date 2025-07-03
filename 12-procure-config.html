@@ -1,0 +1,723 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Procurement Configuration &#8212; WattTime Impact Metastudy</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '12-procure-config';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Scenario Configuration" href="13-scenario-config.html" />
+    <link rel="prev" title="Base Configuration" href="11-baseline-config.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="00-readme.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/logo_WattTime_OET.png" class="logo__image only-light" alt="WattTime Impact Metastudy - Home"/>
+    <script>document.write(`<img src="_static/logo_WattTime_OET.png" class="logo__image only-dark" alt="WattTime Impact Metastudy - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="00-readme.html">
+                    Introduction
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Preparation</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="01-installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="02-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="03-features.html">Features</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Configuration</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="11-baseline-config.html">Base Configuration</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Procurement Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="13-scenario-config.html">Scenario Configuration</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Definition</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="21-vol-match.html">Annual Volume Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="22-247-cfe.html">24/7 Carbon Free Energy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="23-emi-match.html">Emissionality</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/open-energy-transition/procurement-metastudy" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/open-energy-transition/procurement-metastudy/issues/new?title=Issue%20on%20page%20%2F12-procure-config.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/12-procure-config.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Procurement Configuration</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#res-target"><code class="docutils literal notranslate"><span class="pre">res_target</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#grid-policy"><code class="docutils literal notranslate"><span class="pre">grid_policy</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#procurement"><code class="docutils literal notranslate"><span class="pre">procurement</span></code></a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="procurement-configuration">
+<h1>Procurement Configuration<a class="headerlink" href="#procurement-configuration" title="Link to this heading">#</a></h1>
+<p>This is the base configuration outline used in the analysis “The Role of Energy Storage in Germany”.
+The complete explaination of each configuration can be found in <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html">PyPSA-Eur: Configuration</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The PyPSA-Eur configuration files follow a pyramid-like structure, where the parameters in the highest configuration file add to and override those in the configuration file below it.
+The order is as follows:</p>
+<ol class="arabic simple">
+<li><p><a class="reference external" href="https://open-energy-transition.github.io/procurement-metastudy/13-scenario-config.html">scenarios.meta-{xH}.yaml</a></p></li>
+<li><p>config.meta.yaml (<strong>this section</strong>)</p></li>
+<li><p><a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html">config.default.yaml</a></p></li>
+</ol>
+</div>
+<p>Thus, for example changes specified in <cite>scenario.meta.yaml</cite> will add to and override configurations in <cite>config.meta.yaml</cite> and so on.</p>
+<section id="res-target">
+<h2><code class="docutils literal notranslate"><span class="pre">res_target</span></code><a class="headerlink" href="#res-target" title="Link to this heading">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">res_target</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">EU_share_target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">country_share_target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">country_cap_target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">res_additionality</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"> </span><span class="c1"># select if the procured renewables are part of the RE target (false) or are in addition to it (true).</span>
+<span class="w">  </span><span class="nt">res_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/ember_2030_res_targets.xlsx</span><span class="w"> </span><span class="c1"># path to EMBER 2030 global renewable target data (from https://storage.googleapis.com/emb-prod-bkt-publicdata/public-downloads/res_tracker/outputs/targets_download.xlsx)</span>
+</pre></div>
+</div>
+<p>This configuration provides the option to set renewable energy targets for the year 2030, using the <a class="reference external" href="https://ember-energy.org/data/2030-global-renewable-target-tracker/">EMBER 2030 Global Renewable Energy Target Tracker</a> as a reference.
+While it is possible to enable all available targets, please note that doing so may increase the likelihood of curtailment and inefficient allocation of generators.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">EU_share_target</span></code>: If <code class="docutils literal notranslate"><span class="pre">true</span></code>, applies the EU-wide renewable generation share target of 72%.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">country_share_target`</span></code>: If <code class="docutils literal notranslate"><span class="pre">true</span></code>, applies country-specific renewable generation share targets.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">country_cap_target</span></code>: If <code class="docutils literal notranslate"><span class="pre">true</span></code>, applies country-specific renewable capacity targets.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">res_additionality`</span></code>: If <code class="docutils literal notranslate"><span class="pre">true</span></code>, excludes procurement strategies from the targets, indicating that all procurements are additional to the background system.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">res_path</span></code>: File path to the EMBER 2030 Global Renewable Energy Target data.</p></li>
+</ul>
+</section>
+<section id="grid-policy">
+<h2><code class="docutils literal notranslate"><span class="pre">grid_policy</span></code><a class="headerlink" href="#grid-policy" title="Link to this heading">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">grid_policy</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">renewable_carriers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;offwind&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;offwind-ac&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;offwind-dc&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;offwind-float&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;onwind&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;ror&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;hydro&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;urban</span><span class="nv"> </span><span class="s">central</span><span class="nv"> </span><span class="s">solid</span><span class="nv"> </span><span class="s">biomass</span><span class="nv"> </span><span class="s">CHP&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;geothermal&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;solar&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;solar-hsat&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;solar</span><span class="nv"> </span><span class="s">rooftop&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">clean_carriers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;offwind&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;offwind-ac&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;offwind-dc&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;offwind-float&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;onwind&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;ror&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;hydro&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;urban</span><span class="nv"> </span><span class="s">central</span><span class="nv"> </span><span class="s">solid</span><span class="nv"> </span><span class="s">biomass</span><span class="nv"> </span><span class="s">CHP&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;geothermal&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;solar&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;solar-hsat&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;solar</span><span class="nv"> </span><span class="s">rooftop&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;nuclear&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;allam&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">emitters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CCGT&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;OCGT&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;coal&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;lignite&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;oil&quot;</span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+<p>This configuration defines how the model categorizes generation technologies as renewable, clean, or emitting.
+This affects the implementation of renewable targets as well as the assessment of background grid quality in 24/7 CFE (carbon-free energy) calculations.</p>
+</section>
+<section id="procurement">
+<h2><code class="docutils literal notranslate"><span class="pre">procurement</span></code><a class="headerlink" href="#procurement" title="Link to this heading">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">procurement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emi-match</span><span class="w"> </span><span class="c1"># name of procurement strategy: vol-match, emi-match, 247-cfe</span>
+<span class="w">  </span><span class="nt">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;all&quot;</span><span class="w"> </span><span class="c1"># &quot;node&quot;, &quot;country&quot;, &quot;all&quot;, &quot;continent&quot;</span>
+<span class="w">  </span><span class="nt">energy_matching</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span><span class="w"> </span><span class="c1"># share of CI energy demand to be procured</span>
+<span class="w">  </span><span class="nt">emissionality</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">emission_matching</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span><span class="w"> </span><span class="c1"># share of CI emissions to be compensated</span>
+<span class="w">    </span><span class="nt">emission_signal</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">aer</span><span class="w"> </span><span class="c1"># type of emission signal: aer, mber, moer, cmer</span>
+<span class="w">    </span><span class="nt">signal_source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">model</span><span class="w"> </span><span class="c1"># source of emission signal: model, historical</span>
+<span class="w">    </span><span class="nt">signal_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/emission-signals-model</span><span class="w"> </span><span class="c1"># folder path if aer, mber, or moer are chosen as emission_signal</span>
+<span class="w">    </span><span class="nt">signal_historical</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/emission-signals-historical/2023_weighted_em_rates.csv</span><span class="w"> </span><span class="c1"># folder path if historical is chosen as emission_signal</span>
+<span class="w">  </span><span class="nt">participation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span><span class="w"> </span><span class="c1"># share of CI load participating to the procurement</span>
+
+<span class="w">  </span><span class="nt">technology</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">generation_tech</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;onwind&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;offwind-ac&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;offwind-dc&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;offwind-float&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;solar&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;solar-hsat&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;solar</span><span class="nv"> </span><span class="s">rooftop&quot;</span><span class="p p-Indicator">]</span><span class="w">  </span><span class="c1"># &quot;allam&quot;, &quot;geothermal&quot;, &quot;nuclear&quot;</span>
+<span class="w">    </span><span class="nt">storage_tech</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;li-ion</span><span class="nv"> </span><span class="s">battery&quot;</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="c1"># &quot;iron-air battery&quot;</span>
+
+<span class="w">  </span><span class="nt">strip_network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"> </span><span class="c1"># [ true, false ] If true, model only the countries with the CI loads and their neighbors</span>
+<span class="w">  </span><span class="nt">strip_snapshots</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="nt">cap_premium</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.1</span>
+
+<span class="w">  </span><span class="nt">excess_share</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.</span><span class="w">  </span><span class="c1"># share of excess CI generation that can be sold to the grid [percentage]</span>
+<span class="w">  </span><span class="nt">import_share</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.</span>
+<span class="w">  </span><span class="nt">min_iterations</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+
+<span class="w">  </span><span class="nt">ci</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">Albania</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;AL0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Austria</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;AT0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Bosnia and Herzegovina</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;BA0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Belgium</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;BE0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Bulgaria</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;BG0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Switzerland</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;CH0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Czech Republic</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;CZ0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Germany</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;DE0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Denmark</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;DK0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Estonia</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;EE0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Spain</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ES0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Finland</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FI1</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">France</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FR0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">United Kingdom</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;GB2</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Greece</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;GR0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Croatia</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;HR0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Hungary</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;HU0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Ireland</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;IE3</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Italy</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;IT0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Lithuania</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;LT0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Luxembourg</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;LU0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Latvia</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;LV0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Montenegro</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ME0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">North Macedonia</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MK0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Netherlands</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;NL0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Norway</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;NO1</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Poland</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PL0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Portugal</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PT0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Romania</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;RO0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Serbia</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;RS0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Sweden</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;SE1</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Slovenia</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;SI0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Slovakia</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;SK0</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">Kosovo</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;XK0</span><span class="nv"> </span><span class="s">0&quot;</span>
+</pre></div>
+</div>
+<p>These configurations define the core components of procurement strategies:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">strategy</span></code>: Name of the procurement strategy (e.g., annual volume matching, 24/7 carbon-free energy, emission matching).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">scope</span></code>: Spatial scope of the procurement (e.g., node, country, all, continent).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">energy_matching</span></code>: Percentage of CI (Critical Infrastructure) energy demand to be procured in a given year (e.g., enter 10 for 10%).</p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">emissionality</span></code></dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">emission_matching</span></code>: Percentage of CI emissions to be offset or matched in a given year.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">emission_signal</span></code>: Type of emission signal used (e.g., AER, MBER, MOER, CMER).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">signal_source</span></code>: Source of the emission signal (e.g., model-generated or historical data).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">signal_model</span></code>: Folder path to model-generated signals (used when AER, MBER, or MOER is selected).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">signal_historical</span></code>: Folder path for historical emission signal data (used when historical is selected).</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">participation</span></code>: Share of CI load participating in the procurement, expressed as a percentage (e.g., 10 for 10%).</p></li>
+</ul>
+<p>These configurations determine which technologies are included in the procurement strategy:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">technology</span></code></dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">generation_tech</span></code>: List of renewable and clean generation technologies to include.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">storage_tech</span></code>: List of eligible storage technologies (defined as storage_units).</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>These settings are particularly relevant for testing or simplified model resolution:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">strip_network</span></code>: If <code class="docutils literal notranslate"><span class="pre">true</span></code>, models only countries with CI loads and their immediate neighbors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">strip_snapshots</span></code>: If <code class="docutils literal notranslate"><span class="pre">true</span></code>, limits the model to the first 168 time steps.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">cap_premium</span></code> serves dual purposes: it can be used to guide CI procurement technologies to optimal locations and can also reflect real-world conditions where these technologies may incur higher capital costs.</p>
+<p>These configurations are primarily relevant for strategies with nodal scope, such as 24/7 carbon-free energy:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">excess_share</span></code>: Proportion of excess CI generation at the CI bus that can be sold back to the grid (range: 0 to 1).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">import_share</span></code>: Proportion of electricity demand that can be imported from the grid (range: 0 to 1).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min_iterations</span></code>: Setting this above 1 allows the background grid quality to influence the strategy implementation in iterative runs.</p></li>
+</ul>
+<p>This configuration specifies the location of CI procurement. The list includes all countries represented in the model:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ci</span></code>: {name} with {location: bus}.</p></li>
+</ul>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="11-baseline-config.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Base Configuration</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="13-scenario-config.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Scenario Configuration</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#res-target"><code class="docutils literal notranslate"><span class="pre">res_target</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#grid-policy"><code class="docutils literal notranslate"><span class="pre">grid_policy</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#procurement"><code class="docutils literal notranslate"><span class="pre">procurement</span></code></a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By WattTime and Open Energy Transition
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

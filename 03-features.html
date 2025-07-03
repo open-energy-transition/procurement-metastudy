@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Features (Under Construction) &#8212; WattTime Impact Metastudy</title>
+    <title>Features &#8212; WattTime Impact Metastudy</title>
   
   
   
@@ -62,8 +62,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Procurement Configuration (Under Construction)" href="11-baseline.html" />
-    <link rel="prev" title="Tutorials (Under Construction)" href="02-tutorials.html" />
+    <link rel="next" title="Base Configuration" href="11-baseline-config.html" />
+    <link rel="prev" title="Tutorials" href="02-tutorials.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -184,18 +184,20 @@
         <p aria-level="2" class="caption" role="heading"><span class="caption-text">Preparation</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="01-installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="02-tutorials.html">Tutorials (Under Construction)</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Features (Under Construction)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="02-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Features</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Configuration</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="11-baseline.html">Procurement Configuration (Under Construction)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="12-scenarios.html">Scenarios Configuration (Under Construction)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="13-kpis.html">KPIs Configuration (May not be needed)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11-baseline-config.html">Base Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="12-procure-config.html">Procurement Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="13-scenario-config.html">Scenario Configuration</a></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Assumption</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Definition</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="21-segmentation.html">Segmentation Temporal Clustering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="21-vol-match.html">Annual Volume Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="22-247-cfe.html">24/7 Carbon Free Energy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="23-emi-match.html">Emissionality</a></li>
 </ul>
 
     </div>
@@ -379,7 +381,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Features (Under Construction)</h1>
+    <h1>Features</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -393,21 +395,45 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="features-under-construction">
-<h1>Features (Under Construction)<a class="headerlink" href="#features-under-construction" title="Link to this heading">#</a></h1>
+  <section id="features">
+<h1>Features<a class="headerlink" href="#features" title="Link to this heading">#</a></h1>
 <p>Here is a list of changes made to this repository specifically for this work, with the potential to be upstreamed to the main PyPSA-Eur repository.</p>
-<p><strong>Procurement Preparations</strong></p>
+<p><strong>Baseline Enhancements</strong></p>
 <ul class="simple">
-<li><p>Example: Add structure in <code class="docutils literal notranslate"><span class="pre">prepare_sector_network</span></code> to specify a modelling approach of storages as either <code class="docutils literal notranslate"><span class="pre">Stores</span></code> or <code class="docutils literal notranslate"><span class="pre">StorageUnits</span></code> (<a class="github reference external" href="https://github.com/open-energy-transition/pypsa-eur/pull/15">open-energy-transition/pypsa-eur#15</a>)</p></li>
+<li><p>Cherry-picked storage features and technologies from Form Energy Storage Project (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/2">open-energy-transition/procurement-metastudy#2</a>)</p></li>
+<li><p>Added global and national renewable energy share targets (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/11">open-energy-transition/procurement-metastudy#11</a>)</p></li>
+<li><p>Implemented coal phase-out through <code class="docutils literal notranslate"><span class="pre">powerplants_filter</span></code> (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/15">open-energy-transition/procurement-metastudy#15</a>)</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">res_additionallity</span></code> (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/16">open-energy-transition/procurement-metastudy#16</a>)</p></li>
+<li><p>Improved retrieving of CI load input data (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/17">open-energy-transition/procurement-metastudy#17</a>)</p></li>
+<li><p>Added national renewable capacity targets (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/18">open-energy-transition/procurement-metastudy#18</a>)</p></li>
+<li><p>Established a standardized background scenario prior to implementing procurement strategies (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/22">open-energy-transition/procurement-metastudy#22</a>)</p></li>
+<li><p>Added the impact of electricity imports from neighboring buses into the grid quality score (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/23">open-energy-transition/procurement-metastudy#23</a>)</p></li>
+<li><p>Set capacities based on the TYNDP transmission grid (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/24">open-energy-transition/procurement-metastudy#24</a>)</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">freeze_capacity</span></code> option to represent system conditions in 2025 (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/27">open-energy-transition/procurement-metastudy#27</a>)</p></li>
+<li><p>Added a new constraint called <code class="docutils literal notranslate"><span class="pre">import_constraints</span></code> (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/30">open-energy-transition/procurement-metastudy#30</a>)</p></li>
+<li><p>Centralized all CI-related processes under a new Snakemake rule named <code class="docutils literal notranslate"><span class="pre">add_procurement</span></code> (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/31">open-energy-transition/procurement-metastudy#31</a>)</p></li>
+<li><p>Added a new procurement scope: <code class="docutils literal notranslate"><span class="pre">continent</span></code> (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/34">open-energy-transition/procurement-metastudy#34</a>)</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">cap_premium</span></code> to support optimal spatial allocation of CI procurement technologies (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/36">open-energy-transition/procurement-metastudy#36</a>)</p></li>
 </ul>
-<p><strong>Annual Volume Matching</strong></p>
-<p><strong>24/7 Carbon Free Energy</strong></p>
-<p><strong>Emissionality</strong></p>
-<p><strong>Model Documentation</strong></p>
+<p><strong>Procurement Strategy Development</strong></p>
 <ul class="simple">
-<li><p>Provide documentation using github pages</p></li>
+<li><p>Added annual volume matching strategy (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/8">open-energy-transition/procurement-metastudy#8</a>)</p></li>
+<li><p>Added 24/7 carbon-free energy strategy (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/9">open-energy-transition/procurement-metastudy#9</a>)</p></li>
+<li><p>Added mmission-matching constraint and retrieve CI load share from Eurostat (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/12">open-energy-transition/procurement-metastudy#12</a>)</p></li>
+<li><p>Improved emission_matching_constraints and refactored the CI load workflow (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/26">open-energy-transition/procurement-metastudy#26</a>)</p></li>
 </ul>
-<p><strong>Bugfixes</strong></p>
+<p><strong>Model Usability Improvements</strong></p>
+<ul class="simple">
+<li><p>Developed the first command-line interface for running the model (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/25">open-energy-transition/procurement-metastudy#25</a>)</p></li>
+<li><p>Added user documentation via GitHub Pages</p></li>
+</ul>
+<p><strong>Bug Fixes</strong></p>
+<ul class="simple">
+<li><p>Fixed issues with emissionality signal handling (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/28">open-energy-transition/procurement-metastudy#28</a>)</p></li>
+<li><p>Removed requirement for specifying a procurement year in <code class="docutils literal notranslate"><span class="pre">extra_functionality</span></code> (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/29">open-energy-transition/procurement-metastudy#29</a>)</p></li>
+<li><p>Corrected configuration loading to enable procurement via <code class="docutils literal notranslate"><span class="pre">config</span></code> instead of <code class="docutils literal notranslate"><span class="pre">params</span></code> (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/33">open-energy-transition/procurement-metastudy#33</a>)</p></li>
+<li><p>Addressed final scenario preparation bug (<a class="github reference external" href="https://github.com/open-energy-transition/procurement-metastudy/pull/35">open-energy-transition/procurement-metastudy#35</a>)</p></li>
+</ul>
 </section>
 
     <script type="text/x-thebe-config">
@@ -446,15 +472,15 @@ document.write(`
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Tutorials (Under Construction)</p>
+        <p class="prev-next-title">Tutorials</p>
       </div>
     </a>
     <a class="right-next"
-       href="11-baseline.html"
+       href="11-baseline-config.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Procurement Configuration (Under Construction)</p>
+        <p class="prev-next-title">Base Configuration</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

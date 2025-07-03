@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Tutorials (Under Construction) &#8212; WattTime Impact Metastudy</title>
+    <title>Tutorials &#8212; WattTime Impact Metastudy</title>
   
   
   
@@ -62,7 +62,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Features (Under Construction)" href="03-features.html" />
+    <link rel="next" title="Features" href="03-features.html" />
     <link rel="prev" title="Installation" href="01-installation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -184,18 +184,20 @@
         <p aria-level="2" class="caption" role="heading"><span class="caption-text">Preparation</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="01-installation.html">Installation</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Tutorials (Under Construction)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="03-features.html">Features (Under Construction)</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="03-features.html">Features</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Configuration</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="11-baseline.html">Procurement Configuration (Under Construction)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="12-scenarios.html">Scenarios Configuration (Under Construction)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="13-kpis.html">KPIs Configuration (May not be needed)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11-baseline-config.html">Base Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="12-procure-config.html">Procurement Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="13-scenario-config.html">Scenario Configuration</a></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Assumption</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Definition</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="21-segmentation.html">Segmentation Temporal Clustering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="21-vol-match.html">Annual Volume Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="22-247-cfe.html">24/7 Carbon Free Energy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="23-emi-match.html">Emissionality</a></li>
 </ul>
 
     </div>
@@ -381,7 +383,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Tutorials (Under Construction)</h1>
+    <h1>Tutorials</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -391,8 +393,8 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#build-the-tutorial-model">Build the tutorial model</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#run-the-model">Run the model</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#create-the-baseline-models">Create the baseline models</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#create-the-scenario-models">Create the scenario models</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#analyze-the-model">Analyze the model</a></li>
 </ul>
             </nav>
@@ -405,137 +407,69 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="tutorials-under-construction">
-<h1>Tutorials (Under Construction)<a class="headerlink" href="#tutorials-under-construction" title="Link to this heading">#</a></h1>
-<p>This is a brief tutorial on how to recreate the scenarios of the study <strong>The Role of Energy Storage in Germany</strong>.
+  <section id="tutorials">
+<h1>Tutorials<a class="headerlink" href="#tutorials" title="Link to this heading">#</a></h1>
+<p>This is a brief tutorial on how to recreate the scenarios of the study <strong>WattTime Impact Metastudy</strong>.
 Unlike the original PyPSA-Eur repository, this version comes pre-configured with scenarios that you can test run.</p>
-<section id="build-the-tutorial-model">
-<h2>Build the tutorial model<a class="headerlink" href="#build-the-tutorial-model" title="Link to this heading">#</a></h2>
-<p>First, open the base configuration file for this study, called <code class="docutils literal notranslate"><span class="pre">config.form.yaml`,</span> <span class="pre">using</span> <span class="pre">a</span> <span class="pre">code</span> <span class="pre">editor</span> <span class="pre">of</span> <span class="pre">your</span> <span class="pre">choice,</span> <span class="pre">and</span> <span class="pre">navigate</span> <span class="pre">to</span> <span class="pre">the</span> <span class="pre">``run</span></code> section:</p>
-<p>as you can see, <code class="docutils literal notranslate"><span class="pre">baseline-mds</span></code> is the name of the scenario that is chosen.
-The content of <code class="docutils literal notranslate"><span class="pre">baseline-mds</span></code> as well as a comprehensive list of all studied scenarios is defined in <code class="docutils literal notranslate"><span class="pre">scenarios.form.yaml</span></code> as described in <a class="reference external" href="https://open-energy-transition.github.io/procurement-metastudy/12-scenarios.html">Scenarios Configuration</a>.</p>
-<p>To create your own scenarios, it’s recommended to define the configurations in <code class="docutils literal notranslate"><span class="pre">scenarios.form.yaml</span></code> by either modifying an existing scenario or duplicating and renaming a scenario.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you want to create a model with lower computational requirements, you can adjust the <code class="docutils literal notranslate"><span class="pre">clustering:</span> <span class="pre">temporal:</span> <span class="pre">resolution_sector</span></code> setting here:</p>
-<p>The general rules of thumb are as follows:</p>
+<section id="create-the-baseline-models">
+<h2>Create the baseline models<a class="headerlink" href="#create-the-baseline-models" title="Link to this heading">#</a></h2>
+<p>To make it easier for users to replicate results, we provide a simple command-line interface for generating the baseline model.
+Once the environment is activated, you can create the baseline scenario by running:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python run/baseline_run.py</span>
+</pre></div>
+</div>
+<p>During execution, you will be prompted to specify the following:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">1H</span></code>: 1-hour time resolution</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">4380SEG</span></code>: 3 times faster computational time compared to <code class="docutils literal notranslate"><span class="pre">1H</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">2920SEG</span></code>: 4 times faster computational time compared to <code class="docutils literal notranslate"><span class="pre">1H</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">100H</span></code>: significantly quicker to solve compared to <code class="docutils literal notranslate"><span class="pre">1H</span></code></p></li>
+<li><p>Desired time resolution (1H or 3H)</p></li>
+<li><p>Which baseline scenarios to generate (you can select more than one)</p></li>
+<li><p>Whether you’re using a computing cluster (yes/no)</p></li>
+<li><p>(If not using a cluster) The number of CPUs available on your local machine</p></li>
 </ul>
-<p>If you want to test run this model on your computer, replace <code class="docutils literal notranslate"><span class="pre">4380SEG</span></code> with <code class="docutils literal notranslate"><span class="pre">100H</span></code>.
-Using a lower time resolution, such as that from <code class="docutils literal notranslate"><span class="pre">SEG</span></code>, can still capture the desired variability in the model.
-See <a class="reference external" href="https://open-energy-transition.github.io/procurement-metastudy/21-segmentation.html">Segmentation Temporal Clustering</a> for more details</p>
-</div>
-</section>
-<section id="run-the-model">
-<h2>Run the model<a class="headerlink" href="#run-the-model" title="Link to this heading">#</a></h2>
-<p>Before running the model, it’s recommended to test run the snakemake command:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">snakemake solve_sector_networks --configfile config/config.form.yaml -n</span>
-</pre></div>
-</div>
-<p>The <code class="docutils literal notranslate"><span class="pre">-n</span></code> at the end indicates a dry run. If no errors occur, it will list the jobs that would be run:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Job stats:</span>
-<span class="go">job                                                 count</span>
-<span class="go">------------------------------------------------  -------</span>
-<span class="go">add_electricity                                         1</span>
-<span class="go">add_existing_baseyear                                   1</span>
-<span class="go">add_transmission_projects_and_dlr                       1</span>
-<span class="go">base_network                                            1</span>
-<span class="go">build_ammonia_production                                1</span>
-<span class="go">build_biomass_potentials                                1</span>
-<span class="go">build_central_heating_temperature_profiles              1</span>
-<span class="go">build_clustered_population_layouts                      1</span>
-<span class="go">build_cop_profiles                                      1</span>
-<span class="go">build_daily_heat_demand                                 1</span>
-<span class="go">build_direct_heat_source_utilisation_profiles           1</span>
-<span class="go">build_district_heat_share                               1</span>
-<span class="go">build_electricity_demand                                1</span>
-<span class="go">build_electricity_demand_base                           1</span>
-<span class="go">build_energy_totals                                     1</span>
-<span class="go">build_existing_heating_distribution                     1</span>
-<span class="go">build_gas_input_locations                               1</span>
-<span class="go">build_gas_network                                       1</span>
-<span class="go">build_heat_totals                                       1</span>
-<span class="go">build_hourly_heat_demand                                1</span>
-<span class="go">build_hydro_profile                                     1</span>
-<span class="go">build_industrial_distribution_key                       1</span>
-<span class="go">build_industrial_energy_demand_per_country_today        1</span>
-<span class="go">build_industrial_energy_demand_per_node                 1</span>
-<span class="go">build_industrial_energy_demand_per_node_today           1</span>
-<span class="go">build_industrial_production_per_country                 1</span>
-<span class="go">build_industrial_production_per_country_tomorrow        1</span>
-<span class="go">build_industrial_production_per_node                    1</span>
-<span class="go">build_industry_sector_ratios                            1</span>
-<span class="go">build_industry_sector_ratios_intermediate               1</span>
-<span class="go">build_population_layouts                                1</span>
-<span class="go">build_population_weighted_energy_totals                 2</span>
-<span class="go">build_powerplants                                       1</span>
-<span class="go">build_renewable_profiles                                6</span>
-<span class="go">build_salt_cavern_potentials                            1</span>
-<span class="go">build_shapes                                            1</span>
-<span class="go">build_ship_raster                                       1</span>
-<span class="go">build_shipping_demand                                   1</span>
-<span class="go">build_solar_thermal_profiles                            1</span>
-<span class="go">build_temperature_profiles                              1</span>
-<span class="go">build_transmission_projects                             1</span>
-<span class="go">build_transport_demand                                  1</span>
-<span class="go">cluster_gas_network                                     1</span>
-<span class="go">cluster_network                                         1</span>
-<span class="go">determine_availability_matrix                           6</span>
-<span class="go">final_adjustment_myopic                                 1</span>
-<span class="go">prepare_network                                         1</span>
-<span class="go">prepare_sector_network                                  1</span>
-<span class="go">retrieve_cost_data                                      1</span>
-<span class="go">retrieve_electricity_demand                             1</span>
-<span class="go">retrieve_gas_infrastructure_data                        1</span>
-<span class="go">retrieve_osm_prebuilt                                   1</span>
-<span class="go">retrieve_ship_raster                                    1</span>
-<span class="go">simplify_network                                        1</span>
-<span class="go">solve_sector_network_myopic                             1</span>
-<span class="go">solve_sector_networks                                   1</span>
-<span class="go">time_aggregation                                        1</span>
-<span class="go">total                                                  68</span>
-</pre></div>
-</div>
+<p>The script will then generate the baseline scenarios from scratch.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>If an error occurs due to missing data, the first solution is to check the <code class="docutils literal notranslate"><span class="pre">enable:</span></code> setting in <code class="docutils literal notranslate"><span class="pre">config.form.yaml</span></code>.</p>
+<p>If an error occurs due to missing data, the first solution is to check the <code class="docutils literal notranslate"><span class="pre">enable:</span></code> setting in <code class="docutils literal notranslate"><span class="pre">config.meta.yaml</span></code>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">enable</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">retrieve</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auto</span>
+<span class="w">  </span><span class="nt">retrieve_databundle</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">retrieve_cost_data</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">build_cutout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">retrieve_cutout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">custom_busmap</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">drop_leap_day</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">procurement</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># [true, false ] If true, model the procurement strategies</span>
+<span class="w">  </span><span class="nt">ci_load</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">retrieve_databundle</span></code>: set this to true if a file in <code class="docutils literal notranslate"><span class="pre">data/</span></code> is missing</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">retrieve_cost_data</span></code>: set this to true if <code class="docutils literal notranslate"><span class="pre">resources/{run}/cost_2035.csv</span></code> is missing</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">retrieve_cost_data</span></code>: set this to true if <code class="docutils literal notranslate"><span class="pre">resources/{run}/cost_{}.csv</span></code> is missing</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">retrieve_cutout</span></code>: set this to true if <code class="docutils literal notranslate"><span class="pre">cutouts/europe-{weather</span> <span class="pre">year}-sarah3-era5.nc</span></code> is missing</p></li>
 </ul>
 <p>The <a class="reference external" href="https://zenodo.org/records/14936211">weather data cutouts for PyPSA-Eur</a> are available for all the weather years included in the scenarios.
 If the weather year you’ve selected is not on that list, you’ll need to set <code class="docutils literal notranslate"><span class="pre">build_cutout</span></code> to true.</p>
 </div>
-<p>To create and solve the model, run the snakemake command:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">snakemake solve_sector_networks --configfile config/config.form.yaml</span>
+</section>
+<section id="create-the-scenario-models">
+<h2>Create the scenario models<a class="headerlink" href="#create-the-scenario-models" title="Link to this heading">#</a></h2>
+<p>Once the baseline scenario is created, you can streamline the workflow by using a shortcut to avoid re-running redundant steps. To do this, run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python run/multi_run.py</span>
 </pre></div>
 </div>
-<p>This triggers a workflow of multiple preceding jobs that depend on each rule’s inputs and outputs.
-To create and solve the model and automatically generate all KPI plots of the study, run the snakemake command:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">snakemake all --configfile config/config.form.yaml</span>
-</pre></div>
-</div>
+<p>You will again be prompted to specify:</p>
+<ul class="simple">
+<li><p>Desired time resolution (1H or 3H)</p></li>
+<li><p>Which non-baseline scenarios to generate (you can select more than one)</p></li>
+<li><p>The baseline scenario to duplicate resources from (must match the correct year)</p></li>
+<li><p>Whether you’re using a computing cluster (yes/no)</p></li>
+<li><p>(If not using a cluster) The number of CPUs available on your local machine</p></li>
+</ul>
+<p>With this setup, you can efficiently generate your own scenario results.</p>
 </section>
 <section id="analyze-the-model">
 <h2>Analyze the model<a class="headerlink" href="#analyze-the-model" title="Link to this heading">#</a></h2>
-<p>There are several ways to analyze the results of the Snakemake run:</p>
-<ul class="simple">
-<li><p>By analyzing the PyPSA network directly, see <a class="reference external" href="https://github.com/open-energy-transition/procurement-metastudy/tree/master/notebooks/Package_unpackage_networks.ipynb">Package_unpackage_networks.ipynb</a> for more details.</p></li>
-<li><p>By using the CSV files and graphs located in <code class="docutils literal notranslate"><span class="pre">results/{run}/csvs/</span></code> and <code class="docutils literal notranslate"><span class="pre">results/{run}/graphs/</span></code></p></li>
-<li><p>By using a pre-configured Jupyter Notebook in <code class="docutils literal notranslate"><span class="pre">notebooks/</span></code> or any Jupyter Notebook of your choice.</p></li>
-<li><p>By utilizing the customizable KPIs in <code class="docutils literal notranslate"><span class="pre">results/{run}/maps/</span></code></p></li>
-</ul>
-<p>The automatic generation of KPI plots is a feature from this project and may be upstreamed in the future. To create your own custom KPI plots, see <a class="reference external" href="https://open-energy-transition.github.io/procurement-metastudy/13-kpis.html">KPI Configuration</a></p>
-<p>To generate the KPI plots, run the snakemake command:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">snakemake plot_KPIs_all --configfile config/config.form.yaml</span>
-</pre></div>
-</div>
-<p>The Jupyter Notebook <code class="docutils literal notranslate"><span class="pre">notebooks/Scenarios_comparison.ipynb</span></code> uses the script functions in <code class="docutils literal notranslate"><span class="pre">plot_KPIs</span></code> to plot and compare the results of multiple scenarios.</p>
+<p>You can use the pre-configured Jupyter Notebook located in the <code class="docutils literal notranslate"><span class="pre">notebooks/</span></code> directory, or any Jupyter Notebook of your choice.
+Running these notebooks will generate ready-made overview plots of the procurement results.</p>
 </section>
 </section>
 
@@ -583,7 +517,7 @@ To create and solve the model and automatically generate all KPI plots of the st
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Features (Under Construction)</p>
+        <p class="prev-next-title">Features</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -603,8 +537,8 @@ To create and solve the model and automatically generate all KPI plots of the st
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#build-the-tutorial-model">Build the tutorial model</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#run-the-model">Run the model</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#create-the-baseline-models">Create the baseline models</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#create-the-scenario-models">Create the scenario models</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#analyze-the-model">Analyze the model</a></li>
 </ul>
   </nav></div>
