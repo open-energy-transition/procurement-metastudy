@@ -20,6 +20,7 @@ from scripts._helpers import (
     update_config_from_wildcards,
 )
 from scripts.add_electricity import add_missing_carriers, load_costs
+from scripts.prepare_network import maybe_adjust_costs_and_potentials
 
 cc = coco.CountryConverter()
 
@@ -731,5 +732,7 @@ if __name__ == "__main__":
             Nyears,
         )
         add_ci_procurement(n, planning_horizons, snakemake.params, costs)
+
+    maybe_adjust_costs_and_potentials(n, snakemake.params.adjustments)
 
     n.export_to_netcdf(snakemake.output.network)

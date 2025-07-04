@@ -179,6 +179,11 @@ adjustments:
           marginal_cost: 0.5
         electricity distribution grid:
           marginal_cost: 0.5
+  procurement:
+    absolute:
+      storage_units:
+        li-ion battery 8h:
+          marginal_cost: 0.5
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#solving
 solving:
