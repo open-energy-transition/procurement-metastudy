@@ -370,7 +370,9 @@ document.write(`
   </button>
 `);
 </script>
-
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
 </div></div>
       
     </div>
@@ -386,6 +388,17 @@ document.write(`
     <div id="print-main-content">
         <div id="jb-print-toc">
             
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#baseline-scenarios">Baseline Scenarios</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#annual-volume-matching-scenarios">Annual Volume Matching Scenarios</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#carbon-free-energy-scenarios">24/7 Carbon Free Energy Scenarios</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#emission-matching-scenarios">Emission Matching Scenarios</a></li>
+</ul>
+            </nav>
         </div>
     </div>
 </div>
@@ -410,6 +423,312 @@ The order is as follows:</p>
 </ol>
 </div>
 <p>Thus, for example changes specified in <cite>scenario.meta.yaml</cite> will add to and override configurations in <cite>config.meta.yaml</cite> and so on.</p>
+<section id="baseline-scenarios">
+<h2>Baseline Scenarios<a class="headerlink" href="#baseline-scenarios" title="Link to this heading">#</a></h2>
+<p>The following table provide an overview of the baseline scenarios:</p>
+<div class="pst-scrollable-table-container"><table class="table" id="id1">
+<caption><span class="caption-number">Table 1 </span><span class="caption-text">Baseline</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 5.0%" />
+<col style="width: 45.0%" />
+<col style="width: 25.0%" />
+<col style="width: 25.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>#</p></th>
+<th class="head"><p>Scenario name</p></th>
+<th class="head"><p>Planning horizon</p></th>
+<th class="head"><p>RES targets</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>baseline-2025-nH</p></td>
+<td><p>2025</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>baseline-2030-nH</p></td>
+<td><p>2030</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>baseline-2030-NoResTargets-nH</p></td>
+<td><p>2030</p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Key similarities across all baseline scenarios that distinguish them from the default PyPSA-Eur results:</p>
+<ul class="simple">
+<li><p>Load demand is split into low-voltage demand and commercial/industrial (CI) demand at the high-voltage level for all nodes.</p></li>
+<li><p>Transmission capacities between country buses are fixed, including additional capacities specified in the TYNDP.</p></li>
+<li><p>The model considers electricity only (no sector coupling).</p></li>
+<li><p>Fossil fuel prices are customized to reflect estimates for the year 2025.</p></li>
+</ul>
+<p>Key differences by year:</p>
+<ul class="simple">
+<li><p>2025: All powerplant capacities are kept constant (no capacity expansions).</p></li>
+<li><p>2030: 17 countries have achieved their coal phase-out targets.</p></li>
+</ul>
+<p>When the RES target is referenced in this table, it implies that:</p>
+<ul class="simple">
+<li><p>The model enforces the EU-wide renewable generation share target of 72%.</p></li>
+<li><p>Country-specific renewable capacity targets are applied.</p></li>
+<li><p>National renewable generation share targets are not considered (i.e., deactivated).</p></li>
+</ul>
+</section>
+<section id="annual-volume-matching-scenarios">
+<h2>Annual Volume Matching Scenarios<a class="headerlink" href="#annual-volume-matching-scenarios" title="Link to this heading">#</a></h2>
+<p>The following table provide an overview of the annual volume matching scenarios:</p>
+<div class="pst-scrollable-table-container"><table class="table" id="id2">
+<caption><span class="caption-number">Table 2 </span><span class="caption-text">Annual Volume Matching</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 5.0%" />
+<col style="width: 40.0%" />
+<col style="width: 20.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 15.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>#</p></th>
+<th class="head"><p>Scenario name</p></th>
+<th class="head"><p>Baseline</p></th>
+<th class="head"><p>Planning horizon</p></th>
+<th class="head"><p>RES targets</p></th>
+<th class="head"><p>Location scope</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>vol-match-2025-ci25-nH</p></td>
+<td><p>baseline-2025-nH</p></td>
+<td><p>2025</p></td>
+<td><p>No</p></td>
+<td><p>Continent</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>vol-match-2030-ci25-nH</p></td>
+<td><p>baseline-2030-nH</p></td>
+<td><p>2030</p></td>
+<td><p>Yes</p></td>
+<td><p>Continent</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>vol-match-2030-country-ci25-nH</p></td>
+<td><p>baseline-2030-nH</p></td>
+<td><p>2030</p></td>
+<td><p>Yes</p></td>
+<td><p>Country</p></td>
+</tr>
+<tr class="row-odd"><td><p>4</p></td>
+<td><p>vol-match-2030-NoResTargets-ci25-nH</p></td>
+<td><p>baseline-2030-NoResTargets-nH</p></td>
+<td><p>2030</p></td>
+<td><p>No</p></td>
+<td><p>Continent</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Key similarities across these annual volume matching scenarios:</p>
+<ul class="simple">
+<li><p>Energy matching is set at 100%.</p></li>
+<li><p>Each country sources 25% of its commercial and industrial (CI) demand domestically.</p></li>
+<li><p>All procurement counts toward renewable energy (RES) targets (no additionality).</p></li>
+</ul>
+<p>The sensitivities explore two main aspects:</p>
+<ul class="simple">
+<li><p>The impact of limiting procurement strictly to within individual countries.</p></li>
+<li><p>The consequences of not meeting renewable energy (RES) targets.</p></li>
+</ul>
+</section>
+<section id="carbon-free-energy-scenarios">
+<h2>24/7 Carbon Free Energy Scenarios<a class="headerlink" href="#carbon-free-energy-scenarios" title="Link to this heading">#</a></h2>
+<p>The following table provide an overview of the 24/7 carbon free energy scenarios:</p>
+<div class="pst-scrollable-table-container"><table class="table" id="id3">
+<caption><span class="caption-number">Table 3 </span><span class="caption-text">24/7 Carbon Free Energy</span><a class="headerlink" href="#id3" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 5.0%" />
+<col style="width: 30.0%" />
+<col style="width: 20.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 15.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>#</p></th>
+<th class="head"><p>Scenario name</p></th>
+<th class="head"><p>Baseline</p></th>
+<th class="head"><p>Hourly Matching</p></th>
+<th class="head"><p>Planning horizon</p></th>
+<th class="head"><p>RES targets</p></th>
+<th class="head"><p>Location scope</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>247-cfe-2025-ci25-cfe90-nH</p></td>
+<td><p>baseline-2025-nH</p></td>
+<td><p>90%</p></td>
+<td><p>2025</p></td>
+<td><p>No</p></td>
+<td><p>Node</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>247-cfe-2025-ci25-cfe100-nH</p></td>
+<td><p>baseline-2025-nH</p></td>
+<td><p>100%</p></td>
+<td><p>2025</p></td>
+<td><p>No</p></td>
+<td><p>Node</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>247-cfe-2030-ci25-cfe90-nH</p></td>
+<td><p>baseline-2030-nH</p></td>
+<td><p>90%</p></td>
+<td><p>2030</p></td>
+<td><p>Yes</p></td>
+<td><p>Node</p></td>
+</tr>
+<tr class="row-odd"><td><p>4</p></td>
+<td><p>247-cfe-2030-ci25-cfe100-nH</p></td>
+<td><p>baseline-2030-nH</p></td>
+<td><p>100%</p></td>
+<td><p>2030</p></td>
+<td><p>Yes</p></td>
+<td><p>Node</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Key similarities across these annual volume matching scenarios:</p>
+<ul class="simple">
+<li><p>All procurement counts toward renewable energy (RES) targets (no additionality).</p></li>
+</ul>
+<p>The sensitivities explore two main aspects:</p>
+<ul class="simple">
+<li><p>Different energy matching levels, set at either 90% or 100%.</p></li>
+<li><p>The year of procurement, which affects whether RES targets are in place.</p></li>
+</ul>
+</section>
+<section id="emission-matching-scenarios">
+<h2>Emission Matching Scenarios<a class="headerlink" href="#emission-matching-scenarios" title="Link to this heading">#</a></h2>
+<p>The following table provide an overview of the emission matching scenarios:</p>
+<div class="pst-scrollable-table-container"><table class="table" id="id4">
+<caption><span class="caption-number">Table 4 </span><span class="caption-text">Emission Matching</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 5.0%" />
+<col style="width: 30.0%" />
+<col style="width: 20.0%" />
+<col style="width: 9.0%" />
+<col style="width: 9.0%" />
+<col style="width: 9.0%" />
+<col style="width: 9.0%" />
+<col style="width: 9.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>#</p></th>
+<th class="head"><p>Scenario name</p></th>
+<th class="head"><p>Baseline</p></th>
+<th class="head"><p>Signal Source</p></th>
+<th class="head"><p>Signal Type</p></th>
+<th class="head"><p>Planning horizon</p></th>
+<th class="head"><p>RES targets</p></th>
+<th class="head"><p>Location scope</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>emi-match-2025-ci25-data-moer-nH</p></td>
+<td><p>baseline-2025-nH</p></td>
+<td><p>Statistics</p></td>
+<td><p>MOER</p></td>
+<td><p>2025</p></td>
+<td><p>No</p></td>
+<td><p>Continent</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>emi-match-2025-ci25-data-mber-nH</p></td>
+<td><p>baseline-2025-nH</p></td>
+<td><p>Statistics</p></td>
+<td><p>MBER</p></td>
+<td><p>2025</p></td>
+<td><p>No</p></td>
+<td><p>Continent</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>emi-match-2025-ci25-data-cmer-nH</p></td>
+<td><p>baseline-2025-nH</p></td>
+<td><p>Statistics</p></td>
+<td><p>CMER</p></td>
+<td><p>2025</p></td>
+<td><p>No</p></td>
+<td><p>Continent</p></td>
+</tr>
+<tr class="row-odd"><td><p>4</p></td>
+<td><p>emi-match-2025-ci25-data-aer-nH</p></td>
+<td><p>baseline-2025-nH</p></td>
+<td><p>Statistics</p></td>
+<td><p>AER</p></td>
+<td><p>2025</p></td>
+<td><p>No</p></td>
+<td><p>Continent</p></td>
+</tr>
+<tr class="row-even"><td><p>5</p></td>
+<td><p>emi-match-2030-ci25-data-moer-nH</p></td>
+<td><p>baseline-2030-nH</p></td>
+<td><p>Model</p></td>
+<td><p>MOER</p></td>
+<td><p>2030</p></td>
+<td><p>No</p></td>
+<td><p>Continent</p></td>
+</tr>
+<tr class="row-odd"><td><p>6</p></td>
+<td><p>emi-match-2030-ci25-data-mber-nH</p></td>
+<td><p>baseline-2030-nH</p></td>
+<td><p>Model</p></td>
+<td><p>MBER</p></td>
+<td><p>2030</p></td>
+<td><p>No</p></td>
+<td><p>Continent</p></td>
+</tr>
+<tr class="row-even"><td><p>7</p></td>
+<td><p>emi-match-2030-ci25-data-cmer-nH</p></td>
+<td><p>baseline-2030-nH</p></td>
+<td><p>Model</p></td>
+<td><p>CMER</p></td>
+<td><p>2030</p></td>
+<td><p>No</p></td>
+<td><p>Continent</p></td>
+</tr>
+<tr class="row-odd"><td><p>8</p></td>
+<td><p>emi-match-2030-ci25-data-aer-nH</p></td>
+<td><p>baseline-2030-nH</p></td>
+<td><p>Model</p></td>
+<td><p>AER</p></td>
+<td><p>2030</p></td>
+<td><p>No</p></td>
+<td><p>Continent</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Key similarities across these emission matching scenarios:</p>
+<ul class="simple">
+<li><p>Energy matching is set at 100%.</p></li>
+<li><p>Each country sources 25% of its commercial and industrial (CI) demand domestically.</p></li>
+<li><p>All procurement counts toward renewable energy (RES) targets (no additionality).</p></li>
+</ul>
+<p>The sensitivities explore two main aspects:</p>
+<ul class="simple">
+<li><p>The type of emission matching signal used (MOER, MBER, CMER, AER).</p></li>
+<li><p>Whether the signal is derived from recent historical data or from long-term model projections.</p></li>
+</ul>
+</section>
 </section>
 
     <script type="text/x-thebe-config">
@@ -466,6 +785,24 @@ The order is as follows:</p>
             </div>
             
             
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#baseline-scenarios">Baseline Scenarios</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#annual-volume-matching-scenarios">Annual Volume Matching Scenarios</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#carbon-free-energy-scenarios">24/7 Carbon Free Energy Scenarios</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#emission-matching-scenarios">Emission Matching Scenarios</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
               
             
           </div>
