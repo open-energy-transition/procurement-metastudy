@@ -61,5 +61,19 @@ With this setup, you can efficiently generate your own scenario results.
 Analyze the model
 =========================
 
-You can use the pre-configured Jupyter Notebook located in the ``notebooks/`` directory, or any Jupyter Notebook of your choice. 
-Running these notebooks will generate ready-made overview plots of the procurement results.
+You can use the pre-configured Jupyter notebooks located in the ``notebooks/`` directory, or any Jupyter notebook of your choice. There are two types of notebooks:
+
+**Emission Signals Analysis**
+
+These notebooks are located in ``notebooks/emission-signals/`` and are designed to calculate the emission signals used for the emission matching procurement strategy. More details are provided in `emissionality <file:///home/user/OET/projects/metastudy/procurement-metastudy/documentation/_build/html/12-procure-config.html>`_.
+
+**Procurement Results Analysis**
+
+These notebooks are located in ``notebooks/`` and are designed to analyze the procurement results, directly pulling the networks from the ``results/`` directory within the repository (but they can be easily adapted to be used outside the repository). Running these notebooks will generate ready-made overview tables and plots on energy and technology mixes, costs, emissions, and other relevant metrics. In particular:
+
+* `energy-mix.ipynb`: evaluates the energy mix by source, bus, and carriers
+* `system-level-results_and_CI-allocation.ipynb`: evaluates system-level impacts of the procurement strategies in terms of costs, emissions, operations, and capacity expansion, as well as the CI procurement allocation by carrier and bus
+* `costs.ipynb`: evaluates costs and revenues for all the CI components
+* `CI-time-series.ipynb`: evaluates the nodal dispatch by source of the CI procuring actors
+
+

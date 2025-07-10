@@ -462,8 +462,17 @@ If the weather year you’ve selected is not on that list, you’ll need to set 
 </section>
 <section id="analyze-the-model">
 <h2>Analyze the model<a class="headerlink" href="#analyze-the-model" title="Link to this heading">#</a></h2>
-<p>You can use the pre-configured Jupyter Notebook located in the <code class="docutils literal notranslate"><span class="pre">notebooks/</span></code> directory, or any Jupyter Notebook of your choice.
-Running these notebooks will generate ready-made overview plots of the procurement results.</p>
+<p>You can use the pre-configured Jupyter notebooks located in the <code class="docutils literal notranslate"><span class="pre">notebooks/</span></code> directory, or any Jupyter notebook of your choice. There are two types of notebooks:</p>
+<p><strong>Emission Signals Analysis</strong></p>
+<p>These notebooks are located in <code class="docutils literal notranslate"><span class="pre">notebooks/emission-signals/</span></code> and are designed to calculate the emission signals used for the emission matching procurement strategy. More details are provided in <a class="reference external" href="file:///home/user/OET/projects/metastudy/procurement-metastudy/documentation/_build/html/12-procure-config.html">emissionality</a>.</p>
+<p><strong>Procurement Results Analysis</strong></p>
+<p>These notebooks are located in <code class="docutils literal notranslate"><span class="pre">notebooks/</span></code> and are designed to analyze the procurement results, directly pulling the networks from the <code class="docutils literal notranslate"><span class="pre">results/</span></code> directory within the repository (but they can be easily adapted to be used outside the repository). Running these notebooks will generate ready-made overview tables and plots on energy and technology mixes, costs, emissions, and other relevant metrics. In particular:</p>
+<ul class="simple">
+<li><p><cite>energy-mix.ipynb</cite>: evaluates the energy mix by source, bus, and carriers</p></li>
+<li><p><cite>system-level-results_and_CI-allocation.ipynb</cite>: evaluates system-level impacts of the procurement strategies in terms of costs, emissions, operations, and capacity expansion, as well as the CI procurement allocation by carrier and bus</p></li>
+<li><p><cite>costs.ipynb</cite>: evaluates costs and revenues for all the CI components</p></li>
+<li><p><cite>CI-time-series.ipynb</cite>: evaluates the nodal dispatch by source of the CI procuring actors</p></li>
+</ul>
 </section>
 </section>
 
