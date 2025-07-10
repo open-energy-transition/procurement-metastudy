@@ -94,9 +94,9 @@ These configurations define the core components of procurement strategies:
      In particular, they are generated from baseline scenarios results by means of the ``model-based-signals.ipynb`` notebook in the ``notebooks/emission-signals/`` directory.
      This notebook directly pulls the desired baseline network from the ``results/`` directory within the repository (but this can be easily adapted to be used outside the repository).
      Then, it stores the generated signals in dedicated files for each country involved in the analysis in the ``data/emission-signals-model/`` directory (i.e., the path set in ``signal_model``).
-   * *Historical data-based emission signals*: these signals are used if ``siganl_source`` is set to ``historical``.
-     In particular, they are generated from historical data by means of [WAITING FOR WATTTIME].
-     This notebook directly pulls the needed data from the [WAITING FOR WATTTIME].
+   * *Historical data-based emission signals* (under development): these signals are used if ``siganl_source`` is set to ``historical``.
+     In particular, they are generated from historical data by means of ``historical-based-signals.ipynb`` notebook in the ``notebooks/emission-signals/`` directory.
+     In order to use the notebook, one needs to ask WattTime for specific credentials. 
      Then, it stores the generated signals in a single file in the ``data/emission-signals-model/`` directory (i.e., the path set in ``signal_historical``).
 
 * ``participation``: Share of CI load participating in the procurement, expressed as a percentage.
