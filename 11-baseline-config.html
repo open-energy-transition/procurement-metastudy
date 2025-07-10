@@ -432,11 +432,11 @@ The order is as follows:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">run</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">prefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span>
-<span class="w">  </span><span class="c1">#- baseline-2025-3H</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">baseline-2030-3H</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">baseline-2025-1H</span>
+<span class="w">  </span><span class="c1">#- baseline-2030-1H</span>
 <span class="w">  </span><span class="nt">scenarios</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">enable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">config/scenarios.meta-3H.yaml</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">config/scenarios.meta-1H.yaml</span>
 <span class="w">  </span><span class="nt">disable_progressbar</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">  </span><span class="nt">shared_resources</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">policy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
@@ -685,7 +685,7 @@ Also, dedicated import and export links are modelled to connect the <code class=
 <p>For a comprehensive explanation, refer to the upstream PyPSA-Eur <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html#clustering">Clustering Documentation</a>.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">clustering</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">temporal</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">resolution_sector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3H</span>
+<span class="w">    </span><span class="nt">resolution_sector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1H</span>
 </pre></div>
 </div>
 <p>The temporal resolution is clustered to a 3H resolution by default, will change depending on the scenarios.</p>
