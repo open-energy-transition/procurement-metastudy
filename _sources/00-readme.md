@@ -21,20 +21,32 @@ This repository is maintained using [OET's soft-fork strategy](https://open-ener
 
 ## WattTime Impact Metastudy
 
-As companies commit to use 100% clean energy, the question arises: which renewable procurement strategies should they adopt? Existing studies on procurement strategies often rely on differing assumptions and yield varied results. This project enables the flexible switching between different procurement strategies and assumptions within a single modeling workflow.
+As companies commit to use 100% clean energy, the question arises: which renewable procurement strategies should they adopt? Existing studies on procurement strategies often focuses on single procurement method or rely on very differing assumptions, by yielding varied results. Instead, this project enables the flexible switching between different procurement strategies and assumptions within a single modeling workflow. Each strategy modelled uses its own particular methods and assumptions, and we attempted to understand where they agreed on impacts and where and why they might have disagreed, without attempting to validate any particular model. In particular, the impacts account for changes in total emissions, costs, and capacity and generation compared to a reference case where no procurement options are available.
 
-The primary objectives were to use energy system models to evaluate the consequential impact of different renewable procurement strategies. In particular, this work looked at the impacts of using marginal emissions signals to guide decision making, as described in the GHG project protocol. Each model used its own particular methods and assumptions, and we attempted to understand where they agreed on impact and where and why they might have disagreed, without attempting to validate any particular model.
+The three procurement strategies involved in this project are listed below.
 
-OET, an international non-profit organization specializing in open energy modeling software
-development and support, will bring its expertise to this project. The organization has a proven track record in promoting transparent, data-driven decision-making in energy policy and
+1. **Annual Volume matching**: a strategy that seeks to match carbon-free energy (CFE)procurement with annual electricity consumption. It represents the current status of [GHGP Scope 2 market-based accounting standards](https://ghgprotocol.org/sites/default/files/2023-03/Scope%202%20Guidance.pdf). Different matching levels can be considered (i.e., 100% or less).
+
+2. **24/7 Carbon-Free Energy**: strategy that seeks to match electricity consumption with CFE on an hourly basis. Different matching levels can be considered (i.e., 100% or less). Then, it includes locally procured assets and import from the outer grid, in case the matching level is lower than 100%.
+
+3. **Emission Matching**: a strategy that seeks to fully or partially match emissions from the electricity consumption with avoided emissions (according to specific emissions signals) in the locations where CFE is procured. That means to purchase renewable energy from locations where it has the highest impact on emission reduction. The emissions signals included in this analaysis are the following:
+
+    * *Marginal Operating Emissions Rate (MOER)*: Marginal change in emissions from short term changes in load to dispatch of fixed capacity. It can be calculated historically from input grid data using either regression methods, or transmission constraint analysis. It can also be calculated from energy system model results.
+    * *Marginal Build Emissions Rate (MBER)*: Marginal change in emissions from long term changes in load to capacity and generation of the grid. It can be calculated historically from recent build using formula described by the GHGP and UNFCCC. It can also be calculated from energy system model results.
+    * *Combined Marginal Emission Rate (CMER)*: MOER + MBER. Current guidance suggests to use both signals in some weighted combination.
+    * *Average Emissions Rate (AER)*: Average emissions by diving total emissions by total generations. It can be calculated historically or from energy system model results.
+
+[OET](https://openenergytransition.org/), an international non-profit organization specializing in open energy modeling software
+development and support, broght its expertise to this project. The organization has a proven track record in promoting transparent, data-driven decision-making in energy policy and
 planning, with its software products (including PyPSA-Eur and PyPSA-Earth) used in more than 50 research and industry-related projects.
-
 
 For further readings of PyPSA and PyPSA-Eur, check out:
 
 * [PyPSA](https://pypsa.readthedocs.io)
 * [PyPSA-Eur](https://pypsa-eur.readthedocs.io)
 * [PyPSA-Earth](https://pypsa-earth.readthedocs.io)
+
+[WattTime](https://watttime.org/), an environmental tech non-profit organization specializing in technology for electricity grid emissions reductions, supported in the definition of the Emission Matching constraints and data.
 
 ## Model Scope
 
