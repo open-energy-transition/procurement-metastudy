@@ -65,7 +65,7 @@ You can use the pre-configured Jupyter notebooks located in the ``notebooks/`` d
 
 **Emission Signals Analysis**
 
-These notebooks are located in ``notebooks/emission-signals/`` and are designed to calculate the emission signals used for the emission matching procurement strategy. More details are provided in `emissionality <file:///home/user/OET/projects/metastudy/procurement-metastudy/documentation/_build/html/12-procure-config.html>`_.
+These notebooks are located in ``notebooks/emission-signals/`` and are designed to calculate the emission signals used for the emission matching procurement strategy. More details are provided in `emissionality <https://open-energy-transition.github.io/procurement-metastudy/12-procure-config.html#procurement>`_.
 
 **Procurement Results Analysis**
 

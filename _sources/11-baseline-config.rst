@@ -118,8 +118,11 @@ New configuration options introduced in this repository:
    * The reference year for energy consumption data is set through ``load_year``.
    * The CI share over the annual electricity consumption is computed and applied to the PyPSA-Eur load time series:
 
-     * ``profile``: to set a certain daily profile to move from energy to load time series. A flat profile (i.e, "baseload") is used by default, since it is considered among the most appropriate when dealing with CI loads.
-     * ``share``: to set a certain share of the CI load to be moved to high voltage buses. This is used to avoid potential negative loads during some snapshots. 
+     * ``profile``: Setting for a certain daily profile to move from energy to load time series. A flat profile (i.e, ``baseload``) is used by default, since it is considered among the most appropriate when dealing with CI loads.
+     * ``share``: Setting for a certain share of the CI load to be moved to high-voltage dedicated buses. This is used to avoid potential negative loads during some snapshots.
+       For instance, consider the load ``DE0 0``, which is connected to the low-voltage bus ``DE0 0 low voltage``.
+       The corresponding CI load would be a portion of ``DE0 0``, that is called ``DE0 0 CI load`` and is connected to the dedicated high-voltage bus ``DE0 0 CI``.
+       Also, dedicated import and export links are modelled to connect the ``DE0 0 low voltage`` and ``DE0 0 CI`` buses.
 
 * ``freeze_capacity``: Option to prevent the expansion of renewable energy technologies (used for 2025 scenarios).
 * ``filter_TYNDP_build_year``: Option to exclude TYNDP network components scheduled for construction after 2025 or 2030.
