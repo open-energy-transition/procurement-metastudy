@@ -559,7 +559,23 @@ The order is as follows:</p>
 </ul>
 <p>New configuration options introduced in this repository:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ci_load</span></code>: Settings for generating non-procuring CI (Critical Infrastructure) loads and buses.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ci_load</span></code>: Settings for generating non-procuring CI loads and buses.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The CI load should be already modelled in the baseline scenarios so to have a fair comparison with the procurement scenarios. If <code class="docutils literal notranslate"><span class="pre">enable/ci_load</span></code> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, the CI load is generated through the <code class="docutils literal notranslate"><span class="pre">add_ci_load</span></code> function in the <code class="docutils literal notranslate"><span class="pre">add_procurement.py</span></code> script. The CI load is modelled as follows:</p>
+<ul class="simple">
+<li><p>The CI annual electricity consumption of the 34 countries involved in the analysis is pulled from dedicated files in the <code class="docutils literal notranslate"><span class="pre">data/</span></code> repository. In particular, for most of the countries data are taken from <a class="reference external" href="https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e__custom_16270810/default/table?lang=en%20(CSV%202.0)">Eurostat</a> (i.e., <code class="docutils literal notranslate"><span class="pre">load_path_1</span></code>). Instead, for Switzerland and United Kingdom, data are taken from <a class="reference external" href="https://www.iea.org/data-and-statistics/data-product/world-energy-balances-highlights">IEA</a> (i.e., <code class="docutils literal notranslate"><span class="pre">load_path_2</span></code>).</p></li>
+<li><p>The reference year for energy consumption data is set through <code class="docutils literal notranslate"><span class="pre">load_year</span></code>.</p></li>
+<li><p>The CI share over the annual electricity consumption is computed and applied to the PyPSA-Eur load time series:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">profile</span></code>: to set a certain daily profile to move from energy to load time series. A flat profile (i.e, “baseload”) is used by default, since it is considered among the most appropriate when dealing with CI loads.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">share</span></code>: to set a certain share of the CI load to be moved to high voltage buses. This is used to avoid potential negative loads during some snapshots.</p></li>
+</ul>
+</li>
+</ul>
+</div>
+<ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">freeze_capacity</span></code>: Option to prevent the expansion of renewable energy technologies (used for 2025 scenarios).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">filter_TYNDP_build_year</span></code>: Option to exclude TYNDP network components scheduled for construction after 2025 or 2030.</p></li>
 </ul>
@@ -575,8 +591,8 @@ The order is as follows:</p>
 </div>
 <p>Configuration changes made:</p>
 <ul class="simple">
-<li><p>The Ten Year Network Development Plan (TYNDP) 2020 transmission plan has been included from the model.</p></li>
-<li><p>The Netzentwicklungsplan (NEP) of Germany has been excluded in the model.</p></li>
+<li><p>The <a class="reference external" href="https://consultations.entsoe.eu/system-development/tyndp2020/">Ten Year Network Development Plan (TYNDP) 2020 transmission plan</a> has been included from the model.</p></li>
+<li><p>The <a href="#id1"><span class="problematic" id="id2">`Netzentwicklungsplan (NEP)&lt;https://www.netzentwicklungsplan.de/&gt;`_</span></a> of Germany has been excluded in the model.</p></li>
 <li><p>The capacities of the newly added transmission lines are based on the targets specified for their planned build year.</p></li>
 </ul>
 </section>
@@ -691,7 +707,7 @@ The order is as follows:</p>
 </div>
 <p>Configuration changes made:</p>
 <ul class="simple">
-<li><p>The marginal cost for DC links and the electricity distribution grid is set to 0.5 EUR/MWh to avoid unintended simultaneous exports and imports.</p></li>
+<li><p>The marginal costs are set to 0.5 EUR/MWh to avoid unintended storage cycling phenomena. For more details on such phenomena, refer to this <a class="reference external" href="https://www.cell.com/iscience/fulltext/S2589-0042(22)02002-8?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS2589004222020028%3Fshowall%3Dtrue">paper</a>.</p></li>
 </ul>
 </section>
 <section id="solving">
