@@ -23,7 +23,7 @@ This repository is maintained using [OET's soft-fork strategy](https://open-ener
 
 As companies commit to use 100% clean energy, the question arises: which renewable procurement strategies should they adopt? Existing studies on procurement strategies often focuses on single procurement method or rely on very differing assumptions, by yielding varied results. Instead, this project enables the flexible switching between different procurement strategies and assumptions within a single modeling workflow. Each strategy modelled uses its own particular methods and assumptions, and we attempted to understand where they agreed on impacts and where and why they might have disagreed, without attempting to validate any particular model. In particular, the impacts account for changes in total emissions, costs, and capacity and generation compared to a reference case where no procurement options are available.
 
-The three procurement strategies involved in this project are listed below.
+The three procurement strategies involved in this project are listed below and were applied to Commercial and Industry (CI) consumers.
 
 1. **Annual Volume matching**: a strategy that seeks to match carbon-free energy (CFE)procurement with annual electricity consumption. It represents the current status of [GHGP Scope 2 market-based accounting standards](https://ghgprotocol.org/sites/default/files/2023-03/Scope%202%20Guidance.pdf). Different matching levels can be considered (i.e., 100% or less).
 

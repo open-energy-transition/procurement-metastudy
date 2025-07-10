@@ -110,7 +110,17 @@ Configuration changes made:
 
 New configuration options introduced in this repository:
 
-* ``ci_load``: Settings for generating non-procuring CI (Critical Infrastructure) loads and buses.
+* ``ci_load``: Settings for generating non-procuring CI loads and buses.
+.. note::
+   The CI load should be already modelled in the baseline scenarios so to have a fair comparison with the procurement scenarios. If ``enable/ci_load`` is set to ``true``, the CI load is generated through the ``add_ci_load`` function in the ``add_procurement.py`` script. The CI load is modelled as follows:
+
+   * The CI annual electricity consumption of the 34 countries involved in the analysis is pulled from dedicated files in the ``data/`` repository. In particular, for most of the countries data are taken from `Eurostat <https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e__custom_16270810/default/table?lang=en%20(CSV%202.0)>`_ (i.e., ``load_path_1``). Instead, for Switzerland and United Kingdom, data are taken from `IEA <https://www.iea.org/data-and-statistics/data-product/world-energy-balances-highlights>`_ (i.e., ``load_path_2``).
+   * The reference year for energy consumption data is set through ``load_year``.
+   * The CI share over the annual electricity consumption is computed and applied to the PyPSA-Eur load time series:
+
+     * ``profile``: to set a certain daily profile to move from energy to load time series. A flat profile (i.e, "baseload") is used by default, since it is considered among the most appropriate when dealing with CI loads.
+     * ``share``: to set a certain share of the CI load to be moved to high voltage buses. This is used to avoid potential negative loads during some snapshots. 
+
 * ``freeze_capacity``: Option to prevent the expansion of renewable energy technologies (used for 2025 scenarios).
 * ``filter_TYNDP_build_year``: Option to exclude TYNDP network components scheduled for construction after 2025 or 2030.
 
@@ -127,8 +137,8 @@ For a comprehensive explanation, refer to the upstream PyPSA-Eur `Transmission P
 
 Configuration changes made:
 
-* The Ten Year Network Development Plan (TYNDP) 2020 transmission plan has been included from the model.
-* The Netzentwicklungsplan (NEP) of Germany has been excluded in the model.
+* The `Ten Year Network Development Plan (TYNDP) 2020 transmission plan <https://consultations.entsoe.eu/system-development/tyndp2020/>`_ has been included from the model.
+* The `Netzentwicklungsplan (NEP)<https://www.netzentwicklungsplan.de/>`_ of Germany has been excluded in the model.
 * The capacities of the newly added transmission lines are based on the targets specified for their planned build year.
 
 ``sector``
@@ -191,7 +201,7 @@ For a comprehensive explanation, refer to the upstream PyPSA-Eur `Plotting Docum
 
 Configuration changes made:
 
-* The marginal cost for DC links and the electricity distribution grid is set to 0.5 EUR/MWh to avoid unintended simultaneous exports and imports.
+* The marginal costs are set to 0.5 EUR/MWh to avoid unintended storage cycling phenomena. For more details on such phenomena, refer to this `paper <https://www.cell.com/iscience/fulltext/S2589-0042(22)02002-8?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS2589004222020028%3Fshowall%3Dtrue>`_.
 
 ``solving``
 =============
