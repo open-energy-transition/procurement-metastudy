@@ -1720,23 +1720,21 @@ def excess_constraints(n):
     """
     Each CI bus must meet its own load consumption before exporting any energy back to the grid.
     """
-    weights = n.snapshot_weightings["generators"]
+    share = n.config["procurement"]["excess_share"]
 
+    if not share:
+        return
+    
     for name in n.config["procurement"]["ci"]:
         if name + " export" in n.model["Link-p"].indexes["Link"]:
             ci_export = n.model["Link-p"].loc[:, [name + " export"]]
-            excess = (ci_export * weights).sum()
-            total_load = (n.loads_t.p_set[name + " load"] * weights).sum()
-            share = n.config["procurement"][
-                "excess_share"
-            ]  # 'sliding': max(0., energy_matching - 0.8)
+            load = n.loads_t.p_set[name + " load"]
 
             n.model.add_constraints(
-                excess <= share * total_load, name=f"Excess_constraint_{name}"
+                ci_export <= share * load, name=f"export_constraint_{name}"
             )
 
-            limit = round(share * total_load / 1e6, 2)
-            logger.info(f"Limit electricity exports from {name} to a maximum of {limit} TWh")
+            logger.info(f"Limit electricity exports to {name} by a factor of {share} relative to the procuring CI load")
 
 def import_constraints(n):
     """

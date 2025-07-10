@@ -22,11 +22,11 @@ remote:
 run:
   prefix: ""
   name:
-  #- baseline-2025-3H
-  - baseline-2030-3H
+  - baseline-2025-1H
+  #- baseline-2030-1H
   scenarios:
     enable: true
-    file: config/scenarios.meta-3H.yaml
+    file: config/scenarios.meta-1H.yaml
   disable_progressbar: false
   shared_resources:
     policy: false
@@ -168,7 +168,7 @@ costs:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#clustering
 clustering:
   temporal:
-    resolution_sector: 3H
+    resolution_sector: 1H
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#adjustments
 adjustments:
@@ -224,8 +224,8 @@ procurement:
   
   cap_premium: 1.1
 
-  excess_share: 0.  # share of excess CI generation that can be sold to the grid [percentage]
-  import_share: 1.
+  excess_share: 1.  # share of excess CI generation that can be sold to the grid [percentage]
+  import_share: 1.01
   min_iterations: 1
 
   ci:

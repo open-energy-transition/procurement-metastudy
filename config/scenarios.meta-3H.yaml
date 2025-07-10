@@ -24,7 +24,6 @@ baseline-2025-3H: #1
 
   electricity:
     powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
-    freeze_capacity: true
 
   costs:
     year: 2025
@@ -70,7 +69,6 @@ vol-match-2025-ci25-3H: #1
   
   electricity:
     powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
-    freeze_capacity: true
 
   costs:
     year: 2025
@@ -156,7 +154,6 @@ vol-match-2030-NoResTargets-ci25-3H: #4
 
   electricity:
     powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
-    freeze_capacity: true
 
   costs:
     year: 2025
@@ -186,7 +183,6 @@ vol-match-2030-NoResTargets-ci25-3H: #4
 
   electricity:
     powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
-    freeze_capacity: true
 
   costs:
     year: 2025
@@ -253,7 +249,6 @@ emi-match-2025-ci25-data-moer-3H: #1
 
   electricity:
     powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
-    freeze_capacity: true
 
   costs:
     year: 2025
@@ -287,7 +282,6 @@ emi-match-2025-ci25-data-mber-3H: #2
 
   electricity:
     powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
-    freeze_capacity: true
 
   costs:
     year: 2025
@@ -321,7 +315,6 @@ emi-match-2025-ci25-data-cmer-3H: #3
 
   electricity:
     powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
-    freeze_capacity: true
 
   costs:
     year: 2025
@@ -355,7 +348,6 @@ emi-match-2025-ci25-data-aer-3H: #4
 
   electricity:
     powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
-    freeze_capacity: true
 
   costs:
     year: 2025
