@@ -2,8 +2,8 @@
 Procurement Configuration
 ##########################################
 
-This is the base configuration outline used in the analysis "The Role of Energy Storage in Germany".
-The complete explaination of each configuration can be found in `PyPSA-Eur: Configuration <https://pypsa-eur.readthedocs.io/en/latest/configuration.html>`_.
+This is the procurement configuration used in the **WattTime Impact Metastudy**.
+These features were not available in the default PyPSA-Eur at the time of documentation.
 
 .. note::
    The PyPSA-Eur configuration files follow a pyramid-like structure, where the parameters in the highest configuration file add to and override those in the configuration file below it.

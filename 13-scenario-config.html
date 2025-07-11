@@ -403,8 +403,7 @@ document.write(`
                   
   <section id="scenario-configuration">
 <h1>Scenario Configuration<a class="headerlink" href="#scenario-configuration" title="Link to this heading">#</a></h1>
-<p>This is the base configuration outline used in the analysis “The Role of Energy Storage in Germany”.
-The complete explaination of each configuration can be found in <a class="reference external" href="https://pypsa-eur.readthedocs.io/en/latest/configuration.html">PyPSA-Eur: Configuration</a>.</p>
+<p>This is the scenario configuration used in the <strong>WattTime Impact Metastudy</strong>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The PyPSA-Eur configuration files follow a pyramid-like structure, where the parameters in the highest configuration file add to and override those in the configuration file below it.
@@ -462,8 +461,8 @@ The order is as follows:</p>
 </ul>
 <p>Key differences by year:</p>
 <ul class="simple">
-<li><p>2025: All powerplant capacities are kept constant (no capacity expansions).</p></li>
-<li><p>2030: 17 countries have achieved their coal phase-out targets.</p></li>
+<li><p>2025: No coal phase-outs have been initiated.</p></li>
+<li><p>2030: 17 countries have achieved their coal phase-out targets. See <a href="#id5"><span class="problematic" id="id6">`Beyond Fossil Fuels Europe's Coal Exit&lt;https://beyondfossilfuels.org/europes-coal-exit/&gt;`_</span></a>.</p></li>
 </ul>
 <p>When the RES target is referenced in this table, it implies that:</p>
 <ul class="simple">
