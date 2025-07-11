@@ -51,7 +51,7 @@ For further readings of PyPSA and PyPSA-Eur, check out:
 
 ## Model Scope
 
-![alt text](img/map.png)
+![alt text](documentation/img/map.png)
 
 To balance spatial and temporal resolution with computational efficiency, the model’s scope is defined as follows:
 
@@ -81,7 +81,7 @@ The original PyPSA-Eur model is described in the [documentation](https://pypsa-e
 and in the paper [PyPSA-Eur: An Open Optimisation Model of the European Transmission System](https://arxiv.org/abs/1806.01613), 2018,
 [arXiv:1806.01613](https://arxiv.org/abs/1806.01613).
 
-![PyPSA-Eur Grid Model](../doc/img/elec.png)
+![PyPSA-Eur Grid Model](doc/img/elec.png)
 
 The default dataset consists of:
 
