@@ -1,9 +1,9 @@
 <!--
-SPDX-FileCopyrightText: Contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+SPDX-FileCopyrightText: Open Energy Transition gGmbH and contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
 SPDX-License-Identifier: CC-BY-4.0
 -->
 
-# WattTime Impact Metastudy
+# Introduction
 
 ![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/pypsa/pypsa-eur?include_prereleases)
 [![Test workflows](https://github.com/pypsa/pypsa-eur/actions/workflows/test.yaml/badge.svg)](https://github.com/pypsa/pypsa-eur/actions/workflows/test.yaml)
@@ -29,7 +29,7 @@ For further readings of PyPSA and PyPSA-Eur, check out:
 * [PyPSA-Eur](https://pypsa-eur.readthedocs.io)
 * [PyPSA-Earth](https://pypsa-earth.readthedocs.io)
 
-## Introduction
+## WattTime Impact Metastudy
 
 As companies commit to use 100% clean energy, the question arises: which renewable procurement strategies should they adopt? Existing studies on procurement strategies often focuses on single procurement method or rely on very differing assumptions, by yielding varied results. Instead, this project enables the flexible switching between different procurement strategies and assumptions within a single modeling workflow. Each strategy modelled uses its own particular methods and assumptions, and we attempted to understand where they agreed on impacts and where and why they might have disagreed, without attempting to validate any particular model. In particular, the impacts account for changes in total emissions, costs, and capacity and generation compared to a reference case where no procurement options are available.
 

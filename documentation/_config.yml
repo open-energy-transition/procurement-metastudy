@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Open Energy Transition gGmbH and contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+# SPDX-License-Identifier: CC-BY-4.0
+
 #######################################################################################
 # A default configuration that will be loaded for all jupyter books
 # See the documentation for help and more options:
@@ -52,4 +55,4 @@ sphinx:
     html_js_files:
     - https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js
   extra_extensions:
-    - sphinx.ext.graphviz
+  - sphinx.ext.graphviz

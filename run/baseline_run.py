@@ -1,9 +1,13 @@
+# SPDX-FileCopyrightText: Open Energy Transition gGmbH and contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+#
+# SPDX-License-Identifier: MIT
 import os
 import shutil
+
 import yaml
-import pandas as pd
 
 # ---------------------- Utility Functions ----------------------
+
 
 def deep_update(original, updates):
     for key, value in updates.items():
@@ -11,6 +15,7 @@ def deep_update(original, updates):
             deep_update(original[key], value)
         else:
             original[key] = value
+
 
 def select_scenario(scenarios, name="scenarios"):
     print(f"Available {name}:")
@@ -30,11 +35,12 @@ def select_scenario(scenarios, name="scenarios"):
             print(f"'{answer}' is selected.")
             return answer
         elif answer.isdigit():
-            scenario_selected = scenarios[int(answer)-1]
+            scenario_selected = scenarios[int(answer) - 1]
             print(f"'{scenario_selected}' is selected.")
             return scenario_selected
         else:
             print(f"'{answer}' not found in the list. Please try again.")
+
 
 def select_profile():
     while True:
@@ -44,16 +50,23 @@ def select_profile():
         elif answer in ["y", "yes"]:
             return "--profile slurm"
         elif answer in ["n", "no"]:
-            cpu = input("How many CPUs do you want to use (all or a number)? ").strip().lower()
+            cpu = (
+                input("How many CPUs do you want to use (all or a number)? ")
+                .strip()
+                .lower()
+            )
             if cpu == "all":
                 return "-call"
             elif cpu.isdigit():
                 return f"-c{cpu}"
         print(f"'{answer}' is not a valid option. Please try again.")
 
+
 def select_multiruns():
     while True:
-        answer = input("is there more runs that you want to make [y/n]?: ").strip().lower()
+        answer = (
+            input("is there more runs that you want to make [y/n]?: ").strip().lower()
+        )
         if not answer:
             return None
         elif answer in ["y", "yes"]:
@@ -61,6 +74,7 @@ def select_multiruns():
         elif answer in ["n", "no"]:
             return False
         print(f"'{answer}' is not a valid option. Please try again.")
+
 
 def duplicate_run_delete(scenario_name, selected_baseline, selected_profile):
     # Prepare resources
@@ -94,15 +108,17 @@ def duplicate_run_delete(scenario_name, selected_baseline, selected_profile):
     else:
         print(f"Folder does not exist (already removed?): {new_folder}")
 
-    temp_file = 'run/config.meta_temp.yaml'
-    
+    temp_file = "run/config.meta_temp.yaml"
+
     if os.path.exists(temp_file):
         os.remove(temp_file)
         print(f"Deleted file: {temp_file}")
     else:
         print(f"File does not exist: {temp_file}")
 
+
 # ---------------------- Main Script ----------------------
+
 
 def main():
     scenario_yaml = ["scenarios.meta-1H.yaml", "scenarios.meta-3H.yaml"]
@@ -114,7 +130,7 @@ def main():
 
     print("\n=================================================================")
     # Load scenario configuration
-    with open(f'config/{selected_scenario_yaml}', 'r') as file:
+    with open(f"config/{selected_scenario_yaml}") as file:
         config_s = yaml.safe_load(file)
 
     # Extract scenarios with '--'
@@ -133,7 +149,7 @@ def main():
         print("\nFinal selection:")
         print("Baseline:")
         for selected_baseline in scenario_pair:
-            print(f"{selected_baseline}")    
+            print(f"{selected_baseline}")
 
         selected_multiruns = select_multiruns()
         if not selected_multiruns:
@@ -144,7 +160,7 @@ def main():
     if not selected_profile:
         print("\nOperation cancelled by user.")
         return
-    
+
     print(f"Profile: {selected_profile}")
 
     # Iterate runs
@@ -153,37 +169,32 @@ def main():
         print("Currently running:")
         print(f"Baseline: {selected_baseline}")
 
-        with open('config/config.meta.yaml', 'r') as file:
-                config = yaml.safe_load(file)
+        with open("config/config.meta.yaml") as file:
+            config = yaml.safe_load(file)
 
         deep_update(config, config_s[selected_baseline])
 
-        # Modify config per country
-        scenario_name = selected_baseline
-
         config_update = {
-            "run": {
-                "name": selected_baseline,
-                "scenarios": {"enable": False}
-            }
+            "run": {"name": selected_baseline, "scenarios": {"enable": False}}
         }
 
         deep_update(config, config_update)
 
         # Write temp config
-        with open('run/config.meta_temp.yaml', 'w') as file:
+        with open("run/config.meta_temp.yaml", "w") as file:
             yaml.safe_dump(config, file, default_flow_style=False)
 
         run_cmd = f"snakemake {selected_profile} solve_sector_networks --configfile run/config.meta_temp.yaml"
         os.system(run_cmd)
 
-        temp_file = 'run/config.meta_temp.yaml'
+        temp_file = "run/config.meta_temp.yaml"
 
         if os.path.exists(temp_file):
             os.remove(temp_file)
             print(f"Deleted file: {temp_file}")
         else:
             print(f"File does not exist: {temp_file}")
+
 
 if __name__ == "__main__":
     main()

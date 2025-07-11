@@ -38,3 +38,15 @@ License: CC0-1.0
 Files: report/*
 Copyright: Open Energy Transition gGmbH
 License: MIT
+
+Files: documentation/*
+Copyright: Open Energy Transition gGmbH
+License: MIT
+
+Files: notebooks/*
+Copyright: Open Energy Transition gGmbH
+License: MIT
+
+Files: run/*
+Copyright: Open Energy Transition gGmbH
+License: MIT

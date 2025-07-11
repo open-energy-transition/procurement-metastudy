@@ -1500,6 +1500,8 @@ def insert_electricity_distribution_grid(
     options: dict,
     pop_layout: pd.DataFrame,
     solar_rooftop_potentials_fn: str,
+    ext_carriers,
+    max_hours,
 ) -> None:
     """
     Insert electricity distribution grid components into the network.
@@ -1626,7 +1628,7 @@ def insert_electricity_distribution_grid(
             lifetime=costs.at["solar-rooftop", "lifetime"],
         )
 
-    if "li-ion battery" in snakemake.params.electricity["extendable_carriers"]["Store"]:
+    if "li-ion battery" in ext_carriers["Store"]:
         n.add("Carrier", "li-ion home battery")
 
         n.add(
@@ -1673,11 +1675,8 @@ def insert_electricity_distribution_grid(
             lifetime=costs.at["home battery inverter", "lifetime"],
         )
 
-    elif (
-        "battery" in snakemake.params.electricity["extendable_carriers"]["StorageUnit"]
-    ):
+    elif "battery" in ext_carriers["StorageUnit"]:
         n.add("Carrier", "li-ion home battery")
-        max_hours = snakemake.params.electricity["max_hours"]
         for max_hour in max_hours["li-ion battery"]:
             n.add(
                 "StorageUnit",
@@ -1771,6 +1770,7 @@ def add_electricity_grid_connection(n, costs):
 def get_salt_caverns(
     h2_cavern_file,
     cavern_types,
+    hydrogen_underground_storage,
 ):
     """
     Detirmine the potential of hydrogen cavern storage.
@@ -1787,7 +1787,7 @@ def get_salt_caverns(
 
     if (
         not h2_caverns.empty
-        and options["hydrogen_underground_storage"]
+        and hydrogen_underground_storage
         and set(cavern_types).intersection(h2_caverns.columns)
     ):
         h2_caverns = h2_caverns[cavern_types].sum(axis=1)
@@ -1810,6 +1810,8 @@ def add_storageunits(
     n,
     costs,
     carriers,
+    marginal_cost_storage,
+    pop_layout,
     max_hours,
     h2_caverns=None,
 ):
@@ -1824,6 +1826,10 @@ def add_storageunits(
         Technology cost assumptions
     carriers: list
         List of storage technologies to be defined as the component StorageUnit
+    marginal_cost_storage:
+        Marginal cost of storage
+    pop_layout : pd.DataFrame
+        DataFrame with population layout data, used for demand nodes
     max_hours : dict
         Maximum hours of storage if flexible
     h2_caverns : pd.DataFrame
@@ -1898,7 +1904,7 @@ def add_storageunits(
                     capital_cost=costs.at[
                         f"H2 underground {max_hour}h", "capital_cost"
                     ],
-                    marginal_cost=options["marginal_cost_storage"],
+                    marginal_cost=marginal_cost_storage,
                     efficiency_store=costs.at[lookup_store[carrier], "efficiency"]
                     ** roundtrip_correction,
                     efficiency_dispatch=costs.at[lookup_dispatch[carrier], "efficiency"]
@@ -1922,7 +1928,7 @@ def add_storageunits(
                 carrier=f"{carrier} {max_hour}h",
                 p_nom_extendable=True,
                 capital_cost=costs.at[f"{cost_carrier} {max_hour}h", "capital_cost"],
-                marginal_cost=options["marginal_cost_storage"],
+                marginal_cost=marginal_cost_storage,
                 efficiency_store=costs.at[lookup_store[carrier], "efficiency"]
                 ** roundtrip_correction,
                 efficiency_dispatch=costs.at[lookup_dispatch[carrier], "efficiency"]
@@ -1939,6 +1945,8 @@ def add_stores(
     n,
     costs,
     carriers,
+    marginal_cost_storage,
+    pop_layout,
     h2_caverns=None,
 ):
     """
@@ -1952,6 +1960,10 @@ def add_stores(
         Technology cost assumptions
     carriers: list
         List of storage technologies to be defined as the component Stores
+    marginal_cost_storage:
+        Marginal cost of storage
+    pop_layout : pd.DataFrame
+        DataFrame with population layout data, used for demand nodes
     h2_caverns : pd.DataFrame
         DataFrame containing the potential of hydrogen underground storage
 
@@ -2050,7 +2062,7 @@ def add_stores(
             bus1=nodes,
             carrier="li-ion battery discharger",
             efficiency=costs.at["battery inverter", "efficiency"] ** 0.5,
-            marginal_cost=options["marginal_cost_storage"],
+            marginal_cost=marginal_cost_storage,
             p_nom_extendable=True,
             lifetime=costs.at["battery inverter", "lifetime"],
         )
@@ -2095,7 +2107,7 @@ def add_stores(
             bus1=nodes,
             carrier="iron-air battery discharger",
             efficiency=costs.at["iron-air battery discharge", "efficiency"],
-            marginal_cost=options["marginal_cost_storage"],
+            marginal_cost=marginal_cost_storage,
             p_nom_extendable=True,
             lifetime=costs.at["battery inverter", "lifetime"],
         )
@@ -2113,6 +2125,7 @@ def add_storage_and_grids(
     gas_input_nodes,
     spatial,
     options,
+    max_hours,
 ):
     """
     Add storage and grid infrastructure to the network including hydrogen, gas, and battery systems.
@@ -2384,14 +2397,25 @@ def add_storage_and_grids(
         )
 
     # add stores and storages as specified in the config
-    h2_caverns = get_salt_caverns(h2_cavern_file, cavern_types)
+    h2_caverns = get_salt_caverns(
+        h2_cavern_file, cavern_types, options["hydrogen_underground_storage"]
+    )
 
-    add_stores(n, costs, options["extendable_carriers"]["Store"], h2_caverns)
+    add_stores(
+        n,
+        costs,
+        options["extendable_carriers"]["Store"],
+        options["marginal_cost_storage"],
+        pop_layout,
+        h2_caverns,
+    )
     add_storageunits(
         n,
         costs,
         options["extendable_carriers"]["StorageUnit"],
-        snakemake.params.electricity["max_hours"],
+        options["marginal_cost_storage"],
+        pop_layout,
+        max_hours,
         h2_caverns,
     )
 
@@ -6581,6 +6605,7 @@ if __name__ == "__main__":
         gas_input_nodes=gas_input_nodes,
         spatial=spatial,
         options=options,
+        max_hours=snakemake.params.electricity["max_hours"],
     )
 
     if options["transport"]:
@@ -6764,7 +6789,15 @@ if __name__ == "__main__":
 
     if options["electricity_distribution_grid"]:
         insert_electricity_distribution_grid(
-            n, costs, options, pop_layout, snakemake.input.solar_rooftop_potentials
+            n,
+            costs,
+            options,
+            pop_layout,
+            solar_rooftop_potentials_fn=snakemake.input.solar_rooftop_potentials,
+            ext_carriers=snakemake.params.electricity.get(
+                "extendable_carriers", dict()
+            ),
+            max_hours=snakemake.params.electricity["max_hours"],
         )
 
     if options["enhanced_geothermal"].get("enable", False):
