@@ -102,7 +102,7 @@ Each of these sectors is built up on the transmission network nodes from [PyPSA-
 * `cutouts`: will store raw weather data cutouts from `atlite` (does not exist initially)
 * `data`: includes input data that is not produced by any `snakemake` rule
 * `doc`: includes all files necessary to build the `readthedocs` documentation of PyPSA-Eur
-* `documentation`: includes all files necessary to build the `jupyter book` documentation of Form Energy Storage version of PyPSA-Eur
+* `documentation`: includes all files necessary to build the `jupyter book` documentation of WattTime Impact Metastudy version of PyPSA-Eur
 * `envs`: includes all the `mamba` environment specifications to run the workflow
 * `logs`: will store log files (does not exist initially)
 * `notebooks`: includes all the `notebooks` used for ad-hoc analysis

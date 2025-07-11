@@ -2,8 +2,7 @@
 Scenario Configuration
 ##########################################
 
-This is the base configuration outline used in the analysis "The Role of Energy Storage in Germany".
-The complete explaination of each configuration can be found in `PyPSA-Eur: Configuration <https://pypsa-eur.readthedocs.io/en/latest/configuration.html>`_.
+This is the scenario configuration used in the **WattTime Impact Metastudy**.
 
 .. note::
    The PyPSA-Eur configuration files follow a pyramid-like structure, where the parameters in the highest configuration file add to and override those in the configuration file below it.
@@ -50,8 +49,8 @@ Key similarities across all baseline scenarios that distinguish them from the de
 
 Key differences by year:
 
-* 2025: All powerplant capacities are kept constant (no capacity expansions).
-* 2030: 17 countries have achieved their coal phase-out targets.
+* 2025: No coal phase-outs have been initiated.
+* 2030: 17 countries have achieved their coal phase-out targets. See `Beyond Fossil Fuels Europe's Coal Exit<https://beyondfossilfuels.org/europes-coal-exit/>`_.
 
 When the RES target is referenced in this table, it implies that:
 

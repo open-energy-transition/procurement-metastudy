@@ -2,7 +2,7 @@
 Features
 ##########################################
 
-Here is a list of changes made to this repository specifically for this work, with the potential to be upstreamed to the main PyPSA-Eur repository.
+Here is a list of changes made to this repository specifically for **WattTime Impact Metastudy**, with the potential to be upstreamed to the main PyPSA-Eur repository.
 
 **Baseline Enhancements**
 
@@ -48,7 +48,7 @@ Here is a list of changes made to this repository specifically for this work, wi
 
 * Developed the first command-line interface for running the model (https://github.com/open-energy-transition/procurement-metastudy/pull/25)
 
-* Added user documentation via GitHub Pages
+* Added user documentation via GitHub Pages (https://github.com/open-energy-transition/procurement-metastudy/pull/37)
 
 **Bug Fixes**
 
