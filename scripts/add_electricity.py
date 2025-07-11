@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+# SPDX-FileCopyrightText: Open Energy Transition gGmbH and contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
 #
 # SPDX-License-Identifier: MIT
 
@@ -62,6 +62,7 @@ import xarray as xr
 from pypsa.clustering.spatial import DEFAULT_ONE_PORT_STRATEGIES, normed_or_uniform
 
 from scripts._helpers import (
+    PYPSA_V1,
     configure_logging,
     get_snapshots,
     rename_techs,
@@ -608,7 +609,9 @@ def attach_load(
     )
 
     # apply clustering busmap
-    busmap = pd.read_csv(busmap_fn, dtype=str).set_index("Bus").squeeze()
+    busmap = pd.read_csv(busmap_fn, dtype=str)
+    index_col = "name" if PYPSA_V1 else "Bus"
+    busmap = busmap.set_index(index_col).squeeze()
     load = load.groupby(busmap).sum().T
 
     logger.info(f"Load data scaled by factor {scaling}.")

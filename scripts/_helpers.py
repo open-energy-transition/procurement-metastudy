@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+# SPDX-FileCopyrightText: Open Energy Transition gGmbH and contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
 #
 # SPDX-License-Identifier: MIT
 
@@ -28,6 +28,8 @@ from tqdm import tqdm
 logger = logging.getLogger(__name__)
 
 REGION_COLS = ["geometry", "name", "x", "y", "country"]
+
+PYPSA_V1 = bool(re.match(r"^0\.35\.0\.post1\.dev\d{3}", pypsa.__version__))
 
 
 def get_scenarios(run):

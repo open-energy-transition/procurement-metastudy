@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+# SPDX-FileCopyrightText: Open Energy Transition gGmbH and contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
 #
 # SPDX-License-Identifier: MIT
 
@@ -8,6 +8,7 @@ rule add_existing_baseyear:
         baseyear=config_provider("scenario", "planning_horizons", 0),
         sector=config_provider("sector"),
         existing_capacities=config_provider("existing_capacities"),
+        carriers=config_provider("electricity", "renewable_carriers"),
         costs=config_provider("costs"),
         max_hours=config_provider("electricity", "max_hours"),
         heat_pump_sources=config_provider("sector", "heat_pump_sources"),

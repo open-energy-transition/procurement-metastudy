@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+# SPDX-FileCopyrightText: Open Energy Transition gGmbH and contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
 #
 # SPDX-License-Identifier: CC0-1.0
 
@@ -83,5 +83,29 @@ report/*.toc
 merger-todos.md
 
 *.html
+
+# latex files
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.fot
+*.cb
+*.cb2
+.*.lb
+*.bbl
+*.blg
+*.spl
+report/*.pdf
+
 # private dev folder
 dev/*
+
+# ai coding tools
+CLAUDE.md
+.claude/
+.github/copilot-instructions.md

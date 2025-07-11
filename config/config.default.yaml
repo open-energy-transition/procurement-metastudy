@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+# SPDX-FileCopyrightText: Open Energy Transition gGmbH and contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
 #
 # SPDX-License-Identifier: CC0-1.0
 
@@ -149,6 +149,8 @@ atlite:
       dx: 0.3
       dy: 0.3
       time: ['2013', '2013']
+      # features: [] 
+      # sarah_dir: ""
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#renewable
 renewable:
@@ -995,6 +997,7 @@ solving:
 
   agg_p_nom_limits:
     agg_offwind: false
+    agg_solar: false
     include_existing: false
     file: data/agg_p_nom_minmax.csv
 
