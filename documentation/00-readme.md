@@ -3,6 +3,8 @@ SPDX-FileCopyrightText: Contributors to PyPSA-Eur <https://github.com/pypsa/pyps
 SPDX-License-Identifier: CC-BY-4.0
 -->
 
+# Introduction
+
 ![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/pypsa/pypsa-eur?include_prereleases)
 [![Test workflows](https://github.com/pypsa/pypsa-eur/actions/workflows/test.yaml/badge.svg)](https://github.com/pypsa/pypsa-eur/actions/workflows/test.yaml)
 [![Documentation](https://readthedocs.org/projects/pypsa-eur/badge/?version=latest)](https://pypsa-eur.readthedocs.io/en/latest/?badge=latest)
@@ -13,14 +15,11 @@ SPDX-License-Identifier: CC-BY-4.0
 [![Discord](https://img.shields.io/discord/911692131440148490?logo=discord)](https://discord.gg/AnuJBk23FU)
 [![REUSE status](https://api.reuse.software/badge/github.com/pypsa/pypsa-eur)](https://api.reuse.software/info/github.com/pypsa/pypsa-eur)
 
-# WattTime Impact Metastudy
-<img src="https://github.com/open-energy-transition/procurement-metastudy/blob/8a86e7e325bd9d6bc317996792f1d71fc18839e7/documentation/img/logo_WattTime_OET.png" alt="Open Energy Transition Logo" width="200" height="234" align="right">
-
 This repository is a soft-fork of [OET/PyPSA-Eur](https://github.com/open-energy-transition/pypsa-eur) and contains the entire project **WattTime Impact Metastudy** supported by [Open Energy Transition (OET)](https://openenergytransition.org/)<sup>*</sup>, including code and visualization. The philosophy behind this repository is that no intermediary results are included, but all results are computed from raw data and code.
 
 This repository is maintained using [OET's soft-fork strategy](https://open-energy-transition.github.io/handbook/docs/Engineering/SoftForkStrategy). OET's primary aim is to contribute as much as possible to the open source (OS) upstream repositories. For long-term changes that cannot be directly merged upstream, the strategy organizes and maintains OET forks, ensuring they remain up-to-date and compatible with upstream, while also supporting future contributions back to the OS repositories.
 
-## Introduction
+## WattTime Impact Metastudy
 
 As companies commit to use 100% clean energy, the question arises: which renewable procurement strategies should they adopt? Existing studies on procurement strategies often focuses on single procurement method or rely on very differing assumptions, by yielding varied results. Instead, this project enables the flexible switching between different procurement strategies and assumptions within a single modeling workflow. Each strategy modelled uses its own particular methods and assumptions, and we attempted to understand where they agreed on impacts and where and why they might have disagreed, without attempting to validate any particular model. In particular, the impacts account for changes in total emissions, costs, and capacity and generation compared to a reference case where no procurement options are available.
 
@@ -51,7 +50,7 @@ For further readings of PyPSA and PyPSA-Eur, check out:
 
 ## Model Scope
 
-![alt text](documentation/img/map.png)
+![alt text](img/map.png)
 
 To balance spatial and temporal resolution with computational efficiency, the model’s scope is defined as follows:
 
@@ -81,7 +80,7 @@ The original PyPSA-Eur model is described in the [documentation](https://pypsa-e
 and in the paper [PyPSA-Eur: An Open Optimisation Model of the European Transmission System](https://arxiv.org/abs/1806.01613), 2018,
 [arXiv:1806.01613](https://arxiv.org/abs/1806.01613).
 
-![PyPSA-Eur Grid Model](doc/img/elec.png)
+![PyPSA-Eur Grid Model](../doc/img/elec.png)
 
 The default dataset consists of:
 

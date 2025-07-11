@@ -121,6 +121,7 @@ rule add_procurement:
         procurement=config_provider("procurement"),
         costs=config_provider("costs"),
         max_hours=config_provider("electricity", "max_hours"),
+        adjustments=config_provider("adjustments", "procurement"),
     input:
         network=resources(
             "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}_brownfield.nc"

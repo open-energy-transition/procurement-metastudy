@@ -1,0 +1,21 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: 00-readme
+parts:
+- caption: Preparation
+  chapters:
+  - file: 01-installation.md
+  - file: 02-tutorials.rst
+  - file: 03-features.rst
+- caption: Configuration
+  chapters:
+  - file: 11-baseline-config.rst
+  - file: 12-procure-config.rst
+  - file: 13-scenario-config.rst
+- caption: Definition
+  chapters:
+  - file: 21-vol-match.md
+  - file: 22-247-cfe.md
+  - file: 23-emi-match.md
