@@ -1,3 +1,7 @@
+<!--
+SPDX-FileCopyrightText: Open Energy Transition gGmbH and contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+SPDX-License-Identifier: CC-BY-4.0
+-->
 # Installation
 
 The installation process is a modified version of [PyPSA-Eur Installation](https://pypsa-eur.readthedocs.io/en/latest/installation.html) instruction.
