@@ -29,7 +29,7 @@ snapshots:
 electricity:
   extendable_carriers:
     Generator: [OCGT]
-    StorageUnit: [battery, H2]
+    StorageUnit: [li-ion battery, H2]
     Store: []
 
 atlite:

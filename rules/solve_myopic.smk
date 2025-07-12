@@ -10,6 +10,7 @@ rule add_existing_baseyear:
         existing_capacities=config_provider("existing_capacities"),
         carriers=config_provider("electricity", "renewable_carriers"),
         costs=config_provider("costs"),
+        max_hours=config_provider("electricity", "max_hours"),
         heat_pump_sources=config_provider("sector", "heat_pump_sources"),
         energy_totals_year=config_provider("energy", "energy_totals_year"),
     input:
@@ -113,6 +114,41 @@ rule add_brownfield:
 ruleorder: add_existing_baseyear > add_brownfield
 
 
+rule add_procurement:
+    params:
+        procurement_enable=config_provider("enable", "procurement"),
+        ci_load=config_provider("enable", "ci_load"),
+        electricity=config_provider("electricity"),
+        procurement=config_provider("procurement"),
+        costs=config_provider("costs"),
+        max_hours=config_provider("electricity", "max_hours"),
+        adjustments=config_provider("adjustments", "procurement"),
+    input:
+        network=resources(
+            "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}_brownfield.nc"
+        ),
+        costs=resources("costs_{planning_horizons}.csv"),
+    output:    
+        network=resources(
+            "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}_procurement.nc"
+        ),
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "../scripts/add_procurement.py"
+
+
+def choose_network_file(wildcards):
+    base_template = "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}"
+    
+    if config_provider("enable", "procurement") or config_provider("enable", "ci_load"):
+        suffix = "_procurement.nc"
+    else:
+        suffix = "_brownfield.nc"
+    
+    return resources(base_template + suffix)
+
+
 rule solve_sector_network_myopic:
     params:
         solving=config_provider("solving"),
@@ -122,10 +158,7 @@ rule solve_sector_network_myopic:
         ),
         custom_extra_functionality=input_custom_extra_functionality,
     input:
-        network=resources(
-            "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}_brownfield.nc"
-        ),
-        costs=resources("costs_{planning_horizons}.csv"),
+        network = lambda w: choose_network_file(w)
     output:
         network=RESULTS
         + "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.nc",

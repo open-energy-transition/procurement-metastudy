@@ -59,7 +59,7 @@ def add_brownfield(
     dc_i = n.links[n.links.carrier == "DC"].index
     n.links.loc[dc_i, "p_nom_min"] = n_p.links.loc[dc_i, "p_nom_opt"]
 
-    for c in n_p.iterate_components(["Link", "Generator", "Store"]):
+    for c in n_p.iterate_components(["Link", "Generator", "Store", "StorageUnit"]):
         attr = "e" if c.name == "Store" else "p"
 
         # first, remove generators, links and stores that track
@@ -326,16 +326,44 @@ def update_dynamic_ptes_capacity(
     ].values
 
 
+def add_missing_buses(n: pypsa.Network, n_p: pypsa.Network) -> None:
+    """
+    Identify and add buses that are present in the result network but absent in the original network.
+
+    Parameters
+    ----------
+    n : pypsa.Network
+        Original network.
+    n_p : pypsa.Network
+        Network with updated parameters.
+
+    Returns
+    -------
+    None
+        Updates buses in-place.
+    """
+    missing_buses = set(n_p.buses.index) - set(n.buses.index)
+
+    if missing_buses:
+        logger.info(f"Missing buses: {missing_buses}")
+
+        for i in missing_buses:
+            n.buses.loc[i] = n_p.buses.loc[i]
+
+
 if __name__ == "__main__":
     if "snakemake" not in globals():
         from scripts._helpers import mock_snakemake
 
         snakemake = mock_snakemake(
             "add_brownfield",
-            clusters="39",
+            run="vol-match-DK-3H",
             opts="",
+            clusters="39",
+            configfiles="config/config.meta.yaml",
+            ll="v1.0",
             sector_opts="",
-            planning_horizons=2050,
+            planning_horizons="2030",
         )
 
     configure_logging(snakemake)  # pylint: disable=E0606
@@ -355,6 +383,8 @@ if __name__ == "__main__":
 
     n_p = pypsa.Network(snakemake.input.network_p)
 
+    add_missing_buses(n, n_p)
+
     update_heat_pump_efficiency(n, n_p, year)
 
     if snakemake.params.tes and snakemake.params.dynamic_ptes_capacity:
@@ -370,6 +400,8 @@ if __name__ == "__main__":
     )
 
     disable_grid_expansion_if_limit_hit(n)
+
+    sanitize_carriers(n, snakemake.config)
 
     n.meta = dict(snakemake.config, **dict(wildcards=dict(snakemake.wildcards)))
 

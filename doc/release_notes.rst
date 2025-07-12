@@ -63,6 +63,7 @@ PyPSA-Eur v2025.04.0 (6th April 2025)
 
 **Features**
 
+* Added Iron-Air battery, Lithium iron phosphate (lpf), Vanadium, Liquid-air (lair) and Compressed-air (pair) storage technology and changed nomenclature for lithium-ion battery storages from ``battery`` to ``li-ion battery``.
 
 * Allowing **network clustering based on administrative boundaries** (i.e.,
   NUTS0/country-level to NUTS3).  To make use of this setting, set ``clustering:

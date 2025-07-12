@@ -1,0 +1,457 @@
+# -*- coding: utf-8 -*-
+# SPDX-FileCopyrightText: Contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+#
+# SPDX-License-Identifier: MIT
+
+# This file is used to define the scenarios that are run by snakemake. Each entry on the first level is a scenario. Each scenario can contain configuration overrides with respect to the config/config.yaml settings.
+#
+# Example
+#
+# custom-scenario: # name of the scenario
+#   electricity:
+#       renewable_carriers: [wind, solar] # override the list of renewable carriers
+
+# ======== Baseline ==================================
+# ====================================================
+
+baseline-2025-3H: #1
+  scenario:
+    planning_horizons: 
+    - 2025
+  
+  enable:
+    procurement: false
+
+  electricity:
+    powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
+
+  costs:
+    year: 2025
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+
+baseline-2030-3H: #2
+  enable:
+    procurement: false
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+baseline-2030-NoResTargets-3H: #3
+  enable:
+    procurement: false
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+
+# ======== Annual volume matching =====================
+# =====================================================
+
+vol-match-2025-ci25-3H: #1
+  scenario:
+    planning_horizons: 
+    - 2025
+  
+  enable:
+    procurement: true
+  
+  electricity:
+    powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
+
+  costs:
+    year: 2025
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+  
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+    res_additionality: false
+
+  procurement:
+    strategy: vol-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+
+vol-match-2030-ci25-3H: #2
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: vol-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+
+vol-match-2030-country-ci25-3H: #3
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: vol-match
+    scope: country
+    energy_matching: 100
+    participation: 50
+
+vol-match-2030-NoResTargets-ci25-3H: #4
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+    res_additionality: false
+
+  procurement:
+    strategy: vol-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+
+# ======== 247 CFE matching ============================
+# ======================================================
+
+247-cfe-2025-ci25-cfe90-3H: #1
+  scenario:
+    planning_horizons: 
+    - 2025
+  
+  enable:
+    procurement: true
+
+  electricity:
+    powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
+
+  costs:
+    year: 2025
+  
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+    res_additionality: false
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 90
+    participation: 50
+
+247-cfe-2025-ci25-cfe100-3H: #2
+  scenario:
+    planning_horizons: 
+    - 2025
+  
+  enable:
+    procurement: true
+
+  electricity:
+    powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
+
+  costs:
+    year: 2025
+  
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+    res_additionality: false
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 100
+    participation: 50
+
+247-cfe-2030-ci25-cfe90-3H: #3
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 90
+    participation: 50
+
+247-cfe-2030-ci25-cfe100-3H: #4
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 100
+    participation: 50
+
+# ======== Emission matching ==========================
+# =====================================================
+
+emi-match-2025-ci25-data-moer-3H: #1
+  scenario:
+    planning_horizons: 
+    - 2025
+  
+  enable:
+    procurement: true
+
+  electricity:
+    powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
+
+  costs:
+    year: 2025
+  
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+    res_additionality: false
+
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: moer
+      signal_source: historical
+
+emi-match-2025-ci25-data-mber-3H: #2
+  scenario:
+    planning_horizons: 
+    - 2025
+  
+  enable:
+    procurement: true
+
+  electricity:
+    powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
+
+  costs:
+    year: 2025
+  
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+    res_additionality: false
+
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: mber
+      signal_source: historical
+
+emi-match-2025-ci25-data-cmer-3H: #3
+  scenario:
+    planning_horizons: 
+    - 2025
+  
+  enable:
+    procurement: true
+
+  electricity:
+    powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
+
+  costs:
+    year: 2025
+  
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+    res_additionality: false
+
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: cmer
+      signal_source: historical
+
+emi-match-2025-ci25-data-aer-3H: #4
+  scenario:
+    planning_horizons: 
+    - 2025
+  
+  enable:
+    procurement: true
+
+  electricity:
+    powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
+
+  costs:
+    year: 2025
+  
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+    res_additionality: false
+
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: aer
+      signal_source: historical
+
+emi-match-2030-ci25-model-moer-3H: #5
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: moer
+      signal_source: model
+
+emi-match-2030-ci25-model-mber-3H: #6
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: mber
+      signal_source: model
+
+emi-match-2030-ci25-model-cmer-3H: #7
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: cmer
+      signal_source: model
+
+emi-match-2030-ci25-model-aer-3H: #8
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+    
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: aer
+      signal_source: model
+

@@ -286,7 +286,7 @@ def calculate_supply(n, label, supply):
         for c in n.iterate_components(n.one_port_components):
             items = c.df.index[c.df.bus.map(bus_map).fillna(False)]
 
-            if len(items) == 0:
+            if len(items) == 0 or len(c.pnl.p.columns) == 0:
                 continue
 
             s = (
@@ -349,7 +349,7 @@ def calculate_supply_energy(n, label, supply_energy):
         for c in n.iterate_components(n.one_port_components):
             items = c.df.index[c.df.bus.map(bus_map).fillna(False)]
 
-            if len(items) == 0:
+            if len(items) == 0 or len(c.pnl.p.columns) == 0:
                 continue
 
             if c.name == "Generator":
@@ -731,6 +731,7 @@ if __name__ == "__main__":
     costs_db = load_costs(
         snakemake.input.costs,
         snakemake.config["costs"],
+        max_hours=snakemake.config["electricity"]["max_hours"],
         nyears=nyears,
     )
 

@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: Open Energy Transition gGmbH and contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+# SPDX-License-Identifier: CC-BY-4.0
+
+name: docs
+channels:
+- conda-forge
+dependencies:
+- python>=3.12,<3.13
+- pip
+- pandas
+- numpy
+- pypsa
+
+# interactive python
+- jupyterlab
+
+# publishing
+- jupyter-book
+- ghp-import
+- pre-commit

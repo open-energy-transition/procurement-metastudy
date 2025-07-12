@@ -1500,6 +1500,8 @@ def insert_electricity_distribution_grid(
     options: dict,
     pop_layout: pd.DataFrame,
     solar_rooftop_potentials_fn: str,
+    ext_carriers,
+    max_hours,
 ) -> None:
     """
     Insert electricity distribution grid components into the network.
@@ -1626,51 +1628,74 @@ def insert_electricity_distribution_grid(
             lifetime=costs.at["solar-rooftop", "lifetime"],
         )
 
-    n.add("Carrier", "home battery")
+    if "li-ion battery" in ext_carriers["Store"]:
+        n.add("Carrier", "li-ion home battery")
 
-    n.add(
-        "Bus",
-        nodes + " home battery",
-        location=nodes,
-        carrier="home battery",
-        unit="MWh_el",
-    )
+        n.add(
+            "Bus",
+            nodes + " li-ion home battery",
+            location=nodes,
+            carrier="li-ion home battery",
+            unit="MWh_el",
+        )
 
-    n.add(
-        "Store",
-        nodes + " home battery",
-        bus=nodes + " home battery",
-        location=nodes,
-        e_cyclic=True,
-        e_nom_extendable=True,
-        carrier="home battery",
-        capital_cost=costs.at["home battery storage", "capital_cost"],
-        lifetime=costs.at["battery storage", "lifetime"],
-    )
+        n.add(
+            "Store",
+            nodes + " li-ion home battery",
+            bus=nodes + " li-ion home battery",
+            location=nodes,
+            e_cyclic=True,
+            e_nom_extendable=True,
+            carrier="li-ion home battery",
+            capital_cost=costs.at["home battery storage", "capital_cost"],
+            lifetime=costs.at["home battery storage", "lifetime"],
+        )
 
-    n.add(
-        "Link",
-        nodes + " home battery charger",
-        bus0=nodes + " low voltage",
-        bus1=nodes + " home battery",
-        carrier="home battery charger",
-        efficiency=costs.at["battery inverter", "efficiency"] ** 0.5,
-        capital_cost=costs.at["home battery inverter", "capital_cost"],
-        p_nom_extendable=True,
-        lifetime=costs.at["battery inverter", "lifetime"],
-    )
+        n.add(
+            "Link",
+            nodes + " li-ion home battery charger",
+            bus0=nodes + " low voltage",
+            bus1=nodes + " li-ion home battery",
+            carrier="li-ion home battery charger",
+            efficiency=costs.at["home battery inverter", "efficiency"] ** 0.5,
+            capital_cost=costs.at["home battery inverter", "capital_cost"],
+            p_nom_extendable=True,
+            lifetime=costs.at["home battery inverter", "lifetime"],
+        )
 
-    n.add(
-        "Link",
-        nodes + " home battery discharger",
-        bus0=nodes + " home battery",
-        bus1=nodes + " low voltage",
-        carrier="home battery discharger",
-        efficiency=costs.at["battery inverter", "efficiency"] ** 0.5,
-        marginal_cost=costs.at["home battery storage", "marginal_cost"],
-        p_nom_extendable=True,
-        lifetime=costs.at["battery inverter", "lifetime"],
-    )
+        n.add(
+            "Link",
+            nodes + " li-ion home battery discharger",
+            bus0=nodes + " li-ion home battery",
+            bus1=nodes + " low voltage",
+            carrier="li-ion home battery discharger",
+            efficiency=costs.at["home battery inverter", "efficiency"] ** 0.5,
+            marginal_cost=options["marginal_cost_storage"],
+            p_nom_extendable=True,
+            lifetime=costs.at["home battery inverter", "lifetime"],
+        )
+
+    elif "battery" in ext_carriers["StorageUnit"]:
+        n.add("Carrier", "li-ion home battery")
+        for max_hour in max_hours["li-ion battery"]:
+            n.add(
+                "StorageUnit",
+                nodes,
+                suffix=f" li-ion home battery {max_hour}h",
+                bus=nodes + " low voltage",
+                carrier="li-ion home battery",
+                p_nom_extendable=True,
+                capital_cost=costs.at[
+                    f"li-ion home battery {max_hour}h", "capital_cost"
+                ],
+                marginal_cost=options["marginal_cost_storage"],
+                efficiency_store=costs.at["home battery inverter", "efficiency"] ** 0.5,
+                efficiency_dispatch=costs.at["home battery inverter", "efficiency"]
+                ** 0.5,
+                max_hours=max_hour,
+                cyclic_state_of_charge=True,
+                lifetime=costs.at["home battery storage", "lifetime"],
+            )
 
 
 def insert_gas_distribution_costs(
@@ -1742,6 +1767,354 @@ def add_electricity_grid_connection(n, costs):
     ]
 
 
+def get_salt_caverns(
+    h2_cavern_file,
+    cavern_types,
+    hydrogen_underground_storage,
+):
+    """
+    Detirmine the potential of hydrogen cavern storage.
+
+    Parameters
+    ----------
+    h2_cavern_file : str
+        Path to CSV file containing hydrogen cavern storage potentials
+    cavern_types : list
+        List of underground storage types to consider
+    """
+
+    h2_caverns = pd.read_csv(h2_cavern_file, index_col=0)
+
+    if (
+        not h2_caverns.empty
+        and hydrogen_underground_storage
+        and set(cavern_types).intersection(h2_caverns.columns)
+    ):
+        h2_caverns = h2_caverns[cavern_types].sum(axis=1)
+
+        # only use sites with at least 2 TWh potential
+        h2_caverns = h2_caverns[h2_caverns > 2]
+
+        # convert TWh to MWh
+        h2_caverns = h2_caverns * 1e6
+
+        # clip at 1000 TWh for one location
+        h2_caverns.clip(upper=1e9, inplace=True)
+
+        return h2_caverns
+    else:
+        return None
+
+
+def add_storageunits(
+    n,
+    costs,
+    carriers,
+    marginal_cost_storage,
+    pop_layout,
+    max_hours,
+    h2_caverns=None,
+):
+    """
+    Add storage technologies as components of StorageUnit.
+
+    Parameters
+    ----------
+    n : pypsa.Network
+        The PyPSA network container object
+    costs : pd.DataFrame
+        Technology cost assumptions
+    carriers: list
+        List of storage technologies to be defined as the component StorageUnit
+    marginal_cost_storage:
+        Marginal cost of storage
+    pop_layout : pd.DataFrame
+        DataFrame with population layout data, used for demand nodes
+    max_hours : dict
+        Maximum hours of storage if flexible
+    h2_caverns : pd.DataFrame
+        DataFrame containing the potential of hydrogen underground storage
+
+    Returns
+    -------
+    None
+        Modifies the network object in-place by adding components
+    """
+    nodes = pop_layout.index
+
+    # check for not implemented storage technologies
+    implemented = [
+        "H2",
+        "li-ion battery",
+        "iron-air battery",
+        "lfp",
+        "vanadium",
+        "lair",
+        "pair",
+    ]
+    not_implemented = list(set(carriers).difference(implemented))
+    available_carriers = list(set(carriers).intersection(implemented))
+    if len(not_implemented) > 0:
+        logger.warning(
+            f"{not_implemented} are not yet implemented as Storage technologies in PyPSA-Eur"
+        )
+    available_carriers_max_hours = [
+        f"{carrier} {max_hour}h"
+        for carrier in available_carriers
+        if carrier in max_hours
+        for max_hour in max_hours[carrier]
+    ]
+    missing_carriers = list(
+        set(available_carriers_max_hours).difference(n.carriers.index)
+    )
+    n.add("Carrier", missing_carriers)
+
+    lookup_store = {
+        "H2": "electrolysis",
+        "li-ion battery": "battery inverter",
+        "iron-air battery": "iron-air battery charge",
+        "lfp": "Lithium-Ion-LFP-bicharger",
+        "vanadium": "Vanadium-Redox-Flow-bicharger",
+        "lair": "Liquid-Air-charger",
+        "pair": "Compressed-Air-Adiabatic-bicharger",
+    }
+    lookup_dispatch = {
+        "H2": "fuel cell",
+        "li-ion battery": "battery inverter",
+        "iron-air battery": "iron-air battery discharge",
+        "lfp": "Lithium-Ion-LFP-bicharger",
+        "vanadium": "Vanadium-Redox-Flow-bicharger",
+        "lair": "Liquid-Air-discharger",
+        "pair": "Compressed-Air-Adiabatic-bicharger",
+    }
+
+    for carrier in available_carriers:
+        for max_hour in max_hours[carrier]:
+            roundtrip_correction = 0.5 if carrier == "li-ion battery" else 1
+            if carrier == "H2" and h2_caverns is not None:
+                # h2_caverns will be empty pd.Series if hydrogen_underground_storage is set to false
+                n.add(
+                    "StorageUnit",
+                    h2_caverns.index,
+                    suffix=f" {carrier} {max_hour}h",
+                    bus=h2_caverns.index,
+                    carrier=f"{carrier} {max_hour}h",
+                    p_nom_extendable=True,
+                    p_nom_max=h2_caverns.div(max_hour).values,
+                    capital_cost=costs.at[
+                        f"H2 underground {max_hour}h", "capital_cost"
+                    ],
+                    marginal_cost=marginal_cost_storage,
+                    efficiency_store=costs.at[lookup_store[carrier], "efficiency"]
+                    ** roundtrip_correction,
+                    efficiency_dispatch=costs.at[lookup_dispatch[carrier], "efficiency"]
+                    ** roundtrip_correction,
+                    max_hours=max_hour,
+                    cyclic_state_of_charge=True,
+                    lifetime=costs.at["hydrogen storage underground", "lifetime"],
+                )
+                # hydrogen stored overground (where not already underground)
+                nodes_ = h2_caverns.index.symmetric_difference(nodes)
+
+            else:
+                nodes_ = nodes
+
+            cost_carrier = "H2 tank" if carrier == "H2" else carrier
+            n.add(
+                "StorageUnit",
+                nodes_,
+                suffix=f" {carrier} {max_hour}h",
+                bus=nodes_,
+                carrier=f"{carrier} {max_hour}h",
+                p_nom_extendable=True,
+                capital_cost=costs.at[f"{cost_carrier} {max_hour}h", "capital_cost"],
+                marginal_cost=marginal_cost_storage,
+                efficiency_store=costs.at[lookup_store[carrier], "efficiency"]
+                ** roundtrip_correction,
+                efficiency_dispatch=costs.at[lookup_dispatch[carrier], "efficiency"]
+                ** roundtrip_correction,
+                max_hours=max_hour,
+                cyclic_state_of_charge=True,
+                lifetime=costs.at[f"{cost_carrier} {max_hour}h", "lifetime"],
+            )
+
+    logger.info(f"Adding storage_units with carrier {available_carriers}")
+
+
+def add_stores(
+    n,
+    costs,
+    carriers,
+    marginal_cost_storage,
+    pop_layout,
+    h2_caverns=None,
+):
+    """
+    Add storage technologies as components of Stores and Links.
+
+    Parameters
+    ----------
+    n : pypsa.Network
+        The PyPSA network container object
+    costs : pd.DataFrame
+        Technology cost assumptions
+    carriers: list
+        List of storage technologies to be defined as the component Stores
+    marginal_cost_storage:
+        Marginal cost of storage
+    pop_layout : pd.DataFrame
+        DataFrame with population layout data, used for demand nodes
+    h2_caverns : pd.DataFrame
+        DataFrame containing the potential of hydrogen underground storage
+
+    Returns
+    -------
+    None
+        Modifies the network object in-place by adding components
+    """
+    nodes = pop_layout.index
+
+    # check for not implemented storage technologies
+    implemented = ["H2", "li-ion battery", "iron-air battery"]
+    not_implemented = list(set(carriers).difference(implemented))
+    available_carriers = list(set(carriers).intersection(implemented))
+    if len(not_implemented) > 0:
+        logger.warning(
+            f"{not_implemented} are not yet implemented as Store technologies in PyPSA-Eur"
+        )
+    missing_carriers = list(set(available_carriers).difference(n.carriers.index))
+    n.add("Carrier", missing_carriers)
+
+    if "H2" in carriers:
+        if h2_caverns is not None:
+            logger.info("Add hydrogen underground storage")
+            h2_capital_cost = costs.at["hydrogen storage underground", "capital_cost"]
+
+            n.add(
+                "Store",
+                h2_caverns.index + " H2 Store",
+                bus=h2_caverns.index + " H2",
+                e_nom_extendable=True,
+                e_nom_max=h2_caverns.values,
+                e_cyclic=True,
+                carrier="H2 Store",
+                capital_cost=h2_capital_cost,
+                lifetime=costs.at["hydrogen storage underground", "lifetime"],
+            )
+            nodes_overground = h2_caverns.index.symmetric_difference(nodes)
+        else:
+            nodes_overground = nodes
+
+        # hydrogen stored overground (where not already underground)
+        h2_capital_cost = costs.at[
+            "hydrogen storage tank type 1 including compressor", "capital_cost"
+        ]
+
+        n.add(
+            "Store",
+            nodes_overground + " H2 Store",
+            bus=nodes_overground + " H2",
+            e_nom_extendable=True,
+            e_cyclic=True,
+            carrier="H2 Store",
+            capital_cost=h2_capital_cost,
+            lifetime=costs.at[
+                "hydrogen storage tank type 1 including compressor", "lifetime"
+            ],
+        )
+
+    if "li-ion battery" in carriers:
+        n.add(
+            "Bus",
+            nodes + " li-ion battery",
+            location=nodes,
+            carrier="li-ion battery",
+            unit="MWh_el",
+        )
+
+        n.add(
+            "Store",
+            nodes + " li-ion battery",
+            bus=nodes + " li-ion battery",
+            e_cyclic=True,
+            e_nom_extendable=True,
+            carrier="li-ion battery",
+            capital_cost=costs.at["battery storage", "capital_cost"],
+            lifetime=costs.at["battery storage", "lifetime"],
+        )
+
+        n.add(
+            "Link",
+            nodes + " li-ion battery charger",
+            bus0=nodes,
+            bus1=nodes + " li-ion battery",
+            carrier="li-ion battery charger",
+            efficiency=costs.at["battery inverter", "efficiency"] ** 0.5,
+            capital_cost=costs.at["battery inverter", "capital_cost"],
+            p_nom_extendable=True,
+            lifetime=costs.at["battery inverter", "lifetime"],
+        )
+
+        n.add(
+            "Link",
+            nodes + " li-ion battery discharger",
+            bus0=nodes + " li-ion battery",
+            bus1=nodes,
+            carrier="li-ion battery discharger",
+            efficiency=costs.at["battery inverter", "efficiency"] ** 0.5,
+            marginal_cost=marginal_cost_storage,
+            p_nom_extendable=True,
+            lifetime=costs.at["battery inverter", "lifetime"],
+        )
+
+    if "iron-air battery" in carriers:
+        n.add(
+            "Bus",
+            nodes + " iron-air battery",
+            location=nodes,
+            carrier="iron-air battery",
+            unit="MWh_el",
+        )
+
+        n.add(
+            "Store",
+            nodes + " iron-air battery",
+            bus=nodes + " iron-air battery",
+            e_cyclic=True,
+            e_nom_extendable=True,
+            carrier="iron-air battery",
+            capital_cost=costs.at["iron-air battery", "capital_cost"],
+            lifetime=costs.at["iron-air battery", "lifetime"],
+        )
+
+        # using capex and lifetime from battery inverter for charge/discharge link since it's missing from iron-air data
+        n.add(
+            "Link",
+            nodes + " iron-air battery charger",
+            bus0=nodes,
+            bus1=nodes + " iron-air battery",
+            carrier="iron-air battery charger",
+            efficiency=costs.at["iron-air battery charge", "efficiency"],
+            capital_cost=costs.at["battery inverter", "capital_cost"],
+            p_nom_extendable=True,
+            lifetime=costs.at["battery inverter", "lifetime"],
+        )
+
+        n.add(
+            "Link",
+            nodes + " iron-air battery discharger",
+            bus0=nodes + " iron-air battery",
+            bus1=nodes,
+            carrier="iron-air battery discharger",
+            efficiency=costs.at["iron-air battery discharge", "efficiency"],
+            marginal_cost=marginal_cost_storage,
+            p_nom_extendable=True,
+            lifetime=costs.at["battery inverter", "lifetime"],
+        )
+
+    logger.info(f"Adding stores with carrier {carriers}")
+
+
 def add_storage_and_grids(
     n,
     costs,
@@ -1752,6 +2125,7 @@ def add_storage_and_grids(
     gas_input_nodes,
     spatial,
     options,
+    max_hours,
 ):
     """
     Add storage and grid infrastructure to the network including hydrogen, gas, and battery systems.
@@ -1864,55 +2238,6 @@ def add_storage_and_grids(
             marginal_cost=costs.at["OCGT", "VOM"],
             lifetime=costs.at["OCGT", "lifetime"],
         )
-
-    h2_caverns = pd.read_csv(h2_cavern_file, index_col=0)
-
-    if (
-        not h2_caverns.empty
-        and options["hydrogen_underground_storage"]
-        and set(cavern_types).intersection(h2_caverns.columns)
-    ):
-        h2_caverns = h2_caverns[cavern_types].sum(axis=1)
-
-        # only use sites with at least 2 TWh potential
-        h2_caverns = h2_caverns[h2_caverns > 2]
-
-        # convert TWh to MWh
-        h2_caverns = h2_caverns * 1e6
-
-        # clip at 1000 TWh for one location
-        h2_caverns.clip(upper=1e9, inplace=True)
-
-        logger.info("Add hydrogen underground storage")
-
-        h2_capital_cost = costs.at["hydrogen storage underground", "capital_cost"]
-
-        n.add(
-            "Store",
-            h2_caverns.index + " H2 Store",
-            bus=h2_caverns.index + " H2",
-            e_nom_extendable=True,
-            e_nom_max=h2_caverns.values,
-            e_cyclic=True,
-            carrier="H2 Store",
-            capital_cost=h2_capital_cost,
-            lifetime=costs.at["hydrogen storage underground", "lifetime"],
-        )
-
-    # hydrogen stored overground (where not already underground)
-    tech = "hydrogen storage tank type 1 including compressor"
-    nodes_overground = h2_caverns.index.symmetric_difference(nodes)
-
-    n.add(
-        "Store",
-        nodes_overground + " H2 Store",
-        bus=nodes_overground + " H2",
-        e_nom_extendable=True,
-        e_cyclic=True,
-        carrier="H2 Store",
-        capital_cost=costs.at[tech, "capital_cost"],
-        lifetime=costs.at[tech, "lifetime"],
-    )
 
     if options["H2_retrofit"]:
         gas_pipes = pd.read_csv(clustered_gas_network_file, index_col=0)
@@ -2071,42 +2396,27 @@ def add_storage_and_grids(
             lifetime=costs.at["H2 (g) pipeline", "lifetime"],
         )
 
-    n.add("Carrier", "battery")
-
-    n.add("Bus", nodes + " battery", location=nodes, carrier="battery", unit="MWh_el")
-
-    n.add(
-        "Store",
-        nodes + " battery",
-        bus=nodes + " battery",
-        e_cyclic=True,
-        e_nom_extendable=True,
-        carrier="battery",
-        capital_cost=costs.at["battery storage", "capital_cost"],
-        lifetime=costs.at["battery storage", "lifetime"],
+    # add stores and storages as specified in the config
+    h2_caverns = get_salt_caverns(
+        h2_cavern_file, cavern_types, options["hydrogen_underground_storage"]
     )
 
-    n.add(
-        "Link",
-        nodes + " battery charger",
-        bus0=nodes,
-        bus1=nodes + " battery",
-        carrier="battery charger",
-        efficiency=costs.at["battery inverter", "efficiency"] ** 0.5,
-        capital_cost=costs.at["battery inverter", "capital_cost"],
-        p_nom_extendable=True,
-        lifetime=costs.at["battery inverter", "lifetime"],
+    add_stores(
+        n,
+        costs,
+        options["extendable_carriers"]["Store"],
+        options["marginal_cost_storage"],
+        pop_layout,
+        h2_caverns,
     )
-
-    n.add(
-        "Link",
-        nodes + " battery discharger",
-        bus0=nodes + " battery",
-        bus1=nodes,
-        carrier="battery discharger",
-        efficiency=costs.at["battery inverter", "efficiency"] ** 0.5,
-        p_nom_extendable=True,
-        lifetime=costs.at["battery inverter", "lifetime"],
+    add_storageunits(
+        n,
+        costs,
+        options["extendable_carriers"]["StorageUnit"],
+        options["marginal_cost_storage"],
+        pop_layout,
+        max_hours,
+        h2_caverns,
     )
 
     if options["methanation"]:
@@ -6176,10 +6486,13 @@ if __name__ == "__main__":
 
         snakemake = mock_snakemake(
             "prepare_sector_network",
+            run="vol-match-DE-3H",
             opts="",
-            clusters="10",
+            clusters="39",
+            configfiles="config/config.meta.yaml",
+            ll="v1.0",
             sector_opts="",
-            planning_horizons="2050",
+            planning_horizons="2030",
         )
 
     configure_logging(snakemake)  # pylint: disable=E0606
@@ -6187,6 +6500,9 @@ if __name__ == "__main__":
     update_config_from_wildcards(snakemake.config, snakemake.wildcards)
 
     options = snakemake.params.sector
+    options["extendable_carriers"] = snakemake.params.electricity.get(
+        "extendable_carriers", dict()
+    )
     cf_industry = snakemake.params.industry
 
     investment_year = int(snakemake.wildcards.planning_horizons)
@@ -6200,6 +6516,7 @@ if __name__ == "__main__":
     costs = load_costs(
         snakemake.input.costs,
         snakemake.params.costs,
+        max_hours=snakemake.params.electricity["max_hours"],
         nyears=nyears,
     )
 
@@ -6288,6 +6605,7 @@ if __name__ == "__main__":
         gas_input_nodes=gas_input_nodes,
         spatial=spatial,
         options=options,
+        max_hours=snakemake.params.electricity["max_hours"],
     )
 
     if options["transport"]:
@@ -6471,7 +6789,15 @@ if __name__ == "__main__":
 
     if options["electricity_distribution_grid"]:
         insert_electricity_distribution_grid(
-            n, costs, options, pop_layout, snakemake.input.solar_rooftop_potentials
+            n,
+            costs,
+            options,
+            pop_layout,
+            solar_rooftop_potentials_fn=snakemake.input.solar_rooftop_potentials,
+            ext_carriers=snakemake.params.electricity.get(
+                "extendable_carriers", dict()
+            ),
+            max_hours=snakemake.params.electricity["max_hours"],
         )
 
     if options["enhanced_geothermal"].get("enable", False):
