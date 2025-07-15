@@ -84,7 +84,7 @@ and in the paper [PyPSA-Eur: An Open Optimisation Model of the European Transmis
 
 The default dataset consists of:
 
-- A grid model based on a prebuilt high voltage-electricity grid (incl. 200 kV and above) extracted from [OpenStreetMap](https://www.openstreetmap.org/). The route and circuit lengths are similar to those found in the official [ENTSO-E Transmission Inventory data](https://www.entsoe.eu/data/power-stats/).
+- A grid model based on a prebuilt high voltage-electricity grid (incl. 200 kV and above) extracted from [OpenStreetMap](https://www.openstreetmap.org/). The route and circuit lengths are similar to those found in the official [ENTSO-E Transmission Inventory data](https://www.entsoe.eu/data/power-stats/)
   (alternating current lines at and above 220kV voltage level and all high voltage direct current lines) and 3803 substations.
 - The open power plant database [powerplantmatching](https://github.com/PyPSA/powerplantmatching).
 - Electrical demand time series from the [OPSD project](https://open-power-system-data.org/).
