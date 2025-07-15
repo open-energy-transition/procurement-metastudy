@@ -144,7 +144,7 @@ For a comprehensive explanation, refer to the upstream PyPSA-Eur `Transmission P
 Configuration changes made:
 
 * The `Ten Year Network Development Plan (TYNDP) 2020 transmission plan <https://consultations.entsoe.eu/system-development/tyndp2020/>`_ has been included from the model.
-* The `Netzentwicklungsplan (NEP)<https://www.netzentwicklungsplan.de/>`_ of Germany has been excluded in the model.
+* The `Netzentwicklungsplan (NEP) <https://www.netzentwicklungsplan.de/>`_ of Germany has been excluded in the model.
 * The capacities of the newly added transmission lines are based on the targets specified for their planned build year.
 
 ``sector``
