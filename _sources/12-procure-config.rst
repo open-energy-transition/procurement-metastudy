@@ -112,7 +112,7 @@ In particular, they are modelled through the ``add_ci_procurement`` function in 
 * ``technology``
    * ``generation_tech``: List of renewable and clean generation technologies to include.
    .. note::
-      Consider that solar-rooftop modeling involves a simplification.
+      Consider that solar-rooftop modeling involves a simplification when ``scope`` is set to ``node``.
       Indeed, it would be connected to a high-voltage bus (since the CI load is connected to a high-voltage bus, as pointed out below for the ``ci`` setting), even though it is a low-voltage technology.
       It would be more correct to have a dedicated CI load low-voltage bus. However, as far it is assumed that solar-rooftop is built directly onsite to supply CI loads, the electricity distribution grid is not needed.
       On the other hand, potential connection costs would be neglected (instead, they are considered for utility-scale solar, which is connected to high-voltage buses).
