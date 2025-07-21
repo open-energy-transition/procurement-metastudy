@@ -79,8 +79,8 @@ These configurations define the core components of procurement strategies:
    * ``node``: carbon-free energy can be only procured at the level of the participating CI load bus.
    * ``country``: carbon-free energy can be procured at the level of the participating CI load country.
    * ``all``: carbon-free energy can be procured anywhere in the system. This scope allows to track the origin country of the procured energy separately for each participating CI load.
-   * ``continent``: carbon-free energy can be procured anywhere in the system. Differently from the ``all`` scope, this one is not able to track the origin country seprately, but aggregates the procured energy as well as the particiapting CI load.
-     This dramatically reduces the number of variables in the optimization problem (i.e., the computational burden), while still allowing to fulfill tranmission grid constraints.
+   * ``continent``: carbon-free energy can be procured anywhere in the system. Differently from the ``all`` scope, this one is not able to track the origin country separately, but aggregates the procured energy as well as the participating CI load.
+     This dramatically reduces the number of variables in the optimization problem (i.e., the computational burden), while still allowing to fulfill transmission grid constraints.
      Also, when it is selected, the annual volume and emission matching constraints selected are, respectively, ``res_annual_matching_constraints_continent`` and ``emission_matching_constraints_continent``.
 
 * ``energy_matching``: Percentage of CI energy demand to be procured in a given year (e.g., enter 10 for 10%).
