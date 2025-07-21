@@ -125,7 +125,7 @@ New configuration options introduced in this repository:
      * ``share``: Setting for a certain share of the CI load to be moved to high-voltage dedicated buses. This is used to avoid potential negative loads during some snapshots.
        For instance, consider the load ``DE0 0``, which is connected to the low-voltage bus ``DE0 0 low voltage``.
        The corresponding CI load would be a portion of ``DE0 0``, that is called ``DE0 0 CI load`` and is connected to the dedicated high-voltage bus ``DE0 0 CI``.
-       Also, dedicated import and export links are modelled to connect the ``DE0 0 low voltage`` and ``DE0 0 CI`` buses.
+       Also, dedicated import and export links are modelled to connect the ``DE0`` and ``DE0 0 CI`` buses.
 
 * ``freeze_capacity``: Option to prevent the expansion of renewable energy technologies (not in use).
 * ``filter_TYNDP_build_year``: Option to exclude TYNDP network components scheduled for construction after 2025 or 2030.

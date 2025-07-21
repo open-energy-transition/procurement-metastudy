@@ -142,6 +142,6 @@ This configuration specifies the location of CI procurement. The list includes a
    To understand the rationale behind its modelling, let's consider the following example: a participating CI load with ``name`` set to ``Germany`` and ``location`` set to ``DE0 0``.
    
    * The modelled participating CI load would be a portion of ``DE0 0 CI load``, that might be called ``Germany load`` and is connected to a dedicated high-voltage bus ``Germany CI``.
-   * Also, dedicated import and export links are modelled to connect the ``DE0 0 CI`` and ``Germany CI`` buses.
+   * Also, dedicated import and export links are modelled to connect the ``DE0 0`` and ``Germany CI`` buses.
    
 
