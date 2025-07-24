@@ -144,4 +144,6 @@ This configuration specifies the location of CI procurement. The list includes a
    * The modelled participating CI load would be a portion of ``DE0 0 CI load``, that might be called ``Germany load`` and is connected to a dedicated high-voltage bus ``Germany CI``.
    * Also, dedicated import and export links are modelled to connect the ``DE0 0`` and ``Germany CI`` buses.
    
+   For a detailed schematic representation of the CI load modeling approach and PyPSA components, see the :download:`CI Load Modeling Slides <img/250721 WattTime Metastudy - CI load modeling - PyPSA components.pdf>`.
+   
 
