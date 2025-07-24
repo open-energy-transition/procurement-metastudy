@@ -82,6 +82,8 @@ These configurations define the core components of procurement strategies:
    * ``continent``: carbon-free energy can be procured anywhere in the system. Differently from the ``all`` scope, this one is not able to track the origin country separately, but aggregates the procured energy as well as the participating CI load.
      This dramatically reduces the number of variables in the optimization problem (i.e., the computational burden), while still allowing to fulfill transmission grid constraints.
      Also, when it is selected, the annual volume and emission matching constraints selected are, respectively, ``res_annual_matching_constraints_continent`` and ``emission_matching_constraints_continent``.
+   
+   For a detailed schematic representation of the scope modelling approach and involved PyPSA components, see this :download:`slide deck <img/250721 WattTime Metastudy - CI load procurement - PyPSA components - Docs.pdf>`.
 
 * ``energy_matching``: Percentage of CI energy demand to be procured in a given year (e.g., enter 10 for 10%).
 * ``emissionality``
@@ -112,7 +114,7 @@ In particular, they are modelled through the ``add_ci_procurement`` function in 
 * ``technology``
    * ``generation_tech``: List of renewable and clean generation technologies to include.
    .. note::
-      Consider that solar-rooftop modeling involves a simplification when ``scope`` is set to ``node``.
+      Consider that solar-rooftop modelling involves a simplification when ``scope`` is set to ``node``.
       Indeed, it would be connected to a high-voltage bus (since the CI load is connected to a high-voltage bus, as pointed out below for the ``ci`` setting), even though it is a low-voltage technology.
       It would be more correct to have a dedicated CI load low-voltage bus. However, as far it is assumed that solar-rooftop is built directly onsite to supply CI loads, the electricity distribution grid is not needed.
       On the other hand, potential connection costs would be neglected (instead, they are considered for utility-scale solar, which is connected to high-voltage buses).
@@ -144,6 +146,6 @@ This configuration specifies the location of CI procurement. The list includes a
    * The modelled participating CI load would be a portion of ``DE0 0 CI load``, that might be called ``Germany load`` and is connected to a dedicated high-voltage bus ``Germany CI``.
    * Also, dedicated import and export links are modelled to connect the ``DE0 0`` and ``Germany CI`` buses.
    
-   For a detailed schematic representation of the CI load modeling approach and PyPSA components, see the :download:`CI Load Modeling Slides <img/250721 WattTime Metastudy - CI load modeling - PyPSA components.pdf>`.
+   For a detailed schematic representation of the CI load modelling approach and involved PyPSA components, see this :download:`slide deck <img/250721 WattTime Metastudy - CI load procurement - PyPSA components - Docs.pdf>`.
    
 
