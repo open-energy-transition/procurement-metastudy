@@ -2419,8 +2419,10 @@ def extra_functionality(
         energy_matching = procurement["energy_matching"]
         emission_matching = procurement["emissionality"]["emission_matching"]
         res_capacity_constraints(n)
-        excess_constraints(n)
-        import_constraints(n)
+
+        if not procurement["constant_share"]:
+            excess_constraints(n)
+            import_constraints(n)
 
         if strategy == "vol-match":
             logger.info(f"Setting annual volume matching of {energy_matching}%")

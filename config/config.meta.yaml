@@ -161,7 +161,7 @@ costs:
   capital_cost:
     geothermal: 10000
   emission_prices:
-    enable: false
+    enable: true
     co2: 64.85
     co2_monthly_prices: false
 
@@ -224,6 +224,7 @@ procurement:
   
   cap_premium: 1.1
 
+  constant_share: true
   excess_share: 1.  # share of excess CI generation that can be sold to the grid [percentage]
   import_share: 1.01
   min_iterations: 1

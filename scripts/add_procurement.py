@@ -411,12 +411,21 @@ def add_ci_procurement(
     scope = procurement["scope"]
     cap_premium = procurement["cap_premium"]
 
+    constant_share = procurement["constant_share"]
+    excess_share = procurement["excess_share"]
+    import_share = procurement["import_share"]
+
+    if constant_share:
+        logger.info("Constant import and export limit is activated")
+
     for name in ci.keys():
         location = ci[name]["location"]
         participation = procurement["participation"]
 
         # ===================== Adding CI load to be supplied ========================
         # ============================================================================
+
+        p_set_ci = n.loads_t.p_set[f"{location}" + " CI load"] * participation / 100
 
         n.add(
             "Bus",
@@ -432,7 +441,7 @@ def add_ci_procurement(
             f"{name}" + " load",
             carrier="electricity",
             bus=name,
-            p_set=n.loads_t.p_set[f"{location}" + " CI load"] * participation / 100,
+            p_set=p_set_ci,
             ci=name,  # C&I markers used in constraints
         )
 
@@ -444,13 +453,16 @@ def add_ci_procurement(
         else:
             n.loads_t.p_set[f"{location}" + " CI load"] *= (100 - participation) / 100
 
+        p_nom_max_export = p_set_ci.mean() * excess_share if constant_share else 1e6
+        p_nom_max_import = p_set_ci.mean() * import_share if constant_share else 1e6
+
         n.add(
             "Link",
             f"{name}" + " export",
             bus0=name,
             bus1=location,
             marginal_cost=0.1,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
-            p_nom=1e6,
+            p_nom=p_nom_max_export,
             reversed=False,
         )
 
@@ -460,7 +472,7 @@ def add_ci_procurement(
             bus0=location,
             bus1=name,
             marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
-            p_nom=1e6,
+            p_nom=p_nom_max_import,
             reversed=False,
         )
 
