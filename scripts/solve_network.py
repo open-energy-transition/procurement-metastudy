@@ -591,6 +591,8 @@ def calculate_grid_score(
     grid_carriers = ["electricity distribution grid", "AC", "DC"]
     exclude_carriers = grid_carriers + negative_carriers
 
+    logger.info(f"Calc grid score for {name}")
+
     def get_values(n, df, df_t, bus_col, include_techs, include_ci=False):
         # Map low-voltage bus to main grid bus
         grid_buses = n.buses[n.buses.carrier == "AC"].index
@@ -750,9 +752,9 @@ def add_CCL_constraints(
         agg_p_nom_limits: data/agg_p_nom_minmax.csv
     """
 
-    assert planning_horizons is not None, (
-        "add_CCL_constraints are not implemented for perfect foresight, yet"
-    )
+    assert (
+        planning_horizons is not None
+    ), "add_CCL_constraints are not implemented for perfect foresight, yet"
 
     agg_p_nom_minmax = pd.read_csv(
         config["solving"]["agg_p_nom_limits"]["file"], index_col=[0, 1], header=[0, 1]
@@ -1431,9 +1433,9 @@ def ember_res_target(n):
 
     # Convert ISO3 to ISO2, keeping "EU" unchanged
     df_ember["country"] = df_ember["country_code"].apply(
-        lambda code: code
-        if code == "EU"
-        else cc.convert(names=code, src="ISO3", to="ISO2")
+        lambda code: (
+            code if code == "EU" else cc.convert(names=code, src="ISO3", to="ISO2")
+        )
     )
 
     # --- Define technologies and weights ---
@@ -1734,6 +1736,7 @@ def cfe_constraints(n):
     procurement = n.config["procurement"]
     clean_techs = n.config["grid_policy"]["clean_carriers"]
     energy_matching = procurement["energy_matching"] / 100
+    use_SSS = procurement["use_SSS"]
 
     calculate_grid_score(n, clean_techs, "cfe")
 
@@ -1770,14 +1773,25 @@ def cfe_constraints(n):
 
         ci_export = n.model["Link-p"].loc[:, [name + " export"]]
         ci_import = n.model["Link-p"].loc[:, [name + " import"]]
+        ci_SSS_import = n.model["Link-p"].loc[:, [name + " SSS import"]]
+
+        if use_SSS:
+            # SSS counts all clean RECs claimable
+            grid_supply = ci_SSS_import * n.links.at[name + " SSS import", "efficiency"]
+            load = n.loads_t.p_set[name + " load"]
+            # SSS credit cannot exceed proportional CFE from grid
+            n.model.add_constraints(
+                ci_SSS_import <= grid_supply_cfe * load,
+                name=f"SSS_import_constraint_{name}",
+            )
+        else:
+            grid_supply = (
+                ci_import * n.links.at[name + " import", "efficiency"] * grid_supply_cfe
+            )
+
         grid_sum = (
             (-1 * ci_export * weights)
-            + (
-                ci_import
-                * n.links.at[name + " import", "efficiency"]
-                * grid_supply_cfe  # This is why the iteration is necessary
-                * weights
-            )
+            + (grid_supply * weights)  # This is why the iteration is necessary
         ).sum()  # linear expr
 
         lhs = gen_sum + link_sum + discharge_sum + charge_sum + grid_sum
@@ -1786,6 +1800,68 @@ def cfe_constraints(n):
 
         n.model.add_constraints(
             lhs >= energy_matching * (total_load), name=f"CFE_constraint_{name}"
+        )
+
+
+def hourly_non_additional_constraints(n):
+    """
+    Implement strategies to achieve 24/7 carbon-free energy (CFE).
+
+    The hourly generation from all carbon-free energy (CFE)-related generators (e.g., renewable sources) and links (e.g., conventional or clean carriers) must match the corresponding load consumption.
+    These constraints must be solved iteratively, as the CFE score of the grids changes with each run.
+    """
+    weights = n.snapshot_weightings["generators"]
+
+    procurement = n.config["procurement"]
+    clean_techs = n.config["grid_policy"]["clean_carriers"]
+    energy_matching = procurement["energy_matching"] / 100
+
+    negative_carriers = determine_storage_carrier(n)
+    grid_carriers = ["electricity distribution grid", "AC", "DC"]
+    exclude_carriers = grid_carriers + negative_carriers
+
+    for name in procurement["ci"]:
+        busses = [name, procurement["ci"][name]["location"]]
+        gen_clean = list(
+            n.generators.query("carrier in @clean_techs & bus in @busses").index
+        )
+        links_clean = list(
+            n.links.query("carrier in @clean_techs & bus1 in @busses").index
+        )
+        store_clean = list(
+            n.storage_units.query(
+                "carrier == 'li-ion battery 8h' & bus in @busses"
+            ).index
+        )
+
+        print(
+            f"Adding hourly CFE constraints for {name}: {store_clean} - {links_clean} - {gen_clean}"
+        )
+
+        gen_sum = (n.model["Generator-p"].loc[:, gen_clean] * weights).sum(
+            dim="Generator"
+        )
+        link_sum = (
+            n.model["Link-p"].loc[:, links_clean]
+            * n.links.loc[links_clean].efficiency
+            * weights
+        ).sum(dim="Link")
+        discharge_sum = (
+            n.model["StorageUnit-p_dispatch"].loc[:, store_clean] * weights
+        ).sum(dim="StorageUnit")
+        charge_sum = -1 * (
+            n.model["StorageUnit-p_store"].loc[:, store_clean] * weights
+        ).sum(dim="StorageUnit")
+
+        cfe_mwh = gen_sum + discharge_sum + charge_sum
+
+        total_load = n.loads_t.p_set[name + " load"] * weights
+
+        excess = cfe_mwh - total_load
+
+        n.model.add_constraints(
+            cfe_mwh >= energy_matching * (total_load),
+            name=f"CFE_constraint_{name}",
         )
 
 
@@ -1916,6 +1992,8 @@ def emission_matching_constraints(n):
         "mber": "Marginal Build Emission Rate (MBER)",
         "moer": "Marginal Operating Emission Rate (MOER)",
         "cmer": "Combined Marginal Emission Rate (CMER)",
+        "lrmer": "Long Run Marginal Emissions Rate (LRMER)",
+        "lrmer_c": "Long Run Marginal Emissions Rate using Consumed Emissions (LRMER_C)",
     }
 
     allowed_sources = ["model", "historical"]
@@ -2135,6 +2213,8 @@ def emission_matching_constraints_continent(n):  # to update
         "mber": "Marginal Build Emission Rate (MBER)",
         "moer": "Marginal Operating Emission Rate (MOER)",
         "cmer": "Combined Marginal Emission Rate (CMER)",
+        "lrmer": "Long Run Marginal Emissions Rate (LRMER)",
+        "lrmer_c": "Long Run Marginal Emissions Rate using Consumed Emissions (LRMER_C)",
     }
 
     allowed_sources = ["model", "historical"]
@@ -2422,6 +2502,7 @@ def extra_functionality(
         excess_constraints(n)
         import_constraints(n)
 
+        logger.info(f"Procurement Strategy: {strategy}")
         if strategy == "vol-match":
             logger.info(f"Setting annual volume matching of {energy_matching}%")
             if scope != "continent":
@@ -2431,6 +2512,9 @@ def extra_functionality(
         elif strategy == "247-cfe":
             logger.info(f"Setting 247 CFE target of {energy_matching}")
             cfe_constraints(n)
+        elif strategy == "hourly-noadd":
+            logger.info(f"Setting hourly non-additional target of {energy_matching}")
+            hourly_non_additional_constraints(n)
         elif strategy == "emi-match":
             logger.info(
                 f"Setting annual avoided emission target of {emission_matching}%"
@@ -2586,15 +2670,16 @@ def solve_network(
     n.config = config
     n.params = params
 
+    logger.info(f'Solving network for strategy: {config["procurement"]["strategy"]}')
     if rolling_horizon and rule_name == "solve_operations_network":
         kwargs["horizon"] = cf_solving.get("horizon", 365)
         kwargs["overlap"] = cf_solving.get("overlap", 0)
         n.optimize.optimize_with_rolling_horizon(**kwargs)
         status, condition = "", ""
-    elif (
-        config["enable"].get("procurement", False)
-        and config["procurement"].get("strategy", False) == "247-cfe"
-    ):
+    elif config["enable"].get("procurement", False) and config["procurement"].get(
+        "strategy", False
+    ) in ["247-cfe", "hourly-noadd"]:
+        logger.info("Optimizing iteratively!")
         status, condition = optimize_model_iteratively(n, config, **kwargs)
     elif skip_iterations:
         status, condition = n.optimize(**kwargs)

@@ -56,6 +56,30 @@ baseline-2030-NoResTargets-3H: #3
     EU_share_target: false
     country_cap_target: false
 
+baseline-2030-scaled-load-3H: #4
+  enable:
+    procurement: false
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+    
+  load:
+    scaling_factor: 1.05
+
+baseline-no-ci-2030-3H: #2
+  enable:
+    procurement: false
+
+  remove_ci_load: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
 # ======== Annual volume matching =====================
 # =====================================================
 
@@ -455,3 +479,118 @@ emi-match-2030-ci25-model-aer-3H: #8
       emission_signal: aer
       signal_source: model
 
+emi-match-additional-2030-ci25-model-mber-3H: #6
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: true
+
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 25
+    emissionality:
+      emission_matching: 100
+      emission_signal: mber
+      signal_source: model
+
+247-cfe-additional-2030-ci25-cfe90-3H: #3
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 90
+    participation: 25
+
+
+hourly-noadd-2030-ci25-cfe90-3H: #3
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: hourly-noadd
+    scope: node
+    energy_matching: 90
+    participation: 50
+    min_iterations: 3
+    excess_share: null
+
+
+hourly-noadd-2030-ci25-cfe100-3H: #3
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: hourly-noadd
+    scope: node
+    energy_matching: 100
+    participation: 50
+    min_iterations: 3
+    excess_share: null
+
+247-cfe-2030-ci25-cfe100-use-SSS-3H: #4
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 100
+    participation: 50
+    use_SSS: true
+    min_iterations: 3
+
+247-cfe-2030-ci25-cfe99-use-SSS-3H: #4
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 99
+    participation: 50
+    use_SSS: true
+    min_iterations: 3
