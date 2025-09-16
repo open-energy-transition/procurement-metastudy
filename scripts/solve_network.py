@@ -52,6 +52,13 @@ from scripts._helpers import (
     set_scenario_config,
     update_config_from_wildcards,
 )
+from scripts.calc_emissions_signals import (
+    get_data,
+    flow_trace,
+    calc_mber,
+    calc_moer,
+    calc_aer,
+)
 
 cc = coco.CountryConverter()
 
@@ -1937,7 +1944,7 @@ def read_signal_data(n, signal_source, emission_signal):
         n.snapshot_weightings.objective
     )  # e.g., 3 for 3H time resolution
 
-    if signal_source == "model":
+    if signal_source in ["model", "iterate"]:
         signal_path = n.config["procurement"]["emissionality"]["signal_model"]
         df_signal = []
         for country_signal in n.buses.country.unique():
@@ -1973,6 +1980,48 @@ def read_signal_data(n, signal_source, emission_signal):
     return emission_signal_flat, emission_signal_solar, emission_signal_wind, df_signal
 
 
+def calc_em_signals_from_model(n):
+    gens, demand, re, ints, em_by_country, em_by_plant = get_data(n)
+
+    ## if network is empty (no gen), then load csv as starting guess
+    ## TODO: load baseline network as starting guess
+    if all([g.sum().sum() == 0 for g in gens.values()]):
+        logger.info("loading em signals from csv")
+        signal_source = n.config["procurement"]["emissionality"]["signal_source"]
+        _, _, _, moer = read_signal_data(n, signal_source, "moer")
+        _, _, _, mber = read_signal_data(n, signal_source, "mber")
+        _, _, _, aer = read_signal_data(n, signal_source, "aer")
+    else:
+        consumed_em = flow_trace(
+            ints, em_by_country, demand, countries=list(ints.keys())
+        )
+
+        moer = calc_moer(demand, consumed_em, re)
+        aer = calc_aer(demand, consumed_em)
+        mber = calc_mber(gens, em_by_plant)
+
+    def _map_signal_to_bus(signal):
+        _df = pd.concat(
+            [signal.get(ctry, pd.Series()) for ctry in n.buses["country"].values],
+            axis=1,
+        )
+        _df.columns = n.buses.index
+        return _df
+
+    n.buses_t["moer"] = _map_signal_to_bus(moer)
+    n.buses_t["mber"] = _map_signal_to_bus(mber)
+    n.buses_t["aer"] = _map_signal_to_bus(aer)
+    n.buses_t["cmer"] = 0.5 * _map_signal_to_bus(moer) + 0.5 * _map_signal_to_bus(mber)
+
+
+def get_carbon(network):
+    stats = network.statistics()
+    if "Store" in stats.index.levels[0]:
+        return stats.xs("Store").loc["co2", "Optimal Capacity"]
+    else:
+        return 0
+
+
 def emission_matching_constraints(n):
     """
     Implement strategies for emission matching.
@@ -1996,7 +2045,7 @@ def emission_matching_constraints(n):
         "lrmer_c": "Long Run Marginal Emissions Rate using Consumed Emissions (LRMER_C)",
     }
 
-    allowed_sources = ["model", "historical"]
+    allowed_sources = ["model", "historical", "iterated"]
 
     if emission_signal not in allowed_signals:
         raise KeyError(
@@ -2217,13 +2266,14 @@ def emission_matching_constraints_continent(n):  # to update
         "lrmer_c": "Long Run Marginal Emissions Rate using Consumed Emissions (LRMER_C)",
     }
 
-    allowed_sources = ["model", "historical"]
+    allowed_sources = ["model", "historical", "iterate"]
 
     if emission_signal not in allowed_signals:
         raise KeyError(
             f"'emission_signal' must be one of {list(allowed_signals.keys())}. Now is '{emission_signal}'."
         )
     logger.info(f"Emission signal chosen: {allowed_signals[emission_signal]}")
+    logger.info(f"Emission source chosen: {signal_source}")
 
     emission_signal_flat, emission_signal_solar, emission_signal_wind, df_signal = (
         read_signal_data(n, signal_source, emission_signal)
@@ -2279,6 +2329,69 @@ def emission_matching_constraints_continent(n):  # to update
 
         n.model.add_constraints(
             lhs >= load_emissions, name="emission_matching_continent"
+        )
+
+    elif signal_source == "iterate":
+        calc_em_signals_from_model(n)
+        logger.info(f"Total System Emissions: {get_carbon(n)/1e6:.1f} MT")
+        load_emissions = 0
+        bus_em_signal = n.buses_t[emission_signal]
+
+        ## TESTING
+        # logger.info(bus_em_signal.mean())
+        # from datetime import datetime
+
+        # bus_em_signal.mean().to_csv(f"em_signal_{datetime.now()}")
+
+        logger.info(f'Matching {n.config["procurement"]["energy_matching"]}% of load')
+
+        for name in n.config["procurement"]["ci"]:
+            location = n.config["procurement"]["ci"][name]["location"]
+            country_CI = n.buses[n.buses.index == location].index[0]
+            signal_load = bus_em_signal.loc[:, country_CI]
+            load_emissions += (
+                n.loads_t.p_set[name + " load"] * weights * signal_load
+            ).sum()
+
+        gen_ci = (
+            list(n.generators[n.generators.ci == "continent"].index)
+            if "ci" in n.generators.columns
+            else []
+        )
+        links_ci = (
+            list(n.links[n.links.ci == "continent"].index)
+            if "ci" in n.links.columns
+            else []
+        )
+
+        signal_per_gen = bus_em_signal[n.generators.loc[gen_ci, "bus"]]
+        signal_per_gen.columns = n.generators.loc[gen_ci].index
+
+        signal_per_link = bus_em_signal[n.links.loc[links_ci, "bus1"]]
+        signal_per_link.columns = n.generators.loc[links_ci].index
+
+        gen_avoided = (
+            n.model["Generator-p"].loc[:, gen_ci] * weights * signal_per_gen
+        ).sum()
+
+        link_avoided = (
+            n.model["Link-p"].loc[:, links_ci]
+            * n.links.loc[links_ci].efficiency
+            * weights
+            * signal_per_link
+        ).sum()
+
+        link_emitted = (
+            n.model["Link-p"].loc[:, links_ci]
+            * n.links.loc[links_ci].efficiency2
+            * weights
+        ).sum()
+
+        lhs = gen_avoided + link_avoided - link_emitted
+
+        n.model.add_constraints(
+            lhs >= load_emissions * emission_matching,
+            name="emission_matching_continent",
         )
 
     else:  # historical
@@ -2563,6 +2676,62 @@ def optimize_model_iteratively(n: pypsa.Network, config: dict, **kwargs):
     return status, condition
 
 
+def freeze_ci(n: pypsa.Network):
+    # Freeze existing capacities for variable renewables
+    gen_ci = (
+        list(n.generators[n.generators.ci == "continent"].index)
+        if "ci" in n.generators.columns
+        else []
+    )
+    logger.info("Freezing CI capacity at current opt")
+    n.generators.loc[gen_ci, "p_nom_min"] = n.generators.loc[gen_ci, "p_nom_opt"]
+
+
+def optimize_model_ramp_ci(n: pypsa.Network, config: dict, **kwargs):
+    """
+    Calculates the time-series of grid supply score for each C&I consumer.
+
+    Parameters
+    ----------
+    n : pypsa.Network
+        The PyPSA network instance
+    config : Dict
+        Configuration dictionary containing solver settings
+    **kwargs
+        Additional keyword arguments passed to the solver
+
+    Returns
+    -------
+    n : pypsa.Network
+        Solved network instance
+    status : str
+        Solution status
+    condition : str
+        Termination condition
+    """
+
+    procurement = config["procurement"]
+    n_iterations = procurement["min_iterations"]
+
+    frac = 100 / n_iterations
+    n.config["procurement"]["energy_matching"] = frac
+    n.config["procurement"]["emissionality"]["emission_matching"] = frac
+
+    for i in range(n_iterations):
+        logger.info(f"Iteration: {i + 1}")
+        status, condition = n.optimize(**kwargs)
+        n.config["procurement"]["energy_matching"] = min(
+            n.config["procurement"]["energy_matching"] + frac, 100
+        )
+        n.config["procurement"]["emissionality"]["emission_matching"] = min(
+            n.config["procurement"]["emissionality"]["emission_matching"] + frac, 100
+        )
+        freeze_ci(n)
+        n.export_to_netcdf(f'iterate_model_{i}.nc')
+
+    return status, condition
+
+
 def check_objective_value(n: pypsa.Network, solving: dict) -> None:
     """
     Check if objective value matches expected value within tolerance.
@@ -2676,11 +2845,15 @@ def solve_network(
         kwargs["overlap"] = cf_solving.get("overlap", 0)
         n.optimize.optimize_with_rolling_horizon(**kwargs)
         status, condition = "", ""
-    elif config["enable"].get("procurement", False) and config["procurement"].get(
-        "strategy", False
-    ) in ["247-cfe", "hourly-noadd"]:
-        logger.info("Optimizing iteratively!")
-        status, condition = optimize_model_iteratively(n, config, **kwargs)
+    elif config["enable"].get("procurement", False):
+        if ("emissionality" in config["procurement"]) and config["procurement"][
+            "emissionality"
+        ]["signal_source"] == "iterate":
+            logger.info("Optimizing iteratively w/ ramp CI!")
+            status, condition = optimize_model_ramp_ci(n, config, **kwargs)
+        else:
+            logger.info("Optimizing iteratively!")
+            status, condition = optimize_model_iteratively(n, config, **kwargs)
     elif skip_iterations:
         status, condition = n.optimize(**kwargs)
     else:
