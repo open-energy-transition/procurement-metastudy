@@ -122,23 +122,23 @@ def duplicate_run_delete(scenario_name, selected_baseline, selected_profile):
 
 def main():
     scenarios = []
+    year = 2030
     for res in [True, False]:
         res_tag = "-NoResTargets-" if not res else "-"
-        baseline_scenario = "baseline-2025-1H"  # No RES in 2025
-        # (
-        #     "baseline-2025-1H" if res else "baseline-2025-NoResTargets-1H"
-        # )
+        baseline_scenario = (
+            f"baseline-{year}-1H" if (res or year==2025) else f"baseline-{year}-NoResTargets-1H"
+        )
         for ci_participation in [25]:  # [10, 25, 50]:
-            for em_signal in ["mber", "moer", "cmer", "aer", "lrmer_c"]:
+            for em_signal in ["mber", "aer", "cmer", "moer"]:#, "moer", "lrmer_c"]:
                 em_name = (
-                    f"emi-match-2025-ci{ci_participation}-model-{em_signal}{res_tag}1H"
+                    f"emi-match-{year}-ci{ci_participation}-iterate-{em_signal}{res_tag}1H"
                 )
                 em_config = {
-                    "scenario": {"planning_horizons": [2025]},
-                    "costs": {"year": 2025},
+                    "scenario": {"planning_horizons": [year]},
+                    "costs": {"year": year},
                     "electricity": {
                         "powerplants_filter": "(DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')"
-                    },
+                    } if year==2025 else {},
                     "enable": {"procurement": True},
                     "clustering": {"temporal": {"resolution_sector": "1H"}},
                     "res_target": {
@@ -151,10 +151,11 @@ def main():
                         "scope": "continent",
                         "energy_matching": 100,
                         "participation": ci_participation * 2,
+                        "min_iterations": 10,
                         "emissionality": {
                             "emissions_matching": 100,
                             "emission_signal": em_signal,
-                            "signal_source": "historical",
+                            "signal_source": "iterate",
                         },
                     },
                 }

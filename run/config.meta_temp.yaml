@@ -13,7 +13,7 @@ adjustments:
           marginal_cost: 0.5
 clustering:
   temporal:
-    resolution_sector: 1H
+    resolution_sector: 3H
 costs:
   capital_cost:
     geothermal: 10000
@@ -48,7 +48,7 @@ costs:
       Compressed-Air-Adiabatic-bicharger: 40
       Compressed-Air-Adiabatic-store: 40
   version: v0.10.1
-  year: 2025
+  year: 2030
 countries:
 - AL
 - AT
@@ -111,8 +111,12 @@ electricity:
     - 24
     vanadium:
     - 10
-  powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country ==
-    'Germany' and Fueltype == 'Nuclear')
+  powerplants_filter: '(DateOut >= 2024 or DateOut != DateOut) and not (Country ==
+    ''DE'' and Fueltype == ''Nuclear'') and not (Country.isin([''AT'', ''BE'', ''DK'',
+    ''ES'', ''FI'', ''FR'', ''GB'', ''GR'', ''HU'', ''IE'', ''IT'', ''MK'', ''NL'',
+    ''PT'', ''RS'', ''SE'', ''SK'']) and Fueltype.isin([''Hard Coal'', ''Lignite'']))
+
+    '
   transmission_limit: v1.0
 enable:
   build_cutout: false
@@ -240,14 +244,13 @@ procurement:
   emissionality:
     emission_matching: 100
     emission_signal: mber
-    emissions_matching: 100
     signal_historical: data/emission-signals-historical/2023_weighted_em_rates.csv
     signal_model: data/emission-signals-model
-    signal_source: historical
+    signal_source: iterate
   energy_matching: 100
   excess_share: 1.0
   import_share: 1.01
-  min_iterations: 1
+  min_iterations: 6
   participation: 50
   scope: continent
   strategy: emi-match
@@ -270,14 +273,14 @@ remote:
   ssh: ''
 remove_ci_load: false
 res_target:
-  EU_share_target: false
-  country_cap_target: false
+  EU_share_target: true
+  country_cap_target: true
   country_share_target: false
   res_additionality: false
   res_path: data/ember_2030_res_targets.xlsx
 run:
   disable_progressbar: false
-  name: emi-match-2025-ci25-model-mber-NoResTargets-1H
+  name: emi-match-2030-ci25-iterate-mber-3H
   prefix: ''
   scenarios:
     enable: false
@@ -292,7 +295,7 @@ scenario:
   opts:
   - ''
   planning_horizons:
-  - 2025
+  - 2030
   sector_opts:
   - ''
 sector:

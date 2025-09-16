@@ -594,3 +594,25 @@ hourly-noadd-2030-ci25-cfe100-3H: #3
     participation: 50
     use_SSS: true
     min_iterations: 3
+
+emi-match-2030-ci25-iterate-mber-3H: #6
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    min_iterations: 6
+    emissionality:
+      emission_matching: 100
+      emission_signal: mber
+      signal_source: iterate
