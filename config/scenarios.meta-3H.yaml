@@ -80,6 +80,30 @@ baseline-no-ci-2030-3H: #2
     temporal:
       resolution_sector: 3H
 
+baseline-25-no-ci-2030-3H: #2
+  enable:
+    procurement: false
+
+  remove_ci_load: 0.5
+
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+baseline-2030-NoResTargets-25-no-ci-3H: #3
+  enable:
+    procurement: false
+  
+  remove_ci_load: 0.5
+  
+  clustering:
+    temporal:
+      resolution_sector: 3H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+
 # ======== Annual volume matching =====================
 # =====================================================
 
@@ -612,6 +636,8 @@ emi-match-2030-ci25-iterate-mber-3H: #6
     energy_matching: 100
     participation: 50
     min_iterations: 6
+    excess_share: 0
+    import_share: 0
     emissionality:
       emission_matching: 100
       emission_signal: mber
