@@ -1996,9 +1996,14 @@ def calc_em_signals_from_model(n):
             ints, em_by_country, demand, countries=list(ints.keys())
         )
 
-        moer = calc_moer(demand, consumed_em, re)
-        aer = calc_aer(demand, consumed_em)
-        mber = calc_mber(gens, em_by_plant)
+        moer = pd.DataFrame(calc_moer(demand, consumed_em, re))
+        aer = pd.DataFrame(calc_aer(demand, consumed_em))
+        mber = pd.DataFrame(calc_mber(gens, em_by_plant))
+
+    # filter out negatives:
+    moer = moer.where(moer > 0, 0)
+    mber = mber.where(mber > 0, 0)
+    aer = aer.where(aer > 0, 0)
 
     def _map_signal_to_bus(signal):
         _df = pd.concat(
@@ -2304,9 +2309,17 @@ def emission_matching_constraints_continent(n):  # to update
             if "ci" in n.links.columns
             else []
         )
+        store_ci = (
+            list(n.storage_units[n.storage_units.ci == "continent"].index)
+            if "ci" in n.storage_units.columns
+            else []
+        )
 
         signal_per_gen = determine_signal_per_country(n, "gen", gen_ci, df_signal)
         signal_per_link = determine_signal_per_country(n, "link", links_ci, df_signal)
+        signal_per_storage = determine_signal_per_country(
+            n, "storage", links_ci, df_signal
+        )
 
         gen_avoided = (
             n.model["Generator-p"].loc[:, gen_ci] * weights * signal_per_gen
@@ -2325,7 +2338,20 @@ def emission_matching_constraints_continent(n):  # to update
             * weights
         ).sum()
 
-        lhs = emission_matching * (gen_avoided + link_avoided - link_emitted)
+        discharge_sum = (
+            n.model["StorageUnit-p_dispatch"].loc[:, store_ci]
+            * weights
+            * signal_per_storage
+        ).sum()
+        charge_sum = (
+            n.model["StorageUnit-p_store"].loc[:, store_ci]
+            * weights
+            * signal_per_storage
+        ).sum()
+
+        lhs = emission_matching * (
+            gen_avoided + link_avoided - link_emitted + discharge_sum - charge_sum
+        )
 
         n.model.add_constraints(
             lhs >= load_emissions, name="emission_matching_continent"
@@ -2363,12 +2389,21 @@ def emission_matching_constraints_continent(n):  # to update
             if "ci" in n.links.columns
             else []
         )
+        store_ci = (
+            list(n.storage_units[n.storage_units.ci != ""].index)
+            if "ci" in n.storage_units.columns
+            else []
+        )
 
         signal_per_gen = bus_em_signal[n.generators.loc[gen_ci, "bus"]]
         signal_per_gen.columns = n.generators.loc[gen_ci].index
 
         signal_per_link = bus_em_signal[n.links.loc[links_ci, "bus1"]]
         signal_per_link.columns = n.generators.loc[links_ci].index
+
+        signal_per_storage = bus_em_signal[n.storage_units.loc[store_ci, "bus"]]
+        signal_per_storage.columns = n.storage_units.loc[store_ci].index
+        logger.info(f"Storage units counted: {store_ci}")
 
         gen_avoided = (
             n.model["Generator-p"].loc[:, gen_ci] * weights * signal_per_gen
@@ -2387,7 +2422,18 @@ def emission_matching_constraints_continent(n):  # to update
             * weights
         ).sum()
 
-        lhs = gen_avoided + link_avoided - link_emitted
+        # discharge_sum = (
+        #     n.model["StorageUnit-p_dispatch"].loc[:, store_ci]
+        #     * weights
+        #     * signal_per_storage
+        # ).sum()
+        # charge_sum = (
+        #     n.model["StorageUnit-p_store"].loc[:, store_ci]
+        #     * weights
+        #     * signal_per_storage
+        # ).sum()
+
+        lhs = gen_avoided + link_avoided - link_emitted  # + discharge_sum - charge_sum
 
         n.model.add_constraints(
             lhs >= load_emissions * emission_matching,
@@ -2709,7 +2755,7 @@ def optimize_model_ramp_ci(n: pypsa.Network, config: dict, **kwargs):
     condition : str
         Termination condition
     """
-
+    output_folder = n.params["network_output_folder"]
     procurement = config["procurement"]
     n_iterations = procurement["min_iterations"]
 
@@ -2727,7 +2773,7 @@ def optimize_model_ramp_ci(n: pypsa.Network, config: dict, **kwargs):
             n.config["procurement"]["emissionality"]["emission_matching"] + frac, 100
         )
         freeze_ci(n)
-        n.export_to_netcdf(f'iterate_model_{i}.nc')
+        n.export_to_netcdf(f"{output_folder}/iterate_model_{i}.nc")
 
     return status, condition
 
@@ -3024,20 +3070,20 @@ if __name__ == "__main__":
     logging_frequency = snakemake.config.get("solving", {}).get(
         "mem_logging_frequency", 30
     )
-    with memory_logger(
-        filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
-    ) as mem:
-        solve_network(
-            n,
-            config=snakemake.config,
-            params=snakemake.params,
-            solving=snakemake.params.solving,
-            planning_horizons=planning_horizons,
-            rule_name=snakemake.rule,
-            log_fn=snakemake.log.solver,
-        )
+    # with memory_logger(
+    #     filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
+    # ) as mem:
+    solve_network(
+        n,
+        config=snakemake.config,
+        params=snakemake.params,
+        solving=snakemake.params.solving,
+        planning_horizons=planning_horizons,
+        rule_name=snakemake.rule,
+        log_fn=snakemake.log.solver,
+    )
 
-    logger.info(f"Maximum memory usage: {mem.mem_usage}")
+    # logger.info(f"Maximum memory usage: {mem.mem_usage}")
 
     grid_policy = snakemake.config.get("grid_policy", False)
     if grid_policy:

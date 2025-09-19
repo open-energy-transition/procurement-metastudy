@@ -124,6 +124,7 @@ def get_data(n):
         "Onshore Wind",
         "Run of River",
         "Solar",
+        "solar rooftop",
         "solar-hsat",
         "Offshore Wind (DC)",
     ]
@@ -145,6 +146,7 @@ def get_data(n):
         "Run of River",
         "Solar",
         "solar-hsat",
+        "solar rooftop",
         "Offshore Wind (DC)",
     ]
     buses = n.buses
@@ -162,7 +164,7 @@ def get_data(n):
 
     for country in countries:
         # print(f'Processing {country}')
-        gen = eb[(eb["country"] == country) & (eb["bus_carrier"] == "AC")]
+        gen = eb[(eb["country"] == country)]
         gbf = (
             gen.drop(columns=["component", "country", "bus_carrier", "name"])
             .groupby("carrier")
@@ -266,29 +268,36 @@ def flow_trace(ints, ems, demand, countries):
 
 
 def calc_moer(demand, consumed_em, re):
-
+    # Implementing Zohrabian 2023
+    # "A data-driven framework for quantifying consumption-based monthly and hourly marginal emissions factors"
     moers = {}
 
     for country in demand.keys():
         df = pd.concat([demand[country], consumed_em[country], re[country]], axis=1)
+        df.index = pd.to_datetime(df.index)
         df.columns = ["demand", "em", "re"]
         df["demand"] = -1 * df["demand"]
+        df["net_demand"] = df["demand"] - df["re"]
         deltas = df.diff(-1)
-        bins = pd.qcut(df["demand"], 10)
+
+        bins = pd.qcut(df["demand"], 10, duplicates="drop")
 
         slopes = {}
-        for bin, _df in deltas.groupby(bins, observed=True):
+        for bin, _df in deltas.groupby([deltas.index.month, bins], observed=True):
             _df = _df.dropna()
             results = smf.ols("em ~ demand + re", data=_df).fit()
             slopes[bin] = results.params["demand"]
 
-        h_slope = bins.map(slopes)
-        h_slope.index = pd.to_datetime(h_slope.index)
+        h_slope = (
+            pd.MultiIndex.from_arrays([deltas.index.month, bins]).map(slopes).values
+        )
+        h_slope = pd.Series(h_slope, index=deltas.index)
         moers[country] = (
             h_slope.astype(float)
             .groupby([h_slope.index.month, h_slope.index.hour])
             .transform("mean")
         )
+        moers[country] = moers[country].where(moers[country] > 0, 0)
 
     return moers
 

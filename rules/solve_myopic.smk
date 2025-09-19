@@ -157,6 +157,7 @@ rule solve_sector_network_myopic:
             "sector", "co2_sequestration_potential", default=200
         ),
         custom_extra_functionality=input_custom_extra_functionality,
+        network_output_folder=RESULTS + "networks",
     input:
         network = lambda w: choose_network_file(w)
     output:

@@ -13,7 +13,7 @@ adjustments:
           marginal_cost: 0.5
 clustering:
   temporal:
-    resolution_sector: 3H
+    resolution_sector: 1H
 costs:
   capital_cost:
     geothermal: 10000
@@ -243,14 +243,15 @@ procurement:
       location: GB2 0
   emissionality:
     emission_matching: 100
-    emission_signal: mber
+    emission_signal: aer
+    emissions_matching: 100
     signal_historical: data/emission-signals-historical/2023_weighted_em_rates.csv
     signal_model: data/emission-signals-model
     signal_source: iterate
   energy_matching: 100
   excess_share: 1.0
   import_share: 1.01
-  min_iterations: 6
+  min_iterations: 10
   participation: 50
   scope: continent
   strategy: emi-match
@@ -273,14 +274,14 @@ remote:
   ssh: ''
 remove_ci_load: false
 res_target:
-  EU_share_target: true
-  country_cap_target: true
+  EU_share_target: false
+  country_cap_target: false
   country_share_target: false
   res_additionality: false
   res_path: data/ember_2030_res_targets.xlsx
 run:
   disable_progressbar: false
-  name: emi-match-2030-ci25-iterate-mber-3H
+  name: emi-match-2030-ci25-iterate-aer-NoResTargets-1H
   prefix: ''
   scenarios:
     enable: false

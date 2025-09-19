@@ -123,69 +123,70 @@ def duplicate_run_delete(scenario_name, selected_baseline, selected_profile):
 def main():
     scenarios = []
     year = 2030
-    for res in [True, False]:
-        res_tag = "-NoResTargets-" if not res else "-"
-        baseline_scenario = (
-            f"baseline-{year}-1H" if (res or year==2025) else f"baseline-{year}-NoResTargets-1H"
-        )
-        for ci_participation in [25]:  # [10, 25, 50]:
-            for em_signal in ["mber", "aer", "cmer", "moer"]:#, "moer", "lrmer_c"]:
-                em_name = (
-                    f"emi-match-{year}-ci{ci_participation}-iterate-{em_signal}{res_tag}1H"
-                )
-                em_config = {
-                    "scenario": {"planning_horizons": [year]},
-                    "costs": {"year": year},
-                    "electricity": {
-                        "powerplants_filter": "(DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')"
-                    } if year==2025 else {},
-                    "enable": {"procurement": True},
-                    "clustering": {"temporal": {"resolution_sector": "1H"}},
-                    "res_target": {
-                        "EU_share_target": res,
-                        "country_cap_target": res,
-                        "res_additionality": False,
-                    },
-                    "procurement": {
-                        "strategy": "emi-match",
-                        "scope": "continent",
-                        "energy_matching": 100,
-                        "participation": ci_participation * 2,
-                        "min_iterations": 10,
-                        "emissionality": {
-                            "emissions_matching": 100,
-                            "emission_signal": em_signal,
-                            "signal_source": "iterate",
+    for hour in ['1H']:
+        for res in [True, False]:
+            res_tag = "-NoResTargets-" if not res else "-"
+            baseline_scenario = (
+                f"baseline-{year}-{hour}" if (res or year==2025) else f"baseline-{year}-NoResTargets-{hour}"
+            )
+            for ci_participation in [25]:  # [10, 25, 50]:
+                for em_signal in ["mber", "aer", "cmer", "moer"]:#, "moer", "lrmer_c"]:
+                    em_name = (
+                        f"emi-match-{year}-ci{ci_participation}-iterate-{em_signal}{res_tag}{hour}"
+                    )
+                    em_config = {
+                        "scenario": {"planning_horizons": [year]},
+                        "costs": {"year": year},
+                        "electricity": {
+                            "powerplants_filter": "(DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')"
+                        } if year==2025 else {},
+                        "enable": {"procurement": True},
+                        "clustering": {"temporal": {"resolution_sector": hour}},
+                        "res_target": {
+                            "EU_share_target": res,
+                            "country_cap_target": res,
+                            "res_additionality": False,
                         },
-                    },
-                }
-                scenarios.append(([em_name, em_config], baseline_scenario))
-            # for cfe_level in [70, 80, 90, 100]:
-            #     cfe_name = f"247-cfe-2030-ci{ci_participation}-cfe{cfe_level}{res_tag}grid-use-SSS-1H"
-            #     cfe_config = {
-            #         "scenario": {"planning_horizons": [2030]},
-            #         "costs": {"year": 2030},
-            #         # "electricity": {
-            #         #     "powerplants_filter": "(DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')"
-            #         # },
-            #         "enable": {"procurement": True},
-            #         "clustering": {"temporal": {"resolution_sector": "1H"}},
-            #         "res_target": {
-            #             "EU_share_target": res,
-            #             "country_cap_target": res,
-            #             "res_additionality": False,
-            #         },
-            #         "procurement": {
-            #             "strategy": "247-cfe",
-            #             "scope": "node",
-            #             "energy_matching": cfe_level,
-            #             "participation": ci_participation * 2,
-            #             "min_iterations": 3,
-            #             "excess_share": 1,
-            #             "use_SSS": True,
-            #         },
-            #     }
-            #     scenarios.append(([cfe_name, cfe_config], baseline_scenario))
+                        "procurement": {
+                            "strategy": "emi-match",
+                            "scope": "continent",
+                            "energy_matching": 100,
+                            "participation": ci_participation * 2,
+                            "min_iterations": 10,
+                            "emissionality": {
+                                "emissions_matching": 100,
+                                "emission_signal": em_signal,
+                                "signal_source": "iterate",
+                            },
+                        },
+                    }
+                    scenarios.append(([em_name, em_config], baseline_scenario))
+                for cfe_level in [70, 80, 90, 100]:
+                    cfe_name = f"247-cfe-2030-ci{ci_participation}-cfe{cfe_level}{res_tag}-{hour}"
+                    cfe_config = {
+                        "scenario": {"planning_horizons": [2030]},
+                        "costs": {"year": 2030},
+                        # "electricity": {
+                        #     "powerplants_filter": "(DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')"
+                        # },
+                        "enable": {"procurement": True},
+                        "clustering": {"temporal": {"resolution_sector": "{hour}"}},
+                        "res_target": {
+                            "EU_share_target": res,
+                            "country_cap_target": res,
+                            "res_additionality": False,
+                        },
+                        "procurement": {
+                            "strategy": "247-cfe",
+                            "scope": "node",
+                            "energy_matching": cfe_level,
+                            "participation": ci_participation * 2,
+                            "min_iterations": 1,
+                            "excess_share": 1,
+                            "use_SSS": False,
+                        },
+                    }
+                    scenarios.append(([cfe_name, cfe_config], baseline_scenario))
 
     # Iterate runs
     for scenario, selected_baseline in scenarios:
