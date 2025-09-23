@@ -1810,68 +1810,6 @@ def cfe_constraints(n):
         )
 
 
-def hourly_non_additional_constraints(n):
-    """
-    Implement strategies to achieve 24/7 carbon-free energy (CFE).
-
-    The hourly generation from all carbon-free energy (CFE)-related generators (e.g., renewable sources) and links (e.g., conventional or clean carriers) must match the corresponding load consumption.
-    These constraints must be solved iteratively, as the CFE score of the grids changes with each run.
-    """
-    weights = n.snapshot_weightings["generators"]
-
-    procurement = n.config["procurement"]
-    clean_techs = n.config["grid_policy"]["clean_carriers"]
-    energy_matching = procurement["energy_matching"] / 100
-
-    negative_carriers = determine_storage_carrier(n)
-    grid_carriers = ["electricity distribution grid", "AC", "DC"]
-    exclude_carriers = grid_carriers + negative_carriers
-
-    for name in procurement["ci"]:
-        busses = [name, procurement["ci"][name]["location"]]
-        gen_clean = list(
-            n.generators.query("carrier in @clean_techs & bus in @busses").index
-        )
-        links_clean = list(
-            n.links.query("carrier in @clean_techs & bus1 in @busses").index
-        )
-        store_clean = list(
-            n.storage_units.query(
-                "carrier == 'li-ion battery 8h' & bus in @busses"
-            ).index
-        )
-
-        print(
-            f"Adding hourly CFE constraints for {name}: {store_clean} - {links_clean} - {gen_clean}"
-        )
-
-        gen_sum = (n.model["Generator-p"].loc[:, gen_clean] * weights).sum(
-            dim="Generator"
-        )
-        link_sum = (
-            n.model["Link-p"].loc[:, links_clean]
-            * n.links.loc[links_clean].efficiency
-            * weights
-        ).sum(dim="Link")
-        discharge_sum = (
-            n.model["StorageUnit-p_dispatch"].loc[:, store_clean] * weights
-        ).sum(dim="StorageUnit")
-        charge_sum = -1 * (
-            n.model["StorageUnit-p_store"].loc[:, store_clean] * weights
-        ).sum(dim="StorageUnit")
-
-        cfe_mwh = gen_sum + discharge_sum + charge_sum
-
-        total_load = n.loads_t.p_set[name + " load"] * weights
-
-        excess = cfe_mwh - total_load
-
-        n.model.add_constraints(
-            cfe_mwh >= energy_matching * (total_load),
-            name=f"CFE_constraint_{name}",
-        )
-
-
 def excess_constraints(n):
     """
     Each CI bus must meet its own load consumption before exporting any energy back to the grid.
@@ -2338,19 +2276,19 @@ def emission_matching_constraints_continent(n):  # to update
             * weights
         ).sum()
 
-        discharge_sum = (
-            n.model["StorageUnit-p_dispatch"].loc[:, store_ci]
-            * weights
-            * signal_per_storage
-        ).sum()
-        charge_sum = (
-            n.model["StorageUnit-p_store"].loc[:, store_ci]
-            * weights
-            * signal_per_storage
-        ).sum()
+        # discharge_sum = (
+        #     n.model["StorageUnit-p_dispatch"].loc[:, store_ci]
+        #     * weights
+        #     * signal_per_storage
+        # ).sum()
+        # charge_sum = (
+        #     n.model["StorageUnit-p_store"].loc[:, store_ci]
+        #     * weights
+        #     * signal_per_storage
+        # ).sum()
 
         lhs = emission_matching * (
-            gen_avoided + link_avoided - link_emitted + discharge_sum - charge_sum
+            gen_avoided + link_avoided - link_emitted  # + discharge_sum - charge_sum
         )
 
         n.model.add_constraints(
@@ -2671,9 +2609,6 @@ def extra_functionality(
         elif strategy == "247-cfe":
             logger.info(f"Setting 247 CFE target of {energy_matching}")
             cfe_constraints(n)
-        elif strategy == "hourly-noadd":
-            logger.info(f"Setting hourly non-additional target of {energy_matching}")
-            hourly_non_additional_constraints(n)
         elif strategy == "emi-match":
             logger.info(
                 f"Setting annual avoided emission target of {emission_matching}%"
@@ -3070,20 +3005,20 @@ if __name__ == "__main__":
     logging_frequency = snakemake.config.get("solving", {}).get(
         "mem_logging_frequency", 30
     )
-    # with memory_logger(
-    #     filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
-    # ) as mem:
-    solve_network(
-        n,
-        config=snakemake.config,
-        params=snakemake.params,
-        solving=snakemake.params.solving,
-        planning_horizons=planning_horizons,
-        rule_name=snakemake.rule,
-        log_fn=snakemake.log.solver,
-    )
+    with memory_logger(
+        filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
+    ) as mem:
+        solve_network(
+            n,
+            config=snakemake.config,
+            params=snakemake.params,
+            solving=snakemake.params.solving,
+            planning_horizons=planning_horizons,
+            rule_name=snakemake.rule,
+            log_fn=snakemake.log.solver,
+        )
 
-    # logger.info(f"Maximum memory usage: {mem.mem_usage}")
+        logger.info(f"Maximum memory usage: {mem.mem_usage}")
 
     grid_policy = snakemake.config.get("grid_policy", False)
     if grid_policy:

@@ -102,19 +102,19 @@ def duplicate_run_delete(scenario_name, selected_baseline, selected_profile):
     os.system(run_cmd)
 
     # Clean up
-    # if os.path.exists(new_folder):
-    #     shutil.rmtree(new_folder)
-    #     print(f"Deleted folder: {new_folder}")
-    # else:
-    #     print(f"Folder does not exist (already removed?): {new_folder}")
+    if os.path.exists(new_folder):
+        shutil.rmtree(new_folder)
+        print(f"Deleted folder: {new_folder}")
+    else:
+        print(f"Folder does not exist (already removed?): {new_folder}")
 
-    # temp_file = "run/config.meta_temp.yaml"
+    temp_file = "run/config.meta_temp.yaml"
 
-    # if os.path.exists(temp_file):
-    #     os.remove(temp_file)
-    #     print(f"Deleted file: {temp_file}")
-    # else:
-    #     print(f"File does not exist: {temp_file}")
+    if os.path.exists(temp_file):
+        os.remove(temp_file)
+        print(f"Deleted file: {temp_file}")
+    else:
+        print(f"File does not exist: {temp_file}")
 
 
 # ---------------------- Main Script ----------------------

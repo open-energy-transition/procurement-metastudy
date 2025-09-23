@@ -1031,7 +1031,7 @@ solving:
       dual_feasibility_tolerance: 1e-5
       random_seed: 123
     gurobi-default:
-      threads: 14
+      threads: 8
       method: 2 # barrier
       crossover: 0
       BarConvTol: 1.e-6
