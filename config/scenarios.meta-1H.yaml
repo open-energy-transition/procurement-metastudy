@@ -36,6 +36,28 @@ baseline-2025-1H: #1
     EU_share_target: false
     country_cap_target: false
 
+baseline-2025-1H: #1.1
+  scenario:
+    planning_horizons: 
+    - 2025
+  
+  enable:
+    procurement: false
+
+  electricity:
+    powerplants_filter: (DateOut >= 2024 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
+
+  costs:
+    year: 2025
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+
 baseline-2030-1H: #2
   enable:
     procurement: false
