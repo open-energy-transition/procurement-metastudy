@@ -328,6 +328,8 @@ def add_ci_load(n: pypsa.Network, config: dict) -> None:
 
     countries_chosen = []
 
+    remove_ci_load = config.get("remove_ci_load", False)
+
     for bus in [loc for loc in n.buses.location.unique() if loc != "EU"]:
         country = n.buses.country[bus]
         if country in countries_chosen:
@@ -338,46 +340,61 @@ def add_ci_load(n: pypsa.Network, config: dict) -> None:
             load_year_countries.index == country
         ]  # select only the country of interest
 
-        n.add(
-            "Bus",
-            f"{bus}" + " CI",
-            country=n.buses.loc[bus, "country"],
-            location=bus,
-            x=n.buses.loc[bus, "x"],
-            y=n.buses.loc[bus, "y"],
-        )
+        if not remove_ci_load:
+            print(f"Adding CI load to network {config.keys()}")
+            n.add(
+                "Bus",
+                f"{bus}" + " CI",
+                country=n.buses.loc[bus, "country"],
+                location=bus,
+                x=n.buses.loc[bus, "x"],
+                y=n.buses.loc[bus, "y"],
+            )
 
-        n.add(
-            "Link",
-            f"{bus}" + " CI export",
-            bus0=f"{bus}" + " CI",
-            bus1=bus,
-            marginal_cost=0.1,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
-            p_nom=1e6,
-            reversed=False,
-        )
+            n.add(
+                "Link",
+                f"{bus}" + " CI export",
+                bus0=f"{bus}" + " CI",
+                bus1=bus,
+                marginal_cost=0.1,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
+                p_nom=1e6,
+                reversed=False,
+            )
 
-        n.add(
-            "Link",
-            f"{bus}" + " CI import",
-            bus0=bus,
-            bus1=f"{bus}" + " CI",
-            marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
-            p_nom=1e6,
-            reversed=False,
-        )
+            n.add(
+                "Link",
+                f"{bus}" + " CI import",
+                bus0=bus,
+                bus1=f"{bus}" + " CI",
+                marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
+                p_nom=1e6,
+                reversed=False,
+            )
 
-        n.add(
-            "Load",
-            f"{bus}" + " CI load",
-            carrier="electricity",
-            bus=f"{bus}" + " CI",
-            p_set=load_profile(n, load_year, config, bus),
-            ci="None",  # C&I markers used in constraints
-        )
+            n.add(
+                "Link",
+                f"{bus}" + " CI SSS import",
+                bus0=bus,
+                bus1=f"{bus}" + " CI",
+                marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
+                p_nom=1e6,
+                reversed=False,
+            )
 
+            n.add(
+                "Load",
+                f"{bus}" + " CI load",
+                carrier="electricity",
+                bus=f"{bus}" + " CI",
+                p_set=load_profile(n, load_year, config, bus),
+                ci="None",  # C&I markers used in constraints
+            )
+
+        # remove share proportional to remove_ci_load, else remove it all (bc we moved it)
+        remove_ci_share = remove_ci_load if remove_ci_load > 0 else 1
         # C&I following voluntary clean energy procurement is a share of C&I load -> subtract it from node's profile
-        n.loads_t.p_set[bus] -= n.loads_t.p_set[f"{bus}" + " CI" + " load"]
+        print("Subtracting CI load from base load")
+        n.loads_t.p_set[bus] -= remove_ci_share * load_profile(n, load_year, config, bus)
 
     ci_load_cols = n.loads_t.p_set.filter(like="CI").columns
     non_ci_load = n.loads_t.p_set.loc[:, ~n.loads_t.p_set.columns.isin(ci_load_cols)]
@@ -457,6 +474,26 @@ def add_ci_procurement(
         n.add(
             "Link",
             f"{name}" + " import",
+            bus0=location,
+            bus1=name,
+            marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
+            p_nom=1e6,
+            reversed=False,
+        )
+
+        n.add(
+            "Link",
+            f"{name}" + " SSS import",
+            bus0=location,
+            bus1=name,
+            marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
+            p_nom=1e6,
+            reversed=False,
+        )
+
+        n.add(
+            "Link",
+            f"{name}" + " GO import",
             bus0=location,
             bus1=name,
             marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
@@ -644,14 +681,16 @@ def add_ci_procurement(
                 * costs.at[generator, "capital_cost"]
                 * cap_premium,  # NB: fixed cost is per MWel
                 p_nom_extendable=True if strategy else False,
-                p_max_pu=0.7
-                if carrier == "uranium"
-                else 1,  # be conservative for nuclear (maintenance or unplanned shut downs)
+                p_max_pu=(
+                    0.7 if carrier == "uranium" else 1
+                ),  # be conservative for nuclear (maintenance or unplanned shut downs)
                 carrier=generator,
                 efficiency=costs.at[generator, "efficiency"],
-                efficiency2=costs.at[carrier, "CO2 intensity"]
-                if generator != "allam"
-                else 0.02 * costs.at[carrier, "CO2 intensity"],
+                efficiency2=(
+                    costs.at[carrier, "CO2 intensity"]
+                    if generator != "allam"
+                    else 0.02 * costs.at[carrier, "CO2 intensity"]
+                ),
                 lifetime=costs.at[generator, "lifetime"],
                 reversed=False,
                 ci=ci_name,  # C&I markers used in constraints

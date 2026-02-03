@@ -52,6 +52,13 @@ from scripts._helpers import (
     set_scenario_config,
     update_config_from_wildcards,
 )
+from scripts.calc_emissions_signals import (
+    get_data,
+    flow_trace,
+    calc_mber,
+    calc_moer,
+    calc_aer,
+)
 
 cc = coco.CountryConverter()
 
@@ -591,6 +598,8 @@ def calculate_grid_score(
     grid_carriers = ["electricity distribution grid", "AC", "DC"]
     exclude_carriers = grid_carriers + negative_carriers
 
+    logger.info(f"Calc grid score for {name}")
+
     def get_values(n, df, df_t, bus_col, include_techs, include_ci=False):
         # Map low-voltage bus to main grid bus
         grid_buses = n.buses[n.buses.carrier == "AC"].index
@@ -658,6 +667,7 @@ def calculate_grid_score(
 
     if n.buses_t[f"{name}_score"].empty:
         grid_buses = n.buses[n.buses.carrier == "AC"].index
+        n.buses_t[f"{name}_p"] = pd.DataFrame(0, index=n.snapshots, columns=grid_buses)
         n.buses_t[f"{name}_score"] = pd.DataFrame(
             0, index=n.snapshots, columns=grid_buses
         )
@@ -750,9 +760,9 @@ def add_CCL_constraints(
         agg_p_nom_limits: data/agg_p_nom_minmax.csv
     """
 
-    assert planning_horizons is not None, (
-        "add_CCL_constraints are not implemented for perfect foresight, yet"
-    )
+    assert (
+        planning_horizons is not None
+    ), "add_CCL_constraints are not implemented for perfect foresight, yet"
 
     agg_p_nom_minmax = pd.read_csv(
         config["solving"]["agg_p_nom_limits"]["file"], index_col=[0, 1], header=[0, 1]
@@ -1431,9 +1441,9 @@ def ember_res_target(n):
 
     # Convert ISO3 to ISO2, keeping "EU" unchanged
     df_ember["country"] = df_ember["country_code"].apply(
-        lambda code: code
-        if code == "EU"
-        else cc.convert(names=code, src="ISO3", to="ISO2")
+        lambda code: (
+            code if code == "EU" else cc.convert(names=code, src="ISO3", to="ISO2")
+        )
     )
 
     # --- Define technologies and weights ---
@@ -1734,12 +1744,15 @@ def cfe_constraints(n):
     procurement = n.config["procurement"]
     clean_techs = n.config["grid_policy"]["clean_carriers"]
     energy_matching = procurement["energy_matching"] / 100
+    use_SSS = procurement["use_SSS"]
+    use_GO = procurement["use_GO"]
 
     calculate_grid_score(n, clean_techs, "cfe")
 
     for name in procurement["ci"]:
         location = procurement["ci"][name]["location"]
         grid_supply_cfe = n.buses_t.cfe_lvl_score[location]
+        cfe_mwh = n.buses_t.cfe_p[location]
 
         gen_ci = (
             list(n.generators.query("ci == @name").index)
@@ -1770,14 +1783,34 @@ def cfe_constraints(n):
 
         ci_export = n.model["Link-p"].loc[:, [name + " export"]]
         ci_import = n.model["Link-p"].loc[:, [name + " import"]]
+        ci_SSS_import = n.model["Link-p"].loc[:, [name + " SSS import"]]
+        ci_GO_import = n.model["Link-p"].loc[:, [name + " GO import"]]
+
+        if use_SSS:
+            # SSS counts all clean RECs claimable
+            grid_supply = ci_SSS_import * n.links.at[name + " SSS import", "efficiency"]
+            load = n.loads_t.p_set[name + " load"]
+            # SSS credit cannot exceed proportional CFE from grid
+            n.model.add_constraints(
+                ci_SSS_import <= grid_supply_cfe * load,
+                name=f"SSS_import_constraint_{name}",
+            )
+        elif use_GO:
+            # SSS counts all clean RECs claimable
+            grid_supply = ci_GO_import * n.links.at[name + " GO import", "efficiency"]
+            # Allow CI to procure "GOs" up the amount of CFE on the grid
+            n.model.add_constraints(
+                ci_GO_import <= cfe_mwh,
+                name=f"GO_import_constraint_{name}",
+            )
+        else:
+            grid_supply = (
+                ci_import * n.links.at[name + " import", "efficiency"] * grid_supply_cfe
+            )
+
         grid_sum = (
             (-1 * ci_export * weights)
-            + (
-                ci_import
-                * n.links.at[name + " import", "efficiency"]
-                * grid_supply_cfe  # This is why the iteration is necessary
-                * weights
-            )
+            + (grid_supply * weights)  # This is why the iteration is necessary
         ).sum()  # linear expr
 
         lhs = gen_sum + link_sum + discharge_sum + charge_sum + grid_sum
@@ -1861,7 +1894,7 @@ def read_signal_data(n, signal_source, emission_signal):
         n.snapshot_weightings.objective
     )  # e.g., 3 for 3H time resolution
 
-    if signal_source == "model":
+    if signal_source in ["model", "iterate"]:
         signal_path = n.config["procurement"]["emissionality"]["signal_model"]
         df_signal = []
         for country_signal in n.buses.country.unique():
@@ -1897,6 +1930,53 @@ def read_signal_data(n, signal_source, emission_signal):
     return emission_signal_flat, emission_signal_solar, emission_signal_wind, df_signal
 
 
+def calc_em_signals_from_model(n):
+    gens, demand, re, ints, em_by_country, em_by_plant = get_data(n)
+
+    ## if network is empty (no gen), then load csv as starting guess
+    ## TODO: load baseline network as starting guess
+    if all([g.sum().sum() == 0 for g in gens.values()]):
+        logger.info("loading em signals from csv")
+        signal_source = n.config["procurement"]["emissionality"]["signal_source"]
+        _, _, _, moer = read_signal_data(n, signal_source, "moer")
+        _, _, _, mber = read_signal_data(n, signal_source, "mber")
+        _, _, _, aer = read_signal_data(n, signal_source, "aer")
+    else:
+        consumed_em = flow_trace(
+            ints, em_by_country, demand, countries=list(ints.keys())
+        )
+
+        moer = pd.DataFrame(calc_moer(demand, consumed_em, re))
+        aer = pd.DataFrame(calc_aer(demand, consumed_em))
+        mber = pd.DataFrame(calc_mber(gens, em_by_plant))
+
+    # filter out negatives:
+    moer = moer.where(moer > 0, 0)
+    mber = mber.where(mber > 0, 0)
+    aer = aer.where(aer > 0, 0)
+
+    def _map_signal_to_bus(signal):
+        _df = pd.concat(
+            [signal.get(ctry, pd.Series()) for ctry in n.buses["country"].values],
+            axis=1,
+        )
+        _df.columns = n.buses.index
+        return _df
+
+    n.buses_t["moer"] = _map_signal_to_bus(moer)
+    n.buses_t["mber"] = _map_signal_to_bus(mber)
+    n.buses_t["aer"] = _map_signal_to_bus(aer)
+    n.buses_t["cmer"] = 0.5 * _map_signal_to_bus(moer) + 0.5 * _map_signal_to_bus(mber)
+
+
+def get_carbon(network):
+    stats = network.statistics()
+    if "Store" in stats.index.levels[0]:
+        return stats.xs("Store").loc["co2", "Optimal Capacity"]
+    else:
+        return 0
+
+
 def emission_matching_constraints(n):
     """
     Implement strategies for emission matching.
@@ -1916,9 +1996,11 @@ def emission_matching_constraints(n):
         "mber": "Marginal Build Emission Rate (MBER)",
         "moer": "Marginal Operating Emission Rate (MOER)",
         "cmer": "Combined Marginal Emission Rate (CMER)",
+        "lrmer": "Long Run Marginal Emissions Rate (LRMER)",
+        "lrmer_c": "Long Run Marginal Emissions Rate using Consumed Emissions (LRMER_C)",
     }
 
-    allowed_sources = ["model", "historical"]
+    allowed_sources = ["model", "historical", "iterated"]
 
     if emission_signal not in allowed_signals:
         raise KeyError(
@@ -2135,15 +2217,18 @@ def emission_matching_constraints_continent(n):  # to update
         "mber": "Marginal Build Emission Rate (MBER)",
         "moer": "Marginal Operating Emission Rate (MOER)",
         "cmer": "Combined Marginal Emission Rate (CMER)",
+        "lrmer": "Long Run Marginal Emissions Rate (LRMER)",
+        "lrmer_c": "Long Run Marginal Emissions Rate using Consumed Emissions (LRMER_C)",
     }
 
-    allowed_sources = ["model", "historical"]
+    allowed_sources = ["model", "historical", "iterate"]
 
     if emission_signal not in allowed_signals:
         raise KeyError(
             f"'emission_signal' must be one of {list(allowed_signals.keys())}. Now is '{emission_signal}'."
         )
     logger.info(f"Emission signal chosen: {allowed_signals[emission_signal]}")
+    logger.info(f"Emission source chosen: {signal_source}")
 
     emission_signal_flat, emission_signal_solar, emission_signal_wind, df_signal = (
         read_signal_data(n, signal_source, emission_signal)
@@ -2174,9 +2259,17 @@ def emission_matching_constraints_continent(n):  # to update
             if "ci" in n.links.columns
             else []
         )
+        store_ci = (
+            list(n.storage_units[n.storage_units.ci == "continent"].index)
+            if "ci" in n.storage_units.columns
+            else []
+        )
 
         signal_per_gen = determine_signal_per_country(n, "gen", gen_ci, df_signal)
         signal_per_link = determine_signal_per_country(n, "link", links_ci, df_signal)
+        signal_per_storage = determine_signal_per_country(
+            n, "storage", links_ci, df_signal
+        )
 
         gen_avoided = (
             n.model["Generator-p"].loc[:, gen_ci] * weights * signal_per_gen
@@ -2195,10 +2288,110 @@ def emission_matching_constraints_continent(n):  # to update
             * weights
         ).sum()
 
-        lhs = emission_matching * (gen_avoided + link_avoided - link_emitted)
+        lhs = gen_avoided + link_avoided - link_emitted
+
+        if n.config["procurement"]["emissionality"]["use_storage"]:
+            discharge_sum = (
+                n.model["StorageUnit-p_dispatch"].loc[:, store_ci]
+                * weights
+                * signal_per_storage
+            ).sum()
+            charge_sum = (
+                n.model["StorageUnit-p_store"].loc[:, store_ci]
+                * weights
+                * signal_per_storage
+            ).sum()
+
+            lhs = lhs + discharge_sum - charge_sum
 
         n.model.add_constraints(
             lhs >= load_emissions, name="emission_matching_continent"
+        )
+
+    elif signal_source == "iterate":
+        calc_em_signals_from_model(n)
+        logger.info(f"Total System Emissions: {get_carbon(n)/1e6:.1f} MT")
+        load_emissions = 0
+        bus_em_signal = n.buses_t[emission_signal]
+
+        ## TESTING
+        # logger.info(bus_em_signal.mean())
+        # from datetime import datetime
+
+        # bus_em_signal.mean().to_csv(f"em_signal_{datetime.now()}")
+
+        logger.info(f'Matching {n.config["procurement"]["energy_matching"]}% of load')
+
+        for name in n.config["procurement"]["ci"]:
+            location = n.config["procurement"]["ci"][name]["location"]
+            country_CI = n.buses[n.buses.index == location].index[0]
+            signal_load = bus_em_signal.loc[:, country_CI]
+            load_emissions += (
+                n.loads_t.p_set[name + " load"] * weights * signal_load
+            ).sum()
+
+        gen_ci = (
+            list(n.generators[n.generators.ci == "continent"].index)
+            if "ci" in n.generators.columns
+            else []
+        )
+        links_ci = (
+            list(n.links[n.links.ci == "continent"].index)
+            if "ci" in n.links.columns
+            else []
+        )
+        store_ci = (
+            list(n.storage_units[n.storage_units.ci != ""].index)
+            if "ci" in n.storage_units.columns
+            else []
+        )
+
+        signal_per_gen = bus_em_signal[n.generators.loc[gen_ci, "bus"]]
+        signal_per_gen.columns = n.generators.loc[gen_ci].index
+
+        signal_per_link = bus_em_signal[n.links.loc[links_ci, "bus1"]]
+        signal_per_link.columns = n.generators.loc[links_ci].index
+
+        signal_per_storage = bus_em_signal[n.storage_units.loc[store_ci, "bus"]]
+        signal_per_storage.columns = n.storage_units.loc[store_ci].index
+        logger.info(f"Storage units counted: {store_ci}")
+
+        gen_avoided = (
+            n.model["Generator-p"].loc[:, gen_ci] * weights * signal_per_gen
+        ).sum()
+
+        link_avoided = (
+            n.model["Link-p"].loc[:, links_ci]
+            * n.links.loc[links_ci].efficiency
+            * weights
+            * signal_per_link
+        ).sum()
+
+        link_emitted = (
+            n.model["Link-p"].loc[:, links_ci]
+            * n.links.loc[links_ci].efficiency2
+            * weights
+        ).sum()
+
+        lhs = gen_avoided + link_avoided - link_emitted
+
+        if n.config["procurement"]["emissionality"]["use_storage"]:
+            discharge_sum = (
+                n.model["StorageUnit-p_dispatch"].loc[:, store_ci]
+                * weights
+                * signal_per_storage
+            ).sum()
+            charge_sum = (
+                n.model["StorageUnit-p_store"].loc[:, store_ci]
+                * weights
+                * signal_per_storage
+            ).sum()
+
+            lhs = lhs + discharge_sum - charge_sum
+
+        n.model.add_constraints(
+            lhs >= load_emissions * emission_matching,
+            name="emission_matching_continent",
         )
 
     else:  # historical
@@ -2422,6 +2615,7 @@ def extra_functionality(
         excess_constraints(n)
         import_constraints(n)
 
+        logger.info(f"Procurement Strategy: {strategy}")
         if strategy == "vol-match":
             logger.info(f"Setting annual volume matching of {energy_matching}%")
             if scope != "continent":
@@ -2475,6 +2669,62 @@ def optimize_model_iteratively(n: pypsa.Network, config: dict, **kwargs):
     for i in range(n_iterations):
         logger.info(f"Iteration: {i + 1}")
         status, condition = n.optimize(**kwargs)
+
+    return status, condition
+
+
+def freeze_ci(n: pypsa.Network):
+    # Freeze existing capacities for variable renewables
+    gen_ci = (
+        list(n.generators[n.generators.ci == "continent"].index)
+        if "ci" in n.generators.columns
+        else []
+    )
+    logger.info("Freezing CI capacity at current opt")
+    n.generators.loc[gen_ci, "p_nom_min"] = n.generators.loc[gen_ci, "p_nom_opt"]
+
+
+def optimize_model_ramp_ci(n: pypsa.Network, config: dict, **kwargs):
+    """
+    Calculates the time-series of grid supply score for each C&I consumer.
+
+    Parameters
+    ----------
+    n : pypsa.Network
+        The PyPSA network instance
+    config : Dict
+        Configuration dictionary containing solver settings
+    **kwargs
+        Additional keyword arguments passed to the solver
+
+    Returns
+    -------
+    n : pypsa.Network
+        Solved network instance
+    status : str
+        Solution status
+    condition : str
+        Termination condition
+    """
+    output_folder = n.params["network_output_folder"]
+    procurement = config["procurement"]
+    n_iterations = procurement["min_iterations"]
+
+    frac = 100 / n_iterations
+    n.config["procurement"]["energy_matching"] = frac
+    n.config["procurement"]["emissionality"]["emission_matching"] = frac
+
+    for i in range(n_iterations):
+        logger.info(f"Iteration: {i + 1}")
+        status, condition = n.optimize(**kwargs)
+        n.config["procurement"]["energy_matching"] = min(
+            n.config["procurement"]["energy_matching"] + frac, 100
+        )
+        n.config["procurement"]["emissionality"]["emission_matching"] = min(
+            n.config["procurement"]["emissionality"]["emission_matching"] + frac, 100
+        )
+        freeze_ci(n)
+        n.export_to_netcdf(f"{output_folder}/iterate_model_{i}.nc")
 
     return status, condition
 
@@ -2586,16 +2836,21 @@ def solve_network(
     n.config = config
     n.params = params
 
+    logger.info(f'Solving network for strategy: {config["procurement"]["strategy"]}')
     if rolling_horizon and rule_name == "solve_operations_network":
         kwargs["horizon"] = cf_solving.get("horizon", 365)
         kwargs["overlap"] = cf_solving.get("overlap", 0)
         n.optimize.optimize_with_rolling_horizon(**kwargs)
         status, condition = "", ""
-    elif (
-        config["enable"].get("procurement", False)
-        and config["procurement"].get("strategy", False) == "247-cfe"
-    ):
-        status, condition = optimize_model_iteratively(n, config, **kwargs)
+    elif config["enable"].get("procurement", False):
+        if ("emissionality" in config["procurement"]) and config["procurement"][
+            "emissionality"
+        ]["signal_source"] == "iterate":
+            logger.info("Optimizing iteratively w/ ramp CI!")
+            status, condition = optimize_model_ramp_ci(n, config, **kwargs)
+        else:
+            logger.info("Optimizing iteratively!")
+            status, condition = optimize_model_iteratively(n, config, **kwargs)
     elif skip_iterations:
         status, condition = n.optimize(**kwargs)
     else:
@@ -2766,20 +3021,20 @@ if __name__ == "__main__":
     logging_frequency = snakemake.config.get("solving", {}).get(
         "mem_logging_frequency", 30
     )
-    with memory_logger(
-        filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
-    ) as mem:
-        solve_network(
-            n,
-            config=snakemake.config,
-            params=snakemake.params,
-            solving=snakemake.params.solving,
-            planning_horizons=planning_horizons,
-            rule_name=snakemake.rule,
-            log_fn=snakemake.log.solver,
-        )
+    # with memory_logger(
+    #     filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
+    # ) as mem:
+    solve_network(
+        n,
+        config=snakemake.config,
+        params=snakemake.params,
+        solving=snakemake.params.solving,
+        planning_horizons=planning_horizons,
+        rule_name=snakemake.rule,
+        log_fn=snakemake.log.solver,
+    )
 
-    logger.info(f"Maximum memory usage: {mem.mem_usage}")
+    # logger.info(f"Maximum memory usage: {mem.mem_usage}")
 
     grid_policy = snakemake.config.get("grid_policy", False)
     if grid_policy:

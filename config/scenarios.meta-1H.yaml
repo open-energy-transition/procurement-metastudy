@@ -56,6 +56,68 @@ baseline-2030-NoResTargets-1H: #3
     EU_share_target: false
     country_cap_target: false
 
+baseline-2030-scaled-load-1H: #4
+  enable:
+    procurement: false
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    res_additionality: false
+    
+  load:
+    scaling_factor: 1.05
+
+baseline-no-ci-2030-1H: #2
+  enable:
+    procurement: false
+
+  remove_ci_load: 1
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+baseline-2030-NoResTargets-no-ci-1H: #3
+  enable:
+    procurement: false
+  
+  remove_ci_load: 1
+  
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+
+baseline-25-no-ci-2030-1H: #2
+  enable:
+    procurement: false
+
+  remove_ci_load: 0.5
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+baseline-2030-NoResTargets-25-no-ci-1H: #3
+  enable:
+    procurement: false
+  
+  remove_ci_load: 0.5
+  
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+
 # ======== Annual volume matching =====================
 # =====================================================
 
@@ -98,6 +160,23 @@ vol-match-2030-ci25-1H: #2
 
   res_target:
     res_additionality: false
+
+  procurement:
+    strategy: vol-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+
+vol-match-2030-ci25-additional-1H: #2
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    res_additionality: true
 
   procurement:
     strategy: vol-match
@@ -235,6 +314,110 @@ vol-match-2030-NoResTargets-ci25-1H: #4
     scope: node
     energy_matching: 100
     participation: 50
+    
+247-cfe-2030-ci25-cfe70-1H: #3
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 70
+    participation: 50
+
+247-cfe-2030-ci25-cfe80-1H: #4
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    res_additionality: false
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 80
+    participation: 50
+
+247-cfe-2030-ci25-cfe90-additional-1H: #3
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    res_additionality: true
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 90
+    participation: 50
+
+247-cfe-2030-ci25-cfe100-additional-1H: #4
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    res_additionality: true
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 100
+    participation: 50
+
+247-cfe-2030-ci25-cfe90-additional-grid-1H: #3
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    res_additionality: true
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 90
+    participation: 50
+    min_iterations: 3
+
+247-cfe-2030-ci25-cfe100-additional-grid-1H: #4
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    res_additionality: true
+
+  procurement:
+    strategy: 247-cfe
+    scope: node
+    energy_matching: 100
+    participation: 50
+    min_iterations: 3
 
 # ======== Emission matching ==========================
 # =====================================================
@@ -455,3 +638,220 @@ emi-match-2030-ci25-model-aer-1H: #8
       emission_signal: aer
       signal_source: model
 
+emi-match-2030-ci25-model-moer-additional-1H: #5
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    res_additionality: true
+
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: moer
+      signal_source: model
+
+emi-match-2030-ci25-model-mber-additional-1H: #6
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    res_additionality: true
+
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: mber
+      signal_source: model
+
+emi-match-2030-ci25-model-cmer-additional-1H: #7
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    res_additionality: true
+
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: cmer
+      signal_source: model
+
+emi-match-2030-ci25-model-aer-additional-1H: #8
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    res_additionality: true
+    
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: aer
+      signal_source: model
+
+emi-match-2030-ci25-model-lrmer_c-1H: #8
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    res_additionality: false
+    
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: lrmer_c
+      signal_source: model
+
+emi-match-2030-ci25-model-lrmer_c-additional-1H: #8
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    res_additionality: true
+    
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: lrmer_c
+      signal_source: model
+
+emi-match-2030-ci25-model-mber-no-res-1H: #6
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+    res_additionality: false
+
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: mber
+      signal_source: model
+
+emi-match-2030-ci25-model-cmer-no-res-1H: #7
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+    res_additionality: false
+
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: cmer
+      signal_source: model
+
+emi-match-2030-ci25-model-aer-no-res-1H: #8
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+    res_additionality: false
+    
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: aer
+      signal_source: model
+
+emi-match-2030-ci25-model-lrmer_c-no-res-1H: #8
+  enable:
+    procurement: true
+
+  clustering:
+    temporal:
+      resolution_sector: 1H
+
+  res_target:
+    EU_share_target: false
+    country_cap_target: false
+    res_additionality: false
+    
+  procurement:
+    strategy: emi-match
+    scope: continent
+    energy_matching: 100
+    participation: 50
+    emissionality:
+      emission_matching: 100
+      emission_signal: lrmer_c
+      signal_source: model
