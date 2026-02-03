@@ -491,6 +491,16 @@ def add_ci_procurement(
             reversed=False,
         )
 
+        n.add(
+            "Link",
+            f"{name}" + " GO import",
+            bus0=location,
+            bus1=name,
+            marginal_cost=0.001,  # large enough to avoid optimization artifacts, small enough not to influence PPA portfolio
+            p_nom=1e6,
+            reversed=False,
+        )
+
         # ===================== Adding Storage Technologies =====================
         # =======================================================================
 

@@ -67,12 +67,15 @@ class MemTimer(Process):
         self.pipe.send(0)  # we're ready
         stop = False
         while True:
-            cur_mem = _get_memory(
-                self.monitor_pid,
-                self.backend,
-                timestamps=self.timestamps,
-                include_children=self.include_children,
-            )
+            try:
+                cur_mem = _get_memory(
+                    self.monitor_pid,
+                    self.backend,
+                    timestamps=self.timestamps,
+                    include_children=self.include_children,
+                )
+            except:
+                cur_mem = (99, 99)
 
             if stream is not None:
                 stream.write("MEM {:.6f} {:.4f}\n".format(*cur_mem))

@@ -41,67 +41,22 @@ def split_common_carriers(gen, country):
     return gen
 
 
-# def get_gen_and_em(n, country):
-#     eb = n.statistics.energy_balance(
-#         aggregate_time=False, groupby=["country", "carrier", "bus_carrier", "name"]
-#     ).reset_index()
-#     gen = eb[(eb["bus_carrier"] == "AC")]
-
-#     if country:
-#         gen = gen[(gen["country"] == country)]
-# emisisons are not tagged by country
-# em = eb[(eb["bus_carrier"] == "co2")]
-# em = (
-#     em.set_index("name")
-#     .drop(columns=["component", "country", "carrier", "bus_carrier"])
-#     .T
-# )
-
-#     gen_carriers = [
-#         "Open-Cycle Gas",
-#         "li-ion battery discharger",
-#         "Combined-Cycle Gas",
-#         "lignite",
-#         "oil",
-#         "urban central solid biomass CHP",
-#         "coal",
-#         "nuclear",
-#         "Reservoir & Dam",
-#         "Pumped Hydro Storage",
-#         "Offshore Wind (AC)",
-#         "Offshore Wind (Floating)",
-#         "Onshore Wind",
-#         "Run of River",
-#         "Solar",
-#         "solar-hsat",
-#         "Offshore Wind (DC)",
-#     ]
-
-#     def group_carriers(_df):
-#         if _df["carrier"].isin(gen_carriers).all():
-#             _df["carrier"] = _df["name"]
-#         return _df
-
-#     gen = gen.groupby("carrier", as_index=False).apply(group_carriers)
-#     gen = gen.reset_index(drop=True).drop(
-#         columns=["component", "country", "bus_carrier", "name"]
-#     )
-#     gen = gen.groupby("carrier").sum()
-#     gen = gen.T
-#     gen = split_common_carriers(gen, country)
-
-# em = em[[c for c in gen.columns if c in em.columns]]
-
-#     return gen, em
-
-
 def calc_mber(gens, em_by_plant):
     mber = {}
     for ctry, gen in gens.items():
         em = em_by_plant[ctry]
 
+        batt_cols = gen.columns[gen.columns.str.contains('li-ion')]
+        batt = gen[batt_cols]
+        batt = batt.where(batt>0,0)
+        gen['battery-2030'] = batt.sum(axis=1)
+
+
         cols = gen.columns
         cols = cols[cols.str.contains("20") | cols.str.contains("19")]
+
+        # exclude PHS from calc
+        cols = cols[~cols.str.contains("PHS")]
         years = cols.map(lambda x: x.split("-")[-1])
         gen_by_year = gen[cols].T.groupby(years).sum().T
         em_by_year = em.reindex(cols, axis=1)[cols].T.groupby(years).sum().T
@@ -112,6 +67,9 @@ def calc_mber(gens, em_by_plant):
         recent_em = em_by_year[gen_frac_by_year > 0.8].sum(axis=1)
         recent_gen = gen_by_year[gen_frac_by_year > 0.8].sum(axis=1)
         mber[ctry] = recent_em / recent_gen
+
+        # filter out times where there is no gen in node
+        mber[ctry] = mber[ctry].where(gen_total > 1, 0)
 
     return mber
 

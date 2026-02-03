@@ -215,8 +215,10 @@ procurement:
     signal_source: model # source of emission signal: model, historical
     signal_model: data/emission-signals-model # folder path if aer, mber, or moer are chosen as emission_signal
     signal_historical: data/emission-signals-historical/2023_weighted_em_rates.csv # folder path if historical is chosen as emission_signal
+    use_storage: false
   participation: 50 # share of CI load participating to the procurement
   use_SSS: false
+  use_GO: false
 
   technology:
     generation_tech: ["onwind", "offwind-ac", "offwind-dc", "offwind-float", "solar", "solar-hsat", "solar rooftop"]  # "allam", "geothermal", "nuclear"

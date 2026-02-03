@@ -667,6 +667,7 @@ def calculate_grid_score(
 
     if n.buses_t[f"{name}_score"].empty:
         grid_buses = n.buses[n.buses.carrier == "AC"].index
+        n.buses_t[f"{name}_p"] = pd.DataFrame(0, index=n.snapshots, columns=grid_buses)
         n.buses_t[f"{name}_score"] = pd.DataFrame(
             0, index=n.snapshots, columns=grid_buses
         )
@@ -1744,12 +1745,14 @@ def cfe_constraints(n):
     clean_techs = n.config["grid_policy"]["clean_carriers"]
     energy_matching = procurement["energy_matching"] / 100
     use_SSS = procurement["use_SSS"]
+    use_GO = procurement["use_GO"]
 
     calculate_grid_score(n, clean_techs, "cfe")
 
     for name in procurement["ci"]:
         location = procurement["ci"][name]["location"]
         grid_supply_cfe = n.buses_t.cfe_lvl_score[location]
+        cfe_mwh = n.buses_t.cfe_p[location]
 
         gen_ci = (
             list(n.generators.query("ci == @name").index)
@@ -1781,6 +1784,7 @@ def cfe_constraints(n):
         ci_export = n.model["Link-p"].loc[:, [name + " export"]]
         ci_import = n.model["Link-p"].loc[:, [name + " import"]]
         ci_SSS_import = n.model["Link-p"].loc[:, [name + " SSS import"]]
+        ci_GO_import = n.model["Link-p"].loc[:, [name + " GO import"]]
 
         if use_SSS:
             # SSS counts all clean RECs claimable
@@ -1790,6 +1794,14 @@ def cfe_constraints(n):
             n.model.add_constraints(
                 ci_SSS_import <= grid_supply_cfe * load,
                 name=f"SSS_import_constraint_{name}",
+            )
+        elif use_GO:
+            # SSS counts all clean RECs claimable
+            grid_supply = ci_GO_import * n.links.at[name + " GO import", "efficiency"]
+            # Allow CI to procure "GOs" up the amount of CFE on the grid
+            n.model.add_constraints(
+                ci_GO_import <= cfe_mwh,
+                name=f"GO_import_constraint_{name}",
             )
         else:
             grid_supply = (
@@ -2276,20 +2288,21 @@ def emission_matching_constraints_continent(n):  # to update
             * weights
         ).sum()
 
-        # discharge_sum = (
-        #     n.model["StorageUnit-p_dispatch"].loc[:, store_ci]
-        #     * weights
-        #     * signal_per_storage
-        # ).sum()
-        # charge_sum = (
-        #     n.model["StorageUnit-p_store"].loc[:, store_ci]
-        #     * weights
-        #     * signal_per_storage
-        # ).sum()
+        lhs = gen_avoided + link_avoided - link_emitted
 
-        lhs = emission_matching * (
-            gen_avoided + link_avoided - link_emitted  # + discharge_sum - charge_sum
-        )
+        if n.config["procurement"]["emissionality"]["use_storage"]:
+            discharge_sum = (
+                n.model["StorageUnit-p_dispatch"].loc[:, store_ci]
+                * weights
+                * signal_per_storage
+            ).sum()
+            charge_sum = (
+                n.model["StorageUnit-p_store"].loc[:, store_ci]
+                * weights
+                * signal_per_storage
+            ).sum()
+
+            lhs = lhs + discharge_sum - charge_sum
 
         n.model.add_constraints(
             lhs >= load_emissions, name="emission_matching_continent"
@@ -2360,18 +2373,21 @@ def emission_matching_constraints_continent(n):  # to update
             * weights
         ).sum()
 
-        # discharge_sum = (
-        #     n.model["StorageUnit-p_dispatch"].loc[:, store_ci]
-        #     * weights
-        #     * signal_per_storage
-        # ).sum()
-        # charge_sum = (
-        #     n.model["StorageUnit-p_store"].loc[:, store_ci]
-        #     * weights
-        #     * signal_per_storage
-        # ).sum()
+        lhs = gen_avoided + link_avoided - link_emitted
 
-        lhs = gen_avoided + link_avoided - link_emitted  # + discharge_sum - charge_sum
+        if n.config["procurement"]["emissionality"]["use_storage"]:
+            discharge_sum = (
+                n.model["StorageUnit-p_dispatch"].loc[:, store_ci]
+                * weights
+                * signal_per_storage
+            ).sum()
+            charge_sum = (
+                n.model["StorageUnit-p_store"].loc[:, store_ci]
+                * weights
+                * signal_per_storage
+            ).sum()
+
+            lhs = lhs + discharge_sum - charge_sum
 
         n.model.add_constraints(
             lhs >= load_emissions * emission_matching,
@@ -3005,20 +3021,20 @@ if __name__ == "__main__":
     logging_frequency = snakemake.config.get("solving", {}).get(
         "mem_logging_frequency", 30
     )
-    with memory_logger(
-        filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
-    ) as mem:
-        solve_network(
-            n,
-            config=snakemake.config,
-            params=snakemake.params,
-            solving=snakemake.params.solving,
-            planning_horizons=planning_horizons,
-            rule_name=snakemake.rule,
-            log_fn=snakemake.log.solver,
-        )
+    # with memory_logger(
+    #     filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
+    # ) as mem:
+    solve_network(
+        n,
+        config=snakemake.config,
+        params=snakemake.params,
+        solving=snakemake.params.solving,
+        planning_horizons=planning_horizons,
+        rule_name=snakemake.rule,
+        log_fn=snakemake.log.solver,
+    )
 
-        logger.info(f"Maximum memory usage: {mem.mem_usage}")
+    # logger.info(f"Maximum memory usage: {mem.mem_usage}")
 
     grid_policy = snakemake.config.get("grid_policy", False)
     if grid_policy:
